@@ -16,28 +16,46 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import {
   IconAlignJustified,
+  IconBell,
+  IconBook,
+  IconCards,
+  IconChartBar,
   IconChevronLeft,
   IconChevronRight,
-  IconLayoutDashboard,
   IconLayoutGrid,
   IconPencil,
-  IconStar,
-  IconTrophy,
   IconUsers,
 } from "@tabler/icons-react";
+import { ProfileMenu } from "@/components/profile-menu";
 
 const INK = "#0F172A";
 const MUTED = "#667080";
 const ACTIVE_BG = "#374151";
+const HEADER_HEIGHT = 80;
 const SIDEBAR_EXPANDED = 240;
 const SIDEBAR_COLLAPSED = 72;
 
-const NAV_ITEMS = [
-  { label: "Dashboard", icon: IconLayoutDashboard, href: "/dashboard" },
-  { label: "Practice", icon: IconPencil, href: "/dashboard/practice" },
-  { label: "Mock Exam", icon: IconAlignJustified, href: "/dashboard/mock-exam" },
-  { label: "Leaderboard", icon: IconTrophy, href: "/dashboard/leaderboard" },
-  { label: "Community", icon: IconUsers, href: "/dashboard/community" },
+const NAV_SECTIONS = [
+  {
+    label: "HOME",
+    items: [{ label: "Dashboard", icon: IconLayoutGrid, href: "/dashboard" }],
+  },
+  {
+    label: "LEARNING",
+    items: [
+      { label: "Practice", icon: IconPencil, href: "/dashboard/practice" },
+      { label: "Flashcards", icon: IconCards, href: "/dashboard/flashcards" },
+      { label: "References", icon: IconBook, href: "/dashboard/references" },
+      { label: "Mock Exam", icon: IconAlignJustified, href: "/dashboard/mock-exam" },
+    ],
+  },
+  {
+    label: "OTHERS",
+    items: [
+      { label: "Leaderboard", icon: IconChartBar, href: "/dashboard/leaderboard" },
+      { label: "Community", icon: IconUsers, href: "/dashboard/community" },
+    ],
+  },
 ];
 
 function LogoMark() {
@@ -65,7 +83,7 @@ function NavItem({
   collapsed,
   onClick,
 }: {
-  item: (typeof NAV_ITEMS)[0];
+  item: { label: string; icon: React.ElementType; href: string };
   active: boolean;
   collapsed: boolean;
   onClick: () => void;
@@ -80,7 +98,7 @@ function NavItem({
         alignItems: "center",
         justifyContent: collapsed ? "center" : "flex-start",
         gap: rem(10),
-        padding: collapsed ? `${rem(10)} 0` : `${rem(10)} ${rem(12)}`,
+        padding: collapsed ? `${rem(9)} 0` : `${rem(9)} ${rem(12)}`,
         borderRadius: rem(10),
         width: "100%",
         fontSize: rem(14),
@@ -90,7 +108,7 @@ function NavItem({
         transition: "background-color 150ms ease, color 150ms ease",
       }}
     >
-      <Icon size={18} stroke={1.5} />
+      <Icon size={17} stroke={1.5} />
       {!collapsed && item.label}
     </UnstyledButton>
   );
@@ -106,51 +124,6 @@ function NavItem({
   return button;
 }
 
-function UnlockCard() {
-  return (
-    <Box
-      m="xs"
-      p="md"
-      style={{ borderRadius: rem(14), backgroundColor: INK }}
-    >
-      <Box
-        mb={10}
-        style={{
-          width: rem(32),
-          height: rem(32),
-          borderRadius: rem(8),
-          backgroundColor: "rgba(255,255,255,0.12)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <IconStar size={16} stroke={1.5} color="white" />
-      </Box>
-      <Text fw={700} size="sm" c="white" mb={4}>
-        Unlock Full Access
-      </Text>
-      <Text size="xs" c="rgba(255,255,255,0.55)" mb={12} lh={1.5}>
-        Get unlimited practice sets & mock exams for your CSCA prep.
-      </Text>
-      <UnstyledButton
-        style={{
-          display: "block",
-          width: "100%",
-          padding: `${rem(8)} ${rem(12)}`,
-          borderRadius: rem(8),
-          backgroundColor: "rgba(255,255,255,0.15)",
-          color: "white",
-          fontWeight: 600,
-          fontSize: rem(13),
-          textAlign: "center",
-        }}
-      >
-        Subscribe Now
-      </UnstyledButton>
-    </Box>
-  );
-}
 
 export function NavShell({ children }: { children: React.ReactNode }) {
   const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
@@ -158,16 +131,78 @@ export function NavShell({ children }: { children: React.ReactNode }) {
   const [active, setActive] = useState("/dashboard");
 
   const toggleCollapsed = () => setCollapsed((c) => !c);
+  const navbarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
 
   return (
     <AppShell
+      header={{ height: HEADER_HEIGHT }}
       navbar={{
-        width: collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED,
+        width: navbarWidth,
         breakpoint: "sm",
         collapsed: { mobile: !mobileOpened },
       }}
       padding={0}
     >
+      {/* ── Full-width header ── */}
+      <AppShell.Header style={{ borderBottom: "1px solid #E2E8F0" }}>
+        <Group h="100%" wrap="nowrap" gap={0}>
+          {/* Logo section — width tracks sidebar */}
+          <UnstyledButton
+            onClick={toggleCollapsed}
+            visibleFrom="sm"
+            style={{
+              width: navbarWidth,
+              height: "100%",
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              paddingInline: collapsed ? 0 : rem(20),
+              justifyContent: collapsed ? "center" : "flex-start",
+              borderRight: "1px solid #E2E8F0",
+              transition: "width 200ms ease, padding 200ms ease",
+              cursor: "pointer",
+            }}
+          >
+            <Group gap={10} wrap="nowrap">
+              <LogoMark />
+              {!collapsed && (
+                <Text fw={700} size="md" c={INK} lh={1} style={{ whiteSpace: "nowrap" }}>
+                  ThinkNao
+                </Text>
+              )}
+            </Group>
+          </UnstyledButton>
+
+          {/* Mobile burger + logo */}
+          <Group hiddenFrom="sm" px="md" gap="sm" align="center">
+            <Burger opened={mobileOpened} onClick={toggleMobile} size="sm" color={INK} />
+            <Group gap={10} wrap="nowrap">
+              <LogoMark />
+              <Text fw={700} size="md" c={INK} lh={1}>
+                ThinkNao
+              </Text>
+            </Group>
+          </Group>
+
+          {/* Welcome + actions */}
+          <Group flex={1} px={{ base: "md", sm: "xl" }} justify="space-between" align="center" wrap="nowrap">
+            <Box visibleFrom="sm">
+              <Text fw={700} size="xl" c={INK} lh={1.5}>
+                Welcome back, Li Wei!
+              </Text>
+              <Text size="sm" c="dimmed">
+                Dashboard
+              </Text>
+            </Box>
+
+            <Group gap="sm" align="center" style={{ marginLeft: "auto" }}>
+              <ProfileMenu />
+            </Group>
+          </Group>
+        </Group>
+      </AppShell.Header>
+
+      {/* ── Sidebar ── */}
       <AppShell.Navbar
         style={{
           backgroundColor: "white",
@@ -176,62 +211,49 @@ export function NavShell({ children }: { children: React.ReactNode }) {
           flexDirection: "column",
         }}
       >
-        {/* Logo — click to collapse/expand (desktop) */}
-        <UnstyledButton
-          onClick={toggleCollapsed}
-          visibleFrom="sm"
-          px={collapsed ? rem(8) : "md"}
-          py="md"
-          style={{
-            width: "100%",
-            borderBottom: "1px solid #E2E8F0",
-            cursor: "pointer",
-          }}
-        >
-          <Group gap={10} justify={collapsed ? "center" : "flex-start"} wrap="nowrap">
-            <LogoMark />
-            {!collapsed && (
-              <Text fw={700} size="md" c={INK} lh={1} style={{ whiteSpace: "nowrap" }}>
-                ThinkNao
-              </Text>
-            )}
-          </Group>
-        </UnstyledButton>
+        <ScrollArea flex={1} px={collapsed ? rem(8) : "xs"} py="sm">
+          <Stack gap={0}>
+            {NAV_SECTIONS.map((section, si) => (
+              <Box key={section.label} mb={si < NAV_SECTIONS.length - 1 ? 4 : 0}>
+                {/* Section label — hidden when collapsed */}
+                {!collapsed && (
+                  <Text
+                    size="xs"
+                    fw={600}
+                    c="dimmed"
+                    tt="uppercase"
+                    style={{ letterSpacing: "0.07em", paddingInline: rem(12) }}
+                    mb={4}
+                    mt={si > 0 ? 16 : 4}
+                  >
+                    {section.label}
+                  </Text>
+                )}
+                {collapsed && si > 0 && (
+                  <Box
+                    my={8}
+                    style={{ height: 1, backgroundColor: "#E2E8F0", marginInline: rem(8) }}
+                  />
+                )}
 
-        {/* Logo — mobile only (non-interactive) */}
-        <Box
-          hiddenFrom="sm"
-          px="md"
-          py="md"
-          style={{ borderBottom: "1px solid #E2E8F0" }}
-        >
-          <Group gap={10} wrap="nowrap">
-            <LogoMark />
-            <Text fw={700} size="md" c={INK} lh={1} style={{ whiteSpace: "nowrap" }}>
-              ThinkNao
-            </Text>
-          </Group>
-        </Box>
-
-        {/* Nav items */}
-        <ScrollArea flex={1} px={collapsed ? rem(8) : "xs"} py="xs">
-          <Stack gap={2}>
-            {NAV_ITEMS.map((item) => (
-              <NavItem
-                key={item.href}
-                item={item}
-                active={active === item.href}
-                collapsed={collapsed}
-                onClick={() => setActive(item.href)}
-              />
+                <Stack gap={2}>
+                  {section.items.map((item) => (
+                    <NavItem
+                      key={item.href}
+                      item={item}
+                      active={active === item.href}
+                      collapsed={collapsed}
+                      onClick={() => setActive(item.href)}
+                    />
+                  ))}
+                </Stack>
+              </Box>
             ))}
           </Stack>
         </ScrollArea>
 
-        {/* Unlock card — hidden when collapsed */}
-        {!collapsed && <UnlockCard />}
-
-        {/* Collapse toggle arrow — desktop only */}
+        {/* Unlock card */}
+        {/* Collapse toggle — desktop only */}
         <Box
           visibleFrom="sm"
           px="xs"
@@ -255,9 +277,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
               <IconChevronRight size={15} stroke={1.5} />
             ) : (
               <Group gap={4}>
-                <Text size="xs" c={MUTED}>
-                  Collapse
-                </Text>
+                <Text size="xs" c={MUTED}>Collapse</Text>
                 <IconChevronLeft size={15} stroke={1.5} />
               </Group>
             )}
@@ -265,36 +285,14 @@ export function NavShell({ children }: { children: React.ReactNode }) {
         </Box>
       </AppShell.Navbar>
 
+      {/* ── Main content ── */}
       <AppShell.Main
         style={{
           backgroundColor: "#F3F5F7",
-          minHeight: "100dvh",
           display: "flex",
           flexDirection: "column",
         }}
       >
-        {/* Mobile top bar */}
-        <Box
-          hiddenFrom="sm"
-          px="md"
-          py="sm"
-          style={{
-            backgroundColor: "white",
-            borderBottom: "1px solid #E2E8F0",
-            display: "flex",
-            alignItems: "center",
-            gap: rem(12),
-          }}
-        >
-          <Burger opened={mobileOpened} onClick={toggleMobile} size="sm" color={INK} />
-          <Group gap={10} wrap="nowrap">
-            <LogoMark />
-            <Text fw={700} size="md" c={INK} lh={1}>
-              ThinkNao
-            </Text>
-          </Group>
-        </Box>
-
         {children}
       </AppShell.Main>
     </AppShell>
