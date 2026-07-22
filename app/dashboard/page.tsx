@@ -119,14 +119,14 @@ function ProblemSetCard({
 
 const IN_PROGRESS = [
   {
-    label: "Governance Framework — Module 1",
+    label: "Mathematics 1",
     done: 17,
     total: 25,
     pct: 68,
     color: INK,
   },
   {
-    label: "Internal Audit Process — Module 3",
+    label: "Chemistry 3",
     done: 10,
     total: 30,
     pct: 32,
@@ -239,8 +239,8 @@ function LearningActivity() {
         This week
       </Text>
       <Group align="flex-end" justify="space-between" style={{ height: rem(80) }}>
-        {WEEK.map(({ day, pct, current }) => (
-          <Stack key={day} align="center" gap={4} style={{ flex: 1 }}>
+        {WEEK.map(({ day, pct, current }, i) => (
+          <Stack key={i} align="center" gap={4} style={{ flex: 1 }}>
             <Box
               style={{
                 width: "100%",
