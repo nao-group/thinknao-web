@@ -230,16 +230,6 @@ export default function ProfilePage() {
               </Group>
             </Group>
           </Box>
-
-          <Group gap="sm" pb={4}>
-            <Button
-              leftSection={<IconPencil size={13} stroke={1.5} />}
-              size="xs"
-              variant="default"
-            >
-              Edit
-            </Button>
-          </Group>
         </Group>
 
         {/* Stats Row */}
