@@ -5,3 +5,13 @@
 * {
   margin: 0;
 }
+
+.hover-zoom {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  cursor: pointer;
+}
+
+.hover-zoom:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}

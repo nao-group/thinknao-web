@@ -67,6 +67,7 @@ function ProblemSetCard({
   return (
     <Box
       p="lg"
+      className="hover-zoom"
       style={{
         backgroundColor: "white",
         borderRadius: rem(14),
@@ -137,6 +138,7 @@ function InProgressItem({ label, done, total, pct, color }: (typeof IN_PROGRESS)
   return (
     <Box
       p="md"
+      className="hover-zoom"
       style={{
         backgroundColor: "white",
         borderRadius: rem(14),
