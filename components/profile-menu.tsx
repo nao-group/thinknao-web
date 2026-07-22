@@ -2,10 +2,13 @@
 
 import { Avatar, Badge, Box, Group, Menu, Text, UnstyledButton, rem } from "@mantine/core";
 import { IconChevronDown, IconLogout, IconUser } from "@tabler/icons-react";
+import { useRouter } from "next/navigation";
 
 const INK = "#0F172A";
 
 export function ProfileMenu() {
+  const router = useRouter();
+
   return (
     <Menu
       position="bottom-end"
@@ -41,7 +44,10 @@ export function ProfileMenu() {
       </Menu.Target>
 
       <Menu.Dropdown>
-        <Menu.Item leftSection={<IconUser size={15} stroke={1.5} />}>
+        <Menu.Item
+          leftSection={<IconUser size={15} stroke={1.5} />}
+          onClick={() => router.push("/profile")}
+        >
           Profile
         </Menu.Item>
         <Menu.Divider />

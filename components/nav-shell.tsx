@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   AppShell,
   Box,
@@ -125,10 +126,22 @@ function NavItem({
 }
 
 
+const PAGE_LABELS: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/dashboard/practice": "Practice",
+  "/dashboard/flashcards": "Flashcards",
+  "/dashboard/references": "References",
+  "/dashboard/mock-exam": "Mock Exam",
+  "/dashboard/leaderboard": "Leaderboard",
+  "/dashboard/community": "Community",
+  "/profile": "Profile",
+};
+
 export function NavShell({ children }: { children: React.ReactNode }) {
   const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
   const [collapsed, setCollapsed] = useState(false);
-  const [active, setActive] = useState("/dashboard");
+  const pathname = usePathname();
+  const router = useRouter();
 
   const toggleCollapsed = () => setCollapsed((c) => !c);
   const navbarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
@@ -191,7 +204,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
                 Welcome back, Li Wei!
               </Text>
               <Text size="sm" c="dimmed">
-                Dashboard
+                {PAGE_LABELS[pathname] ?? "Dashboard"}
               </Text>
             </Box>
 
@@ -241,9 +254,9 @@ export function NavShell({ children }: { children: React.ReactNode }) {
                     <NavItem
                       key={item.href}
                       item={item}
-                      active={active === item.href}
+                      active={pathname === item.href}
                       collapsed={collapsed}
-                      onClick={() => setActive(item.href)}
+                      onClick={() => router.push(item.href)}
                     />
                   ))}
                 </Stack>
