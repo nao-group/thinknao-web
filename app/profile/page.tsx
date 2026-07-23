@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Avatar,
   Badge,
@@ -8,6 +9,7 @@ import {
   Group,
   PasswordInput,
   SimpleGrid,
+  Skeleton,
   Stack,
   Text,
   rem,
@@ -22,12 +24,34 @@ import {
   IconTarget,
   IconTrophy,
 } from "@tabler/icons-react";
+import api from "@/lib/api";
 
 const INK = "#0F172A";
 const SURFACE = "#F3F5F7";
 const PRIMARY = "#D4A017";
 const INDIGO = "#6670B0";
 const CREAM = "#F7E7D3";
+
+interface UserProfile {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  grade: string | null;
+  province: string | null;
+  current_school: string | null;
+  dream_university: string | null;
+  target_major: string | null;
+  created_at: string;
+}
+
+function getInitials(name: string) {
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+}
+
+function formatJoinDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
@@ -70,14 +94,7 @@ function StatCard({
         <Icon size={20} stroke={1.5} color={iconColor} />
       </Box>
       <Box>
-        <Text
-          size="xs"
-          fw={600}
-          c="dimmed"
-          tt="uppercase"
-          style={{ letterSpacing: "0.06em" }}
-          mb={2}
-        >
+        <Text size="xs" fw={600} c="dimmed" tt="uppercase" style={{ letterSpacing: "0.06em" }} mb={2}>
           {label}
         </Text>
         <Text fw={700} size="lg" c={INK}>
@@ -91,14 +108,7 @@ function StatCard({
 function ReadonlyField({ label, value }: { label: string; value: string }) {
   return (
     <Box>
-      <Text
-        size="xs"
-        fw={600}
-        c="dimmed"
-        tt="uppercase"
-        style={{ letterSpacing: "0.06em" }}
-        mb={6}
-      >
+      <Text size="xs" fw={600} c="dimmed" tt="uppercase" style={{ letterSpacing: "0.06em" }} mb={6}>
         {label}
       </Text>
       <Box
@@ -112,8 +122,8 @@ function ReadonlyField({ label, value }: { label: string; value: string }) {
           alignItems: "center",
         }}
       >
-        <Text size="sm" c={INK}>
-          {value}
+        <Text size="sm" c={value ? INK : "dimmed"}>
+          {value || "—"}
         </Text>
       </Box>
     </Box>
@@ -131,6 +141,18 @@ function SectionCard({ children }: { children: React.ReactNode }) {
 // ─── Page ───────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get<UserProfile>("/api/user/profile")
+      .then((res) => setProfile(res.data))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const initials = profile ? getInitials(profile.full_name) : "";
+  const joinDate = profile ? formatJoinDate(profile.created_at) : "—";
+
   return (
     <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       {/* Banner */}
@@ -183,7 +205,7 @@ export default function ProfilePage() {
 
       {/* Padded content */}
       <Box px={{ base: "md", sm: "xl" }} style={{ flex: 1 }}>
-        {/* Avatar + Buttons row — avatar overlaps banner */}
+        {/* Avatar + Name row */}
         <Group
           justify="space-between"
           align="flex-end"
@@ -202,58 +224,51 @@ export default function ProfilePage() {
               flexShrink: 0,
             }}
           >
-            LW
+            {loading ? "" : initials}
           </Avatar>
 
-          {/* Name + location — beside avatar */}
           <Box pb={4} style={{ flex: 1, minWidth: 0 }}>
-            <Group gap={8} mb={4} align="center">
-              <Text fw={700} size="xl" c={INK}>
-                Li Wei
-              </Text>
-              <Badge size="sm" color="dark" variant="filled" radius="sm">
-                PRO
-              </Badge>
-            </Group>
+            {loading ? (
+              <Skeleton height={20} width={160} mb={8} />
+            ) : (
+              <Group gap={8} mb={4} align="center">
+                <Text fw={700} size="xl" c={INK}>{profile?.full_name}</Text>
+                <Badge size="sm" color="dark" variant="filled" radius="sm">PRO</Badge>
+              </Group>
+            )}
             <Group gap="lg">
-              <Group gap={5}>
-                <IconSchool size={14} stroke={1.5} color="#667080" />
-                <Text size="xs" c="dimmed">
-                  National University of Singapore
-                </Text>
-              </Group>
-              <Group gap={5}>
-                <IconMapPin size={14} stroke={1.5} color="#667080" />
-                <Text size="xs" c="dimmed">
-                  Singapore
-                </Text>
-              </Group>
+              {loading ? (
+                <Skeleton height={14} width={220} />
+              ) : (
+                <>
+                  {profile?.current_school && (
+                    <Group gap={5}>
+                      <IconSchool size={14} stroke={1.5} color="#667080" />
+                      <Text size="xs" c="dimmed">{profile.current_school}</Text>
+                    </Group>
+                  )}
+                  {profile?.province && (
+                    <Group gap={5}>
+                      <IconMapPin size={14} stroke={1.5} color="#667080" />
+                      <Text size="xs" c="dimmed">{profile.province}</Text>
+                    </Group>
+                  )}
+                </>
+              )}
             </Group>
           </Box>
         </Group>
 
         {/* Stats Row */}
         <SimpleGrid cols={{ base: 1, sm: 3 }} mt="xl" mb="md">
-          <StatCard
-            icon={IconBolt}
-            iconBg={CREAM}
-            iconColor={PRIMARY}
-            label="Longest Streak"
-            value="21 days"
-          />
-          <StatCard
-            icon={IconTrophy}
-            iconBg="#EEF0FF"
-            iconColor={INDIGO}
-            label="Current Rank"
-            value="#14 Global"
-          />
+          <StatCard icon={IconBolt} iconBg={CREAM} iconColor={PRIMARY} label="Longest Streak" value="21 days" />
+          <StatCard icon={IconTrophy} iconBg="#EEF0FF" iconColor={INDIGO} label="Current Rank" value="#14 Global" />
           <StatCard
             icon={IconCalendarEvent}
             iconBg="#E6F9F5"
             iconColor="#0D9488"
             label="Joined At"
-            value="July 2024"
+            value={loading ? "—" : joinDate}
           />
         </SimpleGrid>
 
@@ -264,26 +279,24 @@ export default function ProfilePage() {
             {/* Personal Information */}
             <SectionCard>
               <Group justify="space-between" mb="lg">
-                <Text fw={700} size="sm" c={INK}>
-                  Personal Information
-                </Text>
-                <Button
-                  leftSection={<IconPencil size={13} stroke={1.5} />}
-                  size="xs"
-                  variant="default"
-                >
+                <Text fw={700} size="sm" c={INK}>Personal Information</Text>
+                <Button leftSection={<IconPencil size={13} stroke={1.5} />} size="xs" variant="default">
                   Edit
                 </Button>
               </Group>
-              <SimpleGrid cols={2} spacing="md">
-                <ReadonlyField label="Full Name" value="Li Wei" />
-                <ReadonlyField label="Email" value="liwei@example.com" />
-                <ReadonlyField
-                  label="School Origin"
-                  value="National University of Singapore"
-                />
-                <ReadonlyField label="Location" value="Singapore" />
-              </SimpleGrid>
+              {loading ? (
+                <Stack gap="md">
+                  <Skeleton height={56} radius="sm" />
+                  <Skeleton height={56} radius="sm" />
+                </Stack>
+              ) : (
+                <SimpleGrid cols={2} spacing="md">
+                  <ReadonlyField label="Full Name" value={profile?.full_name ?? ""} />
+                  <ReadonlyField label="Email" value={profile?.email ?? ""} />
+                  <ReadonlyField label="Current School" value={profile?.current_school ?? ""} />
+                  <ReadonlyField label="Province" value={profile?.province ?? ""} />
+                </SimpleGrid>
+              )}
             </SectionCard>
 
             {/* Change Password */}
@@ -303,60 +316,32 @@ export default function ProfilePage() {
                 >
                   <IconLock size={16} stroke={1.5} color="#667080" />
                 </Box>
-                <Text fw={700} size="sm" c={INK}>
-                  Change Password
-                </Text>
+                <Text fw={700} size="sm" c={INK}>Change Password</Text>
               </Group>
 
               <Stack gap="md">
                 <Box>
-                  <Text
-                    size="xs"
-                    fw={600}
-                    c="dimmed"
-                    tt="uppercase"
-                    style={{ letterSpacing: "0.06em" }}
-                    mb={6}
-                  >
+                  <Text size="xs" fw={600} c="dimmed" tt="uppercase" style={{ letterSpacing: "0.06em" }} mb={6}>
                     Current Password
                   </Text>
                   <PasswordInput placeholder="Enter current password" />
                 </Box>
-
                 <SimpleGrid cols={2} spacing="md">
                   <Box>
-                    <Text
-                      size="xs"
-                      fw={600}
-                      c="dimmed"
-                      tt="uppercase"
-                      style={{ letterSpacing: "0.06em" }}
-                      mb={6}
-                    >
+                    <Text size="xs" fw={600} c="dimmed" tt="uppercase" style={{ letterSpacing: "0.06em" }} mb={6}>
                       New Password
                     </Text>
                     <PasswordInput placeholder="Enter new password" />
                   </Box>
                   <Box>
-                    <Text
-                      size="xs"
-                      fw={600}
-                      c="dimmed"
-                      tt="uppercase"
-                      style={{ letterSpacing: "0.06em" }}
-                      mb={6}
-                    >
+                    <Text size="xs" fw={600} c="dimmed" tt="uppercase" style={{ letterSpacing: "0.06em" }} mb={6}>
                       Confirm Password
                     </Text>
                     <PasswordInput placeholder="Confirm new password" />
                   </Box>
                 </SimpleGrid>
-
                 <Group justify="flex-end">
-                  <Button
-                    size="sm"
-                    style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
-                  >
+                  <Button size="sm" style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}>
                     Update Password
                   </Button>
                 </Group>
@@ -372,24 +357,21 @@ export default function ProfilePage() {
                 <Group justify="space-between" mb="md">
                   <Group gap={8}>
                     <IconSchool size={16} stroke={1.5} color={PRIMARY} />
-                    <Text fw={700} size="sm" c={INK}>
-                      Dream University
-                    </Text>
+                    <Text fw={700} size="sm" c={INK}>Dream University</Text>
                   </Group>
                   <Box style={{ cursor: "pointer" }}>
                     <IconPencil size={14} stroke={1.5} color="#667080" />
                   </Box>
                 </Group>
-                <Box
-                  px="sm"
-                  py="xs"
-                  mb="sm"
-                  style={{ backgroundColor: SURFACE, borderRadius: rem(8) }}
-                >
-                  <Text size="sm" c={INK} fw={500}>
-                    Massachusetts Institute of Technology
-                  </Text>
-                </Box>
+                {loading ? (
+                  <Skeleton height={36} radius="sm" mb="sm" />
+                ) : (
+                  <Box px="sm" py="xs" mb="sm" style={{ backgroundColor: SURFACE, borderRadius: rem(8) }}>
+                    <Text size="sm" c={profile?.dream_university ? INK : "dimmed"} fw={profile?.dream_university ? 500 : 400}>
+                      {profile?.dream_university ?? "Not set"}
+                    </Text>
+                  </Box>
+                )}
                 <Text size="xs" c="dimmed" lh={1.5}>
                   Your target institution guides your preparation path.
                 </Text>
@@ -400,86 +382,50 @@ export default function ProfilePage() {
                 <Group justify="space-between" mb="md">
                   <Group gap={8}>
                     <IconTarget size={16} stroke={1.5} color={INDIGO} />
-                    <Text fw={700} size="sm" c={INK}>
-                      Target Major
-                    </Text>
+                    <Text fw={700} size="sm" c={INK}>Target Major</Text>
                   </Group>
                   <Box style={{ cursor: "pointer" }}>
                     <IconPencil size={14} stroke={1.5} color="#667080" />
                   </Box>
                 </Group>
-                <Box
-                  px="sm"
-                  py="xs"
-                  style={{ backgroundColor: SURFACE, borderRadius: rem(8) }}
-                >
-                  <Text size="sm" c={INK} fw={500}>
-                    Computer Science & AI
-                  </Text>
-                </Box>
+                {loading ? (
+                  <Skeleton height={36} radius="sm" />
+                ) : (
+                  <Box px="sm" py="xs" style={{ backgroundColor: SURFACE, borderRadius: rem(8) }}>
+                    <Text size="sm" c={profile?.target_major ? INK : "dimmed"} fw={profile?.target_major ? 500 : 400}>
+                      {profile?.target_major ?? "Not set"}
+                    </Text>
+                  </Box>
+                )}
               </SectionCard>
 
               {/* Subscription */}
               <Box p="lg" style={{ backgroundColor: INK, borderRadius: rem(14) }}>
                 <Group justify="space-between" mb="md">
-                  <Text fw={700} size="sm" c="white">
-                    Subscription
-                  </Text>
-                  <Badge
-                    size="sm"
-                    style={{ backgroundColor: PRIMARY, color: "white" }}
-                    radius="sm"
-                  >
-                    PRO
-                  </Badge>
+                  <Text fw={700} size="sm" c="white">Subscription</Text>
+                  <Badge size="sm" style={{ backgroundColor: PRIMARY, color: "white" }} radius="sm">PRO</Badge>
                 </Group>
-
                 <Stack gap={8} mb="md">
                   <Group justify="space-between">
-                    <Text size="xs" c="rgba(255,255,255,0.5)">
-                      Status
-                    </Text>
+                    <Text size="xs" c="rgba(255,255,255,0.5)">Status</Text>
                     <Group gap={5}>
-                      <Box
-                        style={{
-                          width: rem(7),
-                          height: rem(7),
-                          borderRadius: "50%",
-                          backgroundColor: "#22C55E",
-                        }}
-                      />
-                      <Text size="xs" fw={600} c="#22C55E">
-                        Active
-                      </Text>
+                      <Box style={{ width: rem(7), height: rem(7), borderRadius: "50%", backgroundColor: "#22C55E" }} />
+                      <Text size="xs" fw={600} c="#22C55E">Active</Text>
                     </Group>
                   </Group>
                   <Group justify="space-between">
-                    <Text size="xs" c="rgba(255,255,255,0.5)">
-                      Expires
-                    </Text>
-                    <Text size="xs" fw={600} c="white">
-                      Aug 13, 2026
-                    </Text>
+                    <Text size="xs" c="rgba(255,255,255,0.5)">Expires</Text>
+                    <Text size="xs" fw={600} c="white">Aug 13, 2026</Text>
                   </Group>
                   <Group justify="space-between">
-                    <Text size="xs" c="rgba(255,255,255,0.5)">
-                      Days remaining
-                    </Text>
-                    <Text size="xs" fw={700} c={PRIMARY}>
-                      23 days
-                    </Text>
+                    <Text size="xs" c="rgba(255,255,255,0.5)">Days remaining</Text>
+                    <Text size="xs" fw={700} c={PRIMARY}>23 days</Text>
                   </Group>
                 </Stack>
-
                 <Button
                   fullWidth
                   size="sm"
-                  style={{
-                    backgroundColor: PRIMARY,
-                    color: "white",
-                    fontWeight: 600,
-                    borderRadius: rem(8),
-                  }}
+                  style={{ backgroundColor: PRIMARY, color: "white", fontWeight: 600, borderRadius: rem(8) }}
                 >
                   Manage Subscription
                 </Button>

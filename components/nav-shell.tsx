@@ -28,6 +28,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { ProfileMenu } from "@/components/profile-menu";
+import { useAuthStore } from "@/store/auth";
 
 const INK = "#0F172A";
 const MUTED = "#667080";
@@ -142,6 +143,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const firstName = useAuthStore((s) => s.user?.full_name?.split(" ")[0] ?? "");
 
   const toggleCollapsed = () => setCollapsed((c) => !c);
   const navbarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
@@ -201,7 +203,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
           <Group flex={1} px={{ base: "md", sm: "xl" }} justify="space-between" align="center" wrap="nowrap">
             <Box visibleFrom="sm">
               <Text fw={700} size="xl" c={INK} lh={1.5}>
-                Welcome back, Li Wei!
+                Welcome back, {firstName}!
               </Text>
               <Text size="sm" c="dimmed">
                 {PAGE_LABELS[pathname] ?? "Dashboard"}
