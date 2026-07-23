@@ -4,15 +4,19 @@ import { useState } from "react";
 import {
   Box,
   Button,
+  Checkbox,
   Group,
+  Modal,
   NumberInput,
   Progress,
   Stack,
   Text,
+  TextInput,
   UnstyledButton,
   rem,
 } from "@mantine/core";
 import {
+  IconAdjustmentsHorizontal,
   IconAtom,
   IconBookmark,
   IconChevronLeft,
@@ -20,6 +24,7 @@ import {
   IconFlask,
   IconMathFunction,
   IconPlus,
+  IconSearch,
   IconStar,
 } from "@tabler/icons-react";
 
@@ -409,13 +414,39 @@ export default function PracticePage() {
   const [activeTab, setActiveTab] = useState<"in-progress" | "completed">("in-progress");
   const [practicePage, setPracticePage] = useState(0);
 
-  const activeSets = activeTab === "in-progress" ? PRACTICE_SETS_IN_PROGRESS : PRACTICE_SETS_COMPLETED;
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftSubjects, setDraftSubjects] = useState<string[]>([]);
+  const [appliedSubjects, setAppliedSubjects] = useState<string[]>([]);
+
+  const baseSets = activeTab === "in-progress" ? PRACTICE_SETS_IN_PROGRESS : PRACTICE_SETS_COMPLETED;
+  const activeSets = baseSets
+    .filter((s) => searchQuery === "" || s.label.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((s) => appliedSubjects.length === 0 || appliedSubjects.some((sub) => s.label.toLowerCase().startsWith(sub.toLowerCase())));
   const totalPages = Math.ceil(activeSets.length / PAGE_SIZE);
   const pagedSets = activeSets.slice(practicePage * PAGE_SIZE, (practicePage + 1) * PAGE_SIZE);
 
   function handleTabChange(tab: "in-progress" | "completed") {
     setActiveTab(tab);
     setPracticePage(0);
+  }
+
+  function openFilter() {
+    setDraftSubjects(appliedSubjects);
+    setFilterOpen(true);
+  }
+
+  function applyFilter() {
+    setAppliedSubjects(draftSubjects);
+    setPracticePage(0);
+    setFilterOpen(false);
+  }
+
+  function applySearch(query: string) {
+    setSearchQuery(query);
+    setPracticePage(0);
+    setSearchOpen(false);
   }
 
   return (
@@ -536,7 +567,48 @@ export default function PracticePage() {
                 <Text fw={700} size="lg" c={INK}>
                   My Practice Sets
                 </Text>
-                <Group
+                <Group gap="sm" align="center">
+                  {/* Search icon */}
+                  <UnstyledButton
+                    onClick={() => setSearchOpen(true)}
+                    aria-label="Search practice sets"
+                    style={{
+                      width: rem(32),
+                      height: rem(32),
+                      borderRadius: rem(8),
+                      border: `1.5px solid ${searchQuery ? INK : "#D1D5DB"}`,
+                      backgroundColor: searchQuery ? INK : "white",
+                      color: searchQuery ? "white" : "#6B7280",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 150ms ease",
+                    }}
+                  >
+                    <IconSearch size={14} stroke={2} />
+                  </UnstyledButton>
+
+                  {/* Filter icon */}
+                  <UnstyledButton
+                    onClick={openFilter}
+                    aria-label="Filter practice sets"
+                    style={{
+                      width: rem(32),
+                      height: rem(32),
+                      borderRadius: rem(8),
+                      border: `1.5px solid ${appliedSubjects.length > 0 ? INK : "#D1D5DB"}`,
+                      backgroundColor: appliedSubjects.length > 0 ? INK : "white",
+                      color: appliedSubjects.length > 0 ? "white" : "#6B7280",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 150ms ease",
+                    }}
+                  >
+                    <IconAdjustmentsHorizontal size={14} stroke={2} />
+                  </UnstyledButton>
+
+                  <Group
                   gap={0}
                   style={{
                     borderRadius: rem(999),
@@ -562,6 +634,7 @@ export default function PracticePage() {
                       {tab === "in-progress" ? "In Progress" : "Completed"}
                     </UnstyledButton>
                   ))}
+                </Group>
                 </Group>
               </Group>
 
@@ -715,6 +788,144 @@ export default function PracticePage() {
           </Box>
         </Group>
       </Box>
+
+      {/* ── Search modal ── */}
+      <Modal
+        opened={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        withCloseButton={false}
+        padding={0}
+        radius="md"
+        size="md"
+        overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
+      >
+        <Box p="md" style={{ borderBottom: "1px solid #F1F5F9" }}>
+          <TextInput
+            autoFocus
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.currentTarget.value)}
+            onKeyDown={(e) => e.key === "Enter" && applySearch(searchQuery)}
+            placeholder="Search practice sets..."
+            leftSection={<IconSearch size={15} stroke={1.5} color="#667080" />}
+            rightSection={
+              searchQuery && (
+                <UnstyledButton onClick={() => setSearchQuery("")} style={{ display: "flex", alignItems: "center" }}>
+                  <Text size="xs" c="dimmed">✕</Text>
+                </UnstyledButton>
+              )
+            }
+            styles={{
+              input: { border: "none", boxShadow: "none", fontSize: rem(14) },
+            }}
+          />
+        </Box>
+
+        {searchQuery && (
+          <Box>
+            <UnstyledButton
+              onClick={() => applySearch(searchQuery)}
+              style={{ width: "100%", padding: `${rem(12)} ${rem(16)}`, backgroundColor: PRIMARY, display: "flex", alignItems: "center", gap: rem(10) }}
+            >
+              <IconSearch size={15} stroke={2} color="white" />
+              <Text size="sm" fw={700} c="white">
+                Show practice sets with keyword &quot;{searchQuery}&quot;
+              </Text>
+            </UnstyledButton>
+
+            {baseSets
+              .filter((s) => s.label.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((s) => {
+                const Icon = s.icon;
+                return (
+                  <UnstyledButton
+                    key={s.label}
+                    onClick={() => applySearch(searchQuery)}
+                    style={{ width: "100%", padding: `${rem(10)} ${rem(16)}`, display: "flex", alignItems: "center", gap: rem(10), borderBottom: "1px solid #F8FAFC" }}
+                  >
+                    <Box style={{ width: rem(28), height: rem(28), borderRadius: rem(7), backgroundColor: s.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Icon size={13} stroke={1.5} color={s.iconColor} />
+                    </Box>
+                    <Text size="sm" c={INK}>{s.label}</Text>
+                  </UnstyledButton>
+                );
+              })}
+          </Box>
+        )}
+
+        {searchQuery === "" && (
+          <Box px="md" py="lg" style={{ textAlign: "center" }}>
+            <Text size="sm" c="dimmed">Type to search practice sets by name</Text>
+          </Box>
+        )}
+      </Modal>
+
+      {/* ── Filter modal ── */}
+      <Modal
+        opened={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        title={<Text fw={700} size="md" c={INK}>Add Filter</Text>}
+        radius="md"
+        size="sm"
+        overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
+      >
+        <Text size="sm" c="dimmed" mb="md">Select the subjects you want to filter by:</Text>
+
+        <Stack gap="sm" mb="xl">
+          {SUBJECTS.map((s) => {
+            const Icon = s.icon;
+            const checked = draftSubjects.includes(s.label);
+            return (
+              <UnstyledButton
+                key={s.key}
+                onClick={() =>
+                  setDraftSubjects((prev) =>
+                    checked ? prev.filter((x) => x !== s.label) : [...prev, s.label]
+                  )
+                }
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: rem(12),
+                  padding: `${rem(10)} ${rem(12)}`,
+                  borderRadius: rem(10),
+                  border: `1.5px solid ${checked ? INK : "#E2E8F0"}`,
+                  backgroundColor: checked ? "#F8F9FA" : "white",
+                  transition: "all 150ms ease",
+                }}
+              >
+                <Checkbox
+                  checked={checked}
+                  onChange={() => {}}
+                  styles={{ input: { cursor: "pointer" } }}
+                  color="dark"
+                />
+                <Box style={{ width: rem(28), height: rem(28), borderRadius: rem(7), backgroundColor: s.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon size={14} stroke={1.5} color={s.iconColor} />
+                </Box>
+                <Text size="sm" fw={600} c={INK}>{s.label}</Text>
+              </UnstyledButton>
+            );
+          })}
+        </Stack>
+
+        <Group justify="space-between">
+          <Button
+            variant="outline"
+            color="dark"
+            radius="md"
+            onClick={() => { setDraftSubjects([]); setAppliedSubjects([]); setPracticePage(0); setFilterOpen(false); }}
+          >
+            Clear & Close
+          </Button>
+          <Button
+            radius="md"
+            style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
+            onClick={applyFilter}
+          >
+            Apply Filter
+          </Button>
+        </Group>
+      </Modal>
     </Box>
   );
 }
