@@ -20,11 +20,13 @@ import {
 import {
   IconAdjustmentsHorizontal,
   IconAtom,
+  IconBook,
   IconBookmarkFilled,
   IconChevronLeft,
   IconChevronRight,
   IconFlask,
   IconMathFunction,
+  IconMicroscope,
   IconSearch,
 } from "@tabler/icons-react";
 
@@ -34,6 +36,8 @@ const PRIMARY = "#D4A017";
 const INDIGO = "#6670B0";
 const PANDA = "#C65D2E";
 const CREAM = "#F7E7D3";
+const VIOLET = "#6F42C1";
+const EMERALD = "#059669";
 
 const PAGE_SIZE = 6;
 
@@ -45,6 +49,8 @@ const SUBJECTS = [
   { key: "Mathematics" as SubjectKey, icon: IconMathFunction, iconBg: CREAM, iconColor: PRIMARY },
   { key: "Physics" as SubjectKey, icon: IconAtom, iconBg: "#EEF0FF", iconColor: INDIGO },
   { key: "Chemistry" as SubjectKey, icon: IconFlask, iconBg: "#FDF0EC", iconColor: PANDA },
+  { key: "Liberal Arts Chinese" as SubjectKey, icon: IconBook, iconBg: "#F5F3FF", iconColor: VIOLET },
+  { key: "Science Chinese" as SubjectKey, icon: IconMicroscope, iconBg: "#ECFDF5", iconColor: EMERALD },
 ];
 
 const DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
@@ -524,7 +530,7 @@ export default function SavedProblemsPage() {
         onClose={() => setFilterOpen(false)}
         title={<Text fw={700} size="md" c={INK}>Add Filter</Text>}
         radius="md"
-        size="sm"
+        size="md"
         overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
       >
         <Text size="sm" c="dimmed" mb="md">Select the criteria to filter by:</Text>
