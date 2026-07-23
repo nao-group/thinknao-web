@@ -105,7 +105,7 @@ export default function RegisterPage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!agreed) {
       setError("You must agree to the Terms & Privacy Policy.");

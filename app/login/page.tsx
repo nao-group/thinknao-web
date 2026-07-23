@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
 import {
   Anchor,
   Box,
@@ -18,7 +19,7 @@ import {
   Title,
   rem,
 } from "@mantine/core";
-import { IconAt, IconDeviceDesktop, IconLock } from "@tabler/icons-react";
+import { IconAt, IconDeviceDesktop, IconLock, IconMail } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { AuthSplitLayout } from "@/components/auth-split-layout";
 import { useAuthStore } from "@/store/auth";
@@ -65,6 +66,40 @@ export default function LoginPage() {
   const [selectedSession, setSelectedSession] = useState("");
   const [revoking, setRevoking] = useState(false);
 
+  // Forgot password modal state
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotError, setForgotError] = useState("");
+
+  async function handleForgotPassword(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setForgotError("");
+    setForgotLoading(true);
+    try {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/forgot-password`, {
+        email: forgotEmail,
+      });
+      setForgotSent(true);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setForgotError(err.response?.data?.detail ?? "Something went wrong. Please try again.");
+      } else {
+        setForgotError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setForgotLoading(false);
+    }
+  }
+
+  function closeForgotModal() {
+    setForgotOpen(false);
+    setForgotEmail("");
+    setForgotSent(false);
+    setForgotError("");
+  }
+
   function storeSession(accessToken: string, refreshToken: string, user: { id: string; user_id: string; full_name: string; email: string }) {
     setAccessToken(accessToken);
     setUser(user);
@@ -72,7 +107,7 @@ export default function LoginPage() {
     document.cookie = "auth_session=1; path=/; max-age=2592000";
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -205,9 +240,8 @@ export default function LoginPage() {
           <Anchor
             size="sm"
             fw={600}
-            style={{ color: PRIMARY }}
-            component={Link}
-            href="/forgot-password"
+            style={{ color: PRIMARY, cursor: "pointer" }}
+            onClick={() => setForgotOpen(true)}
           >
             Forgot password?
           </Anchor>
@@ -308,6 +342,93 @@ export default function LoginPage() {
         >
           Sign out selected device &amp; continue
         </Button>
+      </Modal>
+
+      {/* Forgot password modal */}
+      <Modal
+        opened={forgotOpen}
+        onClose={closeForgotModal}
+        title={
+          <Text fw={700} size="lg" c={INK}>
+            Reset your password
+          </Text>
+        }
+        centered
+        radius="md"
+      >
+        {forgotSent ? (
+          <Stack align="center" gap="md" py="sm">
+            <Box
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: "50%",
+                backgroundColor: "#F7E7D3",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <IconMail size={26} stroke={1.5} color={PRIMARY} />
+            </Box>
+            <Text fw={600} size="md" c={INK} ta="center">
+              Check your inbox
+            </Text>
+            <Text size="sm" c="dimmed" ta="center">
+              We sent a password reset link to{" "}
+              <Text span fw={600} c={INK}>
+                {forgotEmail}
+              </Text>
+              . The link expires in 15 minutes.
+            </Text>
+            <Text size="xs" c="dimmed" ta="center">
+              Didn&apos;t receive it? Check your spam folder or{" "}
+              <Anchor
+                size="xs"
+                fw={600}
+                style={{ color: PRIMARY, cursor: "pointer" }}
+                onClick={() => { setForgotSent(false); setForgotError(""); }}
+              >
+                try again
+              </Anchor>
+              .
+            </Text>
+          </Stack>
+        ) : (
+          <Box component="form" onSubmit={handleForgotPassword}>
+            <Text size="sm" c="dimmed" mb={20}>
+              Enter the email address for your account and we&apos;ll send you a
+              reset link.
+            </Text>
+            <TextInput
+              label="Email address"
+              placeholder="you@example.com"
+              type="email"
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
+              required
+              leftSection={<IconAt size={16} stroke={1.5} color="#667080" />}
+              size="md"
+              styles={inputStyles}
+              mb={forgotError ? 8 : 20}
+            />
+            {forgotError && (
+              <Text size="sm" c="red" mb={16}>
+                {forgotError}
+              </Text>
+            )}
+            <Button
+              type="submit"
+              fullWidth
+              size="md"
+              radius="md"
+              loading={forgotLoading}
+              style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
+            >
+              Send reset link
+            </Button>
+          </Box>
+        )}
       </Modal>
     </AuthSplitLayout>
   );
