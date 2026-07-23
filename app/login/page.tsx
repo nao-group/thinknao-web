@@ -1,20 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Anchor,
   Box,
   Button,
   Checkbox,
   Group,
+  Modal,
   PasswordInput,
+  Radio,
+  Stack,
   Text,
   TextInput,
   Title,
   rem,
 } from "@mantine/core";
-import { IconAt, IconLock } from "@tabler/icons-react";
+import { IconAt, IconDeviceDesktop, IconLock } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
 import { AuthSplitLayout } from "@/components/auth-split-layout";
+import { useAuthStore } from "@/store/auth";
+import axios from "axios";
 
 const INK = "#0F172A";
 const PRIMARY = "#D4A017";
@@ -32,7 +40,102 @@ const inputStyles = {
   },
 };
 
+interface Session {
+  session_id: string;
+  device: string;
+  created_at: string;
+}
+
+interface MaxDevicesPayload {
+  login_token: string;
+  sessions: Session[];
+}
+
 export default function LoginPage() {
+  const router = useRouter();
+  const { setAccessToken, setUser } = useAuthStore();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Max devices modal state
+  const [maxDevices, setMaxDevices] = useState<MaxDevicesPayload | null>(null);
+  const [selectedSession, setSelectedSession] = useState("");
+  const [revoking, setRevoking] = useState(false);
+
+  function storeSession(accessToken: string, refreshToken: string, user: { id: string; user_id: string; full_name: string; email: string }) {
+    setAccessToken(accessToken);
+    setUser(user);
+    localStorage.setItem("refresh_token", refreshToken);
+    document.cookie = "auth_session=1; path=/; max-age=2592000";
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const { data } = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
+        { email, password }
+      );
+      storeSession(data.access_token, data.refresh_token, data.user);
+      notifications.show({
+        title: "Welcome back!",
+        message: `Good to see you again, ${data.user.full_name.split(" ")[0]}.`,
+        color: "green",
+        autoClose: 3000,
+      });
+      router.push("/dashboard");
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 409) {
+          const payload = err.response.data as MaxDevicesPayload;
+          setMaxDevices(payload);
+          setSelectedSession(payload.sessions[0]?.session_id ?? "");
+        } else {
+          setError(err.response?.data?.detail ?? "Invalid email or password.");
+        }
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRevoke() {
+    if (!maxDevices || !selectedSession) return;
+    setRevoking(true);
+    try {
+      const { data } = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/sessions/revoke`,
+        { login_token: maxDevices.login_token, session_id: selectedSession }
+      );
+      setMaxDevices(null);
+      storeSession(data.access_token, data.refresh_token, data.user);
+      notifications.show({
+        title: "Welcome back!",
+        message: `Good to see you again, ${data.user.full_name.split(" ")[0]}.`,
+        color: "green",
+        autoClose: 3000,
+      });
+      router.push("/dashboard");
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.status === 400) {
+        setMaxDevices(null);
+        setError("Session expired. Please try logging in again.");
+      } else {
+        setError("Failed to sign out device. Try again.");
+      }
+    } finally {
+      setRevoking(false);
+    }
+  }
+
   return (
     <AuthSplitLayout>
       <Text
@@ -54,11 +157,18 @@ export default function LoginPage() {
         Pick up right where you left off.
       </Text>
 
-      <Box component="form" style={{ display: "flex", flexDirection: "column", gap: rem(20) }}>
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        style={{ display: "flex", flexDirection: "column", gap: rem(20) }}
+      >
         <TextInput
           label="Email"
           placeholder="you@example.com"
           type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
           leftSection={<IconAt size={16} stroke={1.5} color="#667080" />}
           variant="filled"
           size="md"
@@ -68,6 +178,9 @@ export default function LoginPage() {
         <PasswordInput
           label="Password"
           placeholder="••••••••••"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
           leftSection={<IconLock size={16} stroke={1.5} color="#667080" />}
           size="md"
           styles={{
@@ -100,12 +213,19 @@ export default function LoginPage() {
           </Anchor>
         </Group>
 
+        {error && (
+          <Text size="sm" c="red">
+            {error}
+          </Text>
+        )}
+
         <Button
           type="submit"
           fullWidth
           size="md"
           radius="md"
-          rightSection={<span>→</span>}
+          loading={loading}
+          rightSection={!loading && <span>→</span>}
           style={{
             backgroundColor: INK,
             color: "white",
@@ -125,6 +245,70 @@ export default function LoginPage() {
           Create an account
         </Anchor>
       </Text>
+
+      {/* Max devices modal */}
+      <Modal
+        opened={!!maxDevices}
+        onClose={() => setMaxDevices(null)}
+        title={
+          <Text fw={700} size="lg" c={INK}>
+            Device limit reached
+          </Text>
+        }
+        centered
+        radius="md"
+      >
+        <Text size="sm" c="dimmed" mb={20}>
+          You&apos;re signed in on 2 devices (the maximum). Choose one to sign
+          out so you can continue.
+        </Text>
+
+        <Radio.Group
+          value={selectedSession}
+          onChange={setSelectedSession}
+          mb={24}
+        >
+          <Stack gap="sm">
+            {maxDevices?.sessions.map((s) => (
+              <Radio.Card
+                key={s.session_id}
+                value={s.session_id}
+                radius="md"
+                p="sm"
+                style={{ border: `1.5px solid ${selectedSession === s.session_id ? INK : "#e5e7eb"}` }}
+              >
+                <Group>
+                  <IconDeviceDesktop size={18} stroke={1.5} color="#667080" />
+                  <Box>
+                    <Text size="sm" fw={500} c={INK}>
+                      {s.device}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      Signed in{" "}
+                      {new Date(s.created_at).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </Text>
+                  </Box>
+                </Group>
+              </Radio.Card>
+            ))}
+          </Stack>
+        </Radio.Group>
+
+        <Button
+          fullWidth
+          size="md"
+          radius="md"
+          loading={revoking}
+          onClick={handleRevoke}
+          style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
+        >
+          Sign out selected device &amp; continue
+        </Button>
+      </Modal>
     </AuthSplitLayout>
   );
 }

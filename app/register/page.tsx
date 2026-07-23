@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Anchor,
   Box,
@@ -20,7 +22,9 @@ import {
   IconShield,
   IconUser,
 } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
 import { AuthSplitLayout } from "@/components/auth-split-layout";
+import axios from "axios";
 
 const INK = "#0F172A";
 const PRIMARY = "#D4A017";
@@ -39,6 +43,106 @@ const inputStyles = {
 };
 
 export default function RegisterPage() {
+  const router = useRouter();
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
+  const [agreed, setAgreed] = useState(true);
+
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [otpError, setOtpError] = useState("");
+
+  const OTP_COOLDOWN = 60;
+  const [countdown, setCountdown] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  function startCountdown() {
+    setCountdown(OTP_COOLDOWN);
+    timerRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
+  async function handleSendOtp() {
+    if (!email || !fullName) {
+      setOtpError("Please enter your name and email first.");
+      return;
+    }
+    setOtpError("");
+    setSendingOtp(true);
+    try {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/otp/send`, {
+        full_name: fullName,
+        email,
+      });
+      setOtpSent(true);
+      startCountdown();
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 409) {
+          setOtpError("This email is already registered. Try logging in.");
+        } else {
+          setOtpError(err.response?.data?.detail ?? "Failed to send OTP.");
+        }
+      } else {
+        setOtpError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setSendingOtp(false);
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!agreed) {
+      setError("You must agree to the Terms & Privacy Policy.");
+      return;
+    }
+    setError("");
+    setSubmitting(true);
+    try {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
+        full_name: fullName,
+        email,
+        otp,
+        password,
+      });
+      notifications.show({
+        title: "Account created!",
+        message: "You're all set. Please log in to continue.",
+        color: "green",
+        autoClose: 4000,
+      });
+      router.push("/login");
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const detail = err.response?.data?.detail;
+        if (err.response?.status === 400) {
+          setError(detail ?? "Invalid or expired verification code.");
+        } else {
+          setError(detail ?? "Registration failed. Please try again.");
+        }
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <AuthSplitLayout>
       <Text
@@ -60,10 +164,17 @@ export default function RegisterPage() {
         Start prepping for the CSCA exam today.
       </Text>
 
-      <Box component="form" style={{ display: "flex", flexDirection: "column", gap: rem(20) }}>
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        style={{ display: "flex", flexDirection: "column", gap: rem(20) }}
+      >
         <TextInput
           label="Full name"
           placeholder="Li Wei"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          required
           leftSection={<IconUser size={16} stroke={1.5} color="#667080" />}
           variant="default"
           size="md"
@@ -81,6 +192,9 @@ export default function RegisterPage() {
             <TextInput
               placeholder="you@example.com"
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
               leftSection={<IconAt size={16} stroke={1.5} color="#667080" />}
               variant="filled"
               size="md"
@@ -90,40 +204,72 @@ export default function RegisterPage() {
             <Button
               size="md"
               radius="sm"
-              leftSection={<IconSend size={15} stroke={1.5} />}
+              loading={sendingOtp}
+              disabled={countdown > 0}
+              onClick={handleSendOtp}
+              leftSection={!sendingOtp && <IconSend size={15} stroke={1.5} />}
               style={{
-                backgroundColor: INK,
+                backgroundColor: countdown > 0 ? "#667080" : INK,
                 color: "white",
                 fontWeight: 600,
                 fontSize: rem(13),
                 flexShrink: 0,
               }}
             >
-              Send OTP
+              {otpSent
+                ? countdown > 0
+                  ? `Resend (${countdown}s)`
+                  : "Resend"
+                : "Send OTP"}
             </Button>
           </Group>
+          {otpError && (
+            <Text size="xs" c="red" mt={4}>
+              {otpError}
+            </Text>
+          )}
         </Box>
 
         <Box>
           <TextInput
             label="Verification Code"
             placeholder="Enter 6-digit OTP"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            required
+            disabled={!otpSent}
             leftSection={<IconShield size={16} stroke={1.5} color="#667080" />}
             variant="filled"
             size="md"
             styles={inputStyles}
           />
-          <Text size="xs" mt={6} c="dimmed">
-            Didn&apos;t receive a code?{" "}
-            <Anchor size="xs" fw={600} style={{ color: PRIMARY }}>
-              Resend
-            </Anchor>
-          </Text>
+          {otpSent && (
+            <Text size="xs" mt={6} c="dimmed">
+              Didn&apos;t receive a code?{" "}
+              {countdown > 0 ? (
+                <Text span size="xs" c="dimmed">
+                  Resend in {countdown}s
+                </Text>
+              ) : (
+                <Anchor
+                  size="xs"
+                  fw={600}
+                  style={{ color: PRIMARY }}
+                  onClick={handleSendOtp}
+                >
+                  Resend
+                </Anchor>
+              )}
+            </Text>
+          )}
         </Box>
 
         <PasswordInput
           label="Password"
           placeholder="••••••••••"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
           leftSection={<IconLock size={16} stroke={1.5} color="#667080" />}
           variant="filled"
           size="md"
@@ -133,19 +279,27 @@ export default function RegisterPage() {
         <Checkbox
           label="I agree to the Terms & Privacy Policy"
           size="sm"
-          defaultChecked
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
           styles={{
             label: { fontSize: rem(14), color: INK },
             input: { borderRadius: rem(4) },
           }}
         />
 
+        {error && (
+          <Text size="sm" c="red">
+            {error}
+          </Text>
+        )}
+
         <Button
           type="submit"
           fullWidth
           size="md"
           radius="md"
-          rightSection={<span>→</span>}
+          loading={submitting}
+          rightSection={!submitting && <span>→</span>}
           style={{
             backgroundColor: INK,
             color: "white",
