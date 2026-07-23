@@ -299,13 +299,15 @@ export default function RegisterPage() {
           size="md"
           radius="md"
           loading={submitting}
+          disabled={!fullName.trim() || !email.trim() || !otpSent || !otp.trim() || !password.trim() || !agreed}
           rightSection={!submitting && <span>→</span>}
           style={{
-            backgroundColor: INK,
+            backgroundColor: !fullName.trim() || !email.trim() || !otpSent || !otp.trim() || !password.trim() || !agreed ? "#94A3B8" : INK,
             color: "white",
             fontWeight: 600,
             fontSize: rem(15),
             height: rem(52),
+            opacity: 1,
           }}
         >
           Create account

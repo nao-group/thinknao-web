@@ -259,14 +259,16 @@ export default function LoginPage() {
           size="md"
           radius="md"
           loading={loading}
+          disabled={!email.trim() || !password.trim()}
           rightSection={!loading && <span>→</span>}
           style={{
-            backgroundColor: INK,
+            backgroundColor: !email.trim() || !password.trim() ? "#94A3B8" : INK,
             color: "white",
             fontWeight: 600,
             fontSize: rem(15),
             height: rem(52),
             marginTop: rem(4),
+            opacity: 1,
           }}
         >
           Log in
