@@ -6,6 +6,21 @@
   margin: 0;
 }
 
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-fade-in {
+  animation: tabFadeIn 220ms ease;
+}
+
 .hover-zoom {
   transition: transform 200ms ease, box-shadow 200ms ease;
   cursor: pointer;

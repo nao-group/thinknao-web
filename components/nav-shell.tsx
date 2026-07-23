@@ -45,7 +45,7 @@ const NAV_SECTIONS = [
   {
     label: "LEARNING",
     items: [
-      { label: "Practice", icon: IconPencil, href: "/dashboard/practice" },
+      { label: "Practice", icon: IconPencil, href: "/practice" },
       { label: "Flashcards", icon: IconCards, href: "/dashboard/flashcards" },
       { label: "References", icon: IconBook, href: "/dashboard/references" },
       { label: "Mock Exam", icon: IconAlignJustified, href: "/dashboard/mock-exam" },
@@ -129,7 +129,7 @@ function NavItem({
 
 const PAGE_LABELS: Record<string, string> = {
   "/dashboard": "Dashboard",
-  "/dashboard/practice": "Practice",
+  "/practice": "Practice",
   "/dashboard/flashcards": "Flashcards",
   "/dashboard/references": "References",
   "/dashboard/mock-exam": "Mock Exam",
