@@ -45,12 +45,12 @@ const EMERALD = "#059669";
 const SUBJECTS = ["All", "Mathematics", "Physics", "Chemistry", "Liberal Arts Chinese", "Science Chinese"] as const;
 type SubjectFilter = (typeof SUBJECTS)[number];
 
-const SUBJECT_META: Record<Subject, { icon: React.ElementType; bg: string; color: string }> = {
-  Mathematics:          { icon: IconMathFunction, bg: CREAM,      color: PRIMARY  },
-  Physics:              { icon: IconAtom,         bg: "#EEF0FF",  color: INDIGO   },
-  Chemistry:            { icon: IconFlask,        bg: "#FDF0EC",  color: PANDA    },
-  "Liberal Arts Chinese": { icon: IconBook,       bg: "#F5F3FF",  color: VIOLET   },
-  "Science Chinese":      { icon: IconMicroscope, bg: "#ECFDF5",  color: EMERALD  },
+const SUBJECT_META: Record<Subject, { icon: React.ElementType; iconBg: string; iconColor: string }> = {
+  "Liberal Arts Chinese": { icon: IconBook,        iconBg: "#F5F3FF", iconColor: VIOLET  },
+  "Science Chinese":      { icon: IconMicroscope,  iconBg: "#ECFDF5", iconColor: EMERALD },
+  Mathematics:            { icon: IconMathFunction, iconBg: CREAM,    iconColor: PRIMARY },
+  Physics:                { icon: IconAtom,         iconBg: "#EEF0FF", iconColor: INDIGO  },
+  Chemistry:              { icon: IconFlask,        iconBg: "#FDF0EC", iconColor: PANDA   },
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -188,15 +188,15 @@ function SubjectBadge({ subject }: { subject: Subject }) {
           width: rem(20),
           height: rem(20),
           borderRadius: rem(5),
-          backgroundColor: meta.bg,
+          backgroundColor: meta.iconBg,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <Icon size={11} stroke={1.5} color={meta.color} />
+        <Icon size={11} stroke={1.5} color={meta.iconColor} />
       </Box>
-      <Text size="xs" fw={600} c={meta.color}>{subject}</Text>
+      <Text size="xs" fw={600} c={meta.iconColor}>{subject}</Text>
     </Group>
   );
 }
@@ -262,15 +262,15 @@ function FormulaCard({ entry }: { entry: FormulaEntry }) {
         px="sm"
         py="xs"
         style={{
-          backgroundColor: meta.bg,
+          backgroundColor: meta.iconBg,
           borderRadius: rem(8),
-          borderLeft: `3px solid ${meta.color}`,
+          borderLeft: `3px solid ${meta.iconColor}`,
         }}
       >
         <Text
           size="sm"
           fw={700}
-          c={meta.color}
+          c={meta.iconColor}
           style={{ fontFamily: "monospace", letterSpacing: "0.02em" }}
         >
           {entry.formula}
@@ -342,7 +342,7 @@ function FormulaRow({ entry }: { entry: FormulaEntry }) {
         px="xs"
         py={3}
         style={{
-          backgroundColor: meta.bg,
+          backgroundColor: meta.iconBg,
           borderRadius: rem(6),
           flexShrink: 0,
           maxWidth: rem(240),
@@ -351,7 +351,7 @@ function FormulaRow({ entry }: { entry: FormulaEntry }) {
         <Text
           size="xs"
           fw={700}
-          c={meta.color}
+          c={meta.iconColor}
           style={{ fontFamily: "monospace" }}
           lineClamp={1}
         >
@@ -562,15 +562,15 @@ function FlashcardStudy({
                   width: rem(24),
                   height: rem(24),
                   borderRadius: rem(6),
-                  backgroundColor: meta.bg,
+                  backgroundColor: meta.iconBg,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Icon size={13} stroke={1.5} color={meta.color} />
+                <Icon size={13} stroke={1.5} color={meta.iconColor} />
               </Box>
-              <Text size="xs" fw={600} c={meta.color}>{card.subject}</Text>
+              <Text size="xs" fw={600} c={meta.iconColor}>{card.subject}</Text>
             </Group>
 
             <Text fw={800} size="xl" c={INK} ta="center" lh={1.3}>
