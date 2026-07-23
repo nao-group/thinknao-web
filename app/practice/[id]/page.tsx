@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Badge,
@@ -26,6 +27,8 @@ import {
   IconFlagFilled,
   IconNotes,
 } from "@tabler/icons-react";
+import { FloatingChatbot } from "@/components/floating-chatbot";
+import { LanguageToggle, type Lang } from "@/components/language-toggle";
 
 // ─── Styling constants ─────────────────────────────────────────────────────────
 
@@ -72,6 +75,21 @@ const QUESTIONS = [
       ],
       conclusion: "∴ f′(x) = 3x² − 12x + 9",
     },
+    zh: {
+      topic: "微积分",
+      text: "f(x) = x³ − 6x² + 9x + 1 的导数是什么？",
+      explanation: {
+        correctStatement: "A — f′(x) = 3x² − 12x + 9",
+        intro: "对每项应用幂次法则 (d/dx[xⁿ] = n·xⁿ⁻¹)：",
+        steps: [
+          "d/dx(x³) = 3x²",
+          "d/dx(−6x²) = −12x",
+          "d/dx(9x) = 9",
+          "d/dx(1) = 0 — 常数的导数恒为零",
+        ],
+        conclusion: "∴ f′(x) = 3x² − 12x + 9",
+      },
+    },
   },
   {
     id: 2,
@@ -94,6 +112,21 @@ const QUESTIONS = [
         "∫−1 dx = −x",
       ],
       conclusion: "∴ x⁴ − x³ + x² − x + C",
+    },
+    zh: {
+      topic: "积分",
+      text: "计算不定积分 ∫(4x³ − 3x² + 2x − 1)dx。",
+      explanation: {
+        correctStatement: "A — x⁴ − x³ + x² − x + C",
+        intro: "对每项应用 ∫xⁿ dx = xⁿ⁺¹/(n+1) + C：",
+        steps: [
+          "∫4x³ dx = x⁴",
+          "∫−3x² dx = −x³",
+          "∫2x dx = x²",
+          "∫−1 dx = −x",
+        ],
+        conclusion: "∴ x⁴ − x³ + x² − x + C",
+      },
     },
   },
   {
@@ -118,6 +151,21 @@ const QUESTIONS = [
       ],
       conclusion: "∴ f′(x) = 9x² − 4x + 5",
     },
+    zh: {
+      topic: "微积分",
+      text: "求函数 f(x) = 3x³ − 2x² + 5x − 1 的导数。以下哪项正确表示 f′(x)？",
+      explanation: {
+        correctStatement: "A — f′(x) = 9x² − 4x + 5",
+        intro: "对每项应用幂次法则 (d/dx[xⁿ] = n·xⁿ⁻¹)：",
+        steps: [
+          "d/dx(3x³) = 9x² — 系数3乘以指数3，指数减1",
+          "d/dx(−2x²) = −4x",
+          "d/dx(5x) = 5 — 线性项的导数为其系数",
+          "d/dx(−1) = 0 — 常数的导数恒为零",
+        ],
+        conclusion: "∴ f′(x) = 9x² − 4x + 5",
+      },
+    },
   },
   {
     id: 4,
@@ -127,7 +175,7 @@ const QUESTIONS = [
       { key: "A", text: "0" },
       { key: "B", text: "4" },
       { key: "C", text: "2" },
-      { key: "D", text: "Undefined" },
+      { key: "D", text: "Undefined", text_zh: "无定义" },
     ],
     correctAnswer: "B",
     explanation: {
@@ -139,6 +187,20 @@ const QUESTIONS = [
         "lim(x→2) (x+2) = 2 + 2 = 4",
       ],
       conclusion: "∴ The limit is 4",
+    },
+    zh: {
+      topic: "极限",
+      text: "求极限：lim(x→2) (x² − 4)/(x − 2)。",
+      explanation: {
+        correctStatement: "B — 4",
+        intro: "对分子因式分解并化简：",
+        steps: [
+          "x² − 4 = (x−2)(x+2)",
+          "(x−2)(x+2)/(x−2) = x+2（x ≠ 2）",
+          "lim(x→2) (x+2) = 2 + 2 = 4",
+        ],
+        conclusion: "∴ 极限为 4",
+      },
     },
   },
   {
@@ -157,6 +219,16 @@ const QUESTIONS = [
       intro: "Differentiate twice using the Power Rule:",
       steps: ["f′(x) = 4x³ − 6x", "f″(x) = 12x² − 6"],
       conclusion: "∴ f″(x) = 12x² − 6",
+    },
+    zh: {
+      topic: "微积分",
+      text: "f(x) = x⁴ − 3x² + 2 的二阶导数是什么？",
+      explanation: {
+        correctStatement: "A — 12x² − 6",
+        intro: "两次运用幂次法则求导：",
+        steps: ["f′(x) = 4x³ − 6x", "f″(x) = 12x² − 6"],
+        conclusion: "∴ f″(x) = 12x² − 6",
+      },
     },
   },
   {
@@ -181,6 +253,21 @@ const QUESTIONS = [
       ],
       conclusion: "∴ The integral equals 2",
     },
+    zh: {
+      topic: "积分",
+      text: "∫₀¹ (3x² + 2x) dx 等于多少？",
+      explanation: {
+        correctStatement: "A — 2",
+        intro: "计算定积分：",
+        steps: [
+          "∫(3x² + 2x)dx = x³ + x²",
+          "x=1 时：1 + 1 = 2",
+          "x=0 时：0 + 0 = 0",
+          "结果：2 − 0 = 2",
+        ],
+        conclusion: "∴ 积分值为 2",
+      },
+    },
   },
   {
     id: 7,
@@ -190,7 +277,7 @@ const QUESTIONS = [
       { key: "A", text: "0" },
       { key: "B", text: "∞" },
       { key: "C", text: "1" },
-      { key: "D", text: "Undefined" },
+      { key: "D", text: "Undefined", text_zh: "无定义" },
     ],
     correctAnswer: "C",
     explanation: {
@@ -203,16 +290,30 @@ const QUESTIONS = [
       ],
       conclusion: "∴ lim(x→0) sin(x)/x = 1",
     },
+    zh: {
+      topic: "极限",
+      text: "运用洛必达法则，求 lim(x→0) sin(x)/x。",
+      explanation: {
+        correctStatement: "C — 1",
+        intro: "应用洛必达法则（0/0 不定式）：",
+        steps: [
+          "d/dx(sin x) = cos x",
+          "d/dx(x) = 1",
+          "lim(x→0) cos(x)/1 = cos(0) = 1",
+        ],
+        conclusion: "∴ lim(x→0) sin(x)/x = 1",
+      },
+    },
   },
   {
     id: 8,
     topic: "Calculus",
     text: "Find the critical points of f(x) = x³ − 3x + 2.",
     options: [
-      { key: "A", text: "x = 1 and x = −1" },
-      { key: "B", text: "x = 0 only" },
-      { key: "C", text: "x = 3 and x = −3" },
-      { key: "D", text: "x = 1 only" },
+      { key: "A", text: "x = 1 and x = −1", text_zh: "x = 1 和 x = −1" },
+      { key: "B", text: "x = 0 only", text_zh: "仅 x = 0" },
+      { key: "C", text: "x = 3 and x = −3", text_zh: "x = 3 和 x = −3" },
+      { key: "D", text: "x = 1 only", text_zh: "仅 x = 1" },
     ],
     correctAnswer: "A",
     explanation: {
@@ -220,6 +321,16 @@ const QUESTIONS = [
       intro: "Set f′(x) = 0 and solve:",
       steps: ["f′(x) = 3x² − 3", "3x² − 3 = 0", "x² = 1", "x = ±1"],
       conclusion: "∴ Critical points at x = 1 and x = −1",
+    },
+    zh: {
+      topic: "微积分",
+      text: "求 f(x) = x³ − 3x + 2 的临界点。",
+      explanation: {
+        correctStatement: "A — x = 1 和 x = −1",
+        intro: "令 f′(x) = 0 并求解：",
+        steps: ["f′(x) = 3x² − 3", "3x² − 3 = 0", "x² = 1", "x = ±1"],
+        conclusion: "∴ 临界点在 x = 1 和 x = −1",
+      },
     },
   },
   {
@@ -243,6 +354,20 @@ const QUESTIONS = [
       ],
       conclusion: "∴ ∫ e^(2x) dx = (1/2)e^(2x) + C",
     },
+    zh: {
+      topic: "积分",
+      text: "计算 ∫ e^(2x) dx。",
+      explanation: {
+        correctStatement: "C — (1/2)e^(2x) + C",
+        intro: "令 u = 2x 进行换元：",
+        steps: [
+          "du = 2 dx，故 dx = du/2",
+          "∫ eᵘ (du/2) = (1/2)eᵘ + C",
+          "代入还原：(1/2)e^(2x) + C",
+        ],
+        conclusion: "∴ ∫ e^(2x) dx = (1/2)e^(2x) + C",
+      },
+    },
   },
   {
     id: 10,
@@ -260,6 +385,16 @@ const QUESTIONS = [
       intro: "Find f′(x) and evaluate at x = 2:",
       steps: ["f′(x) = 2x + 3", "f′(2) = 2(2) + 3 = 4 + 3 = 7"],
       conclusion: "∴ Slope of tangent at x = 2 is 7",
+    },
+    zh: {
+      topic: "微积分",
+      text: "y = x² + 3x 在 x = 2 处切线的斜率是多少？",
+      explanation: {
+        correctStatement: "A — 7",
+        intro: "求 f′(x) 并代入 x = 2：",
+        steps: ["f′(x) = 2x + 3", "f′(2) = 2(2) + 3 = 4 + 3 = 7"],
+        conclusion: "∴ x = 2 处切线斜率为 7",
+      },
     },
   },
   {
@@ -283,6 +418,20 @@ const QUESTIONS = [
       ],
       conclusion: "∴ The limit is 3",
     },
+    zh: {
+      topic: "极限",
+      text: "lim(x→∞) (3x² + 2x)/(x² − 1) 等于多少？",
+      explanation: {
+        correctStatement: "D — 3",
+        intro: "分子分母同除以 x²：",
+        steps: [
+          "(3 + 2/x) / (1 − 1/x²)",
+          "当 x→∞，2/x → 0，1/x² → 0",
+          "结果：3/1 = 3",
+        ],
+        conclusion: "∴ 极限为 3",
+      },
+    },
   },
   {
     id: 12,
@@ -300,6 +449,16 @@ const QUESTIONS = [
       intro: "Evaluate the definite integral:",
       steps: ["∫₀³ 2x dx = [x²]₀³", "= 3² − 0² = 9 − 0 = 9"],
       conclusion: "∴ Area = 9 square units",
+    },
+    zh: {
+      topic: "积分",
+      text: "求曲线 y = 2x 在 x = 0 到 x = 3 之间的面积。",
+      explanation: {
+        correctStatement: "B — 9",
+        intro: "计算定积分：",
+        steps: ["∫₀³ 2x dx = [x²]₀³", "= 3² − 0² = 9 − 0 = 9"],
+        conclusion: "∴ 面积 = 9 平方单位",
+      },
     },
   },
 ];
@@ -705,26 +864,240 @@ function QuestionNavigator({
   );
 }
 
+// ─── Summary ───────────────────────────────────────────────────────────────────
+
+function SummaryView({
+  questions,
+  answers,
+  submittedSet,
+  totalSeconds,
+  lang,
+  onBack,
+}: {
+  questions: typeof QUESTIONS;
+  answers: Record<number, string>;
+  submittedSet: Set<number>;
+  totalSeconds: number;
+  lang: Lang;
+  onBack: () => void;
+}) {
+  const correct = questions.filter(
+    (q, i) => submittedSet.has(i) && answers[i] === q.correctAnswer
+  ).length;
+  const wrong = submittedSet.size - correct;
+  const skipped = questions.length - submittedSet.size;
+  const scorePct = Math.round((correct / questions.length) * 100);
+
+  const scoreColor =
+    scorePct >= 70 ? CORRECT_GREEN : scorePct >= 40 ? PRIMARY : WRONG_RED;
+  const scoreBg =
+    scorePct >= 70 ? CORRECT_BG : scorePct >= 40 ? "#FFF9EC" : WRONG_BG;
+
+  return (
+    <Stack gap="md">
+      {/* ── Score header ── */}
+      <Box p="xl" style={{ backgroundColor: "white", borderRadius: rem(14) }}>
+        <Group justify="space-between" align="flex-start" mb="lg" wrap="nowrap">
+          <Box>
+            <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.07em" }} mb={4}>
+              Practice Complete
+            </Text>
+            <Text fw={800} size="xl" c={INK}>Your Results</Text>
+          </Box>
+          <Group gap={6} style={{ flexShrink: 0 }}>
+            <IconClock size={14} stroke={1.5} color={MUTED} />
+            <Text size="sm" fw={600} c={MUTED}>{formatTime(totalSeconds)}</Text>
+          </Group>
+        </Group>
+
+        {/* Score display */}
+        <Group align="center" gap="xl" mb="lg" wrap="nowrap">
+          <Box
+            style={{
+              width: rem(96),
+              height: rem(96),
+              borderRadius: "50%",
+              backgroundColor: scoreBg,
+              border: `3px solid ${scoreColor}`,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Text fw={800} size="xl" c={scoreColor} lh={1}>{scorePct}%</Text>
+            <Text size="xs" c={scoreColor} fw={600}>{correct}/{questions.length}</Text>
+          </Box>
+
+          <Box style={{ flex: 1 }}>
+            {/* Progress bar */}
+            <Box
+              mb="md"
+              style={{
+                height: rem(10),
+                borderRadius: rem(999),
+                backgroundColor: SURFACE,
+                overflow: "hidden",
+                display: "flex",
+              }}
+            >
+              {correct > 0 && (
+                <Box style={{ width: `${(correct / questions.length) * 100}%`, backgroundColor: CORRECT_GREEN, transition: "width 600ms ease" }} />
+              )}
+              {wrong > 0 && (
+                <Box style={{ width: `${(wrong / questions.length) * 100}%`, backgroundColor: WRONG_RED }} />
+              )}
+              {skipped > 0 && (
+                <Box style={{ width: `${(skipped / questions.length) * 100}%`, backgroundColor: "#CBD5E1" }} />
+              )}
+            </Box>
+
+            {/* Stat pills */}
+            <SimpleGrid cols={3} spacing="xs">
+              <Box p="sm" style={{ backgroundColor: CORRECT_BG, borderRadius: rem(10), textAlign: "center" }}>
+                <Group gap={4} justify="center" mb={2}>
+                  <IconCircleCheck size={14} stroke={2} color={CORRECT_GREEN} />
+                  <Text size="xs" fw={700} c={CORRECT_GREEN}>Correct</Text>
+                </Group>
+                <Text fw={800} size="lg" c={CORRECT_DARK}>{correct}</Text>
+              </Box>
+              <Box p="sm" style={{ backgroundColor: WRONG_BG, borderRadius: rem(10), textAlign: "center" }}>
+                <Group gap={4} justify="center" mb={2}>
+                  <IconCircleX size={14} stroke={2} color={WRONG_RED} />
+                  <Text size="xs" fw={700} c={WRONG_RED}>Wrong</Text>
+                </Group>
+                <Text fw={800} size="lg" c={WRONG_DARK}>{wrong}</Text>
+              </Box>
+              <Box p="sm" style={{ backgroundColor: SURFACE, borderRadius: rem(10), textAlign: "center" }}>
+                <Group gap={4} justify="center" mb={2}>
+                  <IconFlag size={14} stroke={1.5} color={MUTED} />
+                  <Text size="xs" fw={700} c={MUTED}>Skipped</Text>
+                </Group>
+                <Text fw={800} size="lg" c={INK}>{skipped}</Text>
+              </Box>
+            </SimpleGrid>
+          </Box>
+        </Group>
+
+        <Button
+          variant="outline"
+          color="dark"
+          radius="md"
+          leftSection={<IconChevronLeft size={14} stroke={2} />}
+          onClick={onBack}
+        >
+          Back to Practice Sets
+        </Button>
+      </Box>
+
+      {/* ── Question review list ── */}
+      <Text fw={700} size="sm" c={INK} px={2}>Answer Key &amp; Review</Text>
+
+      {questions.map((q, i) => {
+        const submitted = submittedSet.has(i);
+        const userAns = answers[i];
+        const isCorrectQ = submitted && userAns === q.correctAnswer;
+        const displayText = lang === "zh" ? (q.zh?.text ?? q.text) : q.text;
+        const displayTopic = lang === "zh" ? (q.zh?.topic ?? q.topic) : q.topic;
+        const explanation = lang === "zh" ? (q.zh?.explanation ?? q.explanation) : q.explanation;
+
+        const resultLabel = !submitted ? "Skipped" : isCorrectQ ? "Correct" : "Wrong";
+        const resultBg = !submitted ? SURFACE : isCorrectQ ? "#DCFCE7" : "#FEE2E2";
+        const resultColor = !submitted ? MUTED : isCorrectQ ? CORRECT_GREEN : WRONG_RED;
+
+        return (
+          <Box
+            key={i}
+            p="lg"
+            className="no-select"
+            style={{ backgroundColor: "white", borderRadius: rem(14) }}
+          >
+            {/* Header */}
+            <Group justify="space-between" align="center" mb="md">
+              <Group gap={8}>
+                <Badge
+                  size="sm"
+                  style={{ backgroundColor: INK, color: "white", fontWeight: 700, borderRadius: rem(999) }}
+                >
+                  Q{i + 1}
+                </Badge>
+                <Badge
+                  size="sm"
+                  style={{ backgroundColor: CREAM, color: PRIMARY, fontWeight: 600, borderRadius: rem(999) }}
+                >
+                  {displayTopic}
+                </Badge>
+              </Group>
+              <Box
+                px="sm"
+                py={3}
+                style={{ backgroundColor: resultBg, borderRadius: rem(999) }}
+              >
+                <Text size="xs" fw={700} c={resultColor}>{resultLabel}</Text>
+              </Box>
+            </Group>
+
+            {/* Question text */}
+            <Box mb="md" p="md" style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}>
+              <Text size="sm" c={INK} lh={1.7}>{displayText}</Text>
+            </Box>
+
+            {/* Options */}
+            <Stack gap={rem(8)} mb="md">
+              {q.options.map((opt) => {
+                const optIsCorrect = opt.key === q.correctAnswer;
+                const optIsUserWrong = submitted && opt.key === userAns && !optIsCorrect;
+                const optText = lang === "zh"
+                  ? ((opt as { text_zh?: string }).text_zh ?? opt.text)
+                  : opt.text;
+                return (
+                  <OptionButton
+                    key={opt.key}
+                    optKey={opt.key}
+                    text={optText}
+                    selected={false}
+                    submitted={true}
+                    isCorrect={optIsCorrect}
+                    isUserAnswer={optIsUserWrong}
+                  />
+                );
+              })}
+            </Stack>
+
+            {/* Explanation */}
+            <ExplanationBox explanation={explanation} />
+          </Box>
+        );
+      })}
+    </Stack>
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function PracticeDetailPage() {
+  const router = useRouter();
   const [currentQ, setCurrentQ] = useState(2);
   const [answers, setAnswers] = useState<Record<number, string>>({ 0: "A", 1: "A", 2: "B" });
   const [submittedSet, setSubmittedSet] = useState<Set<number>>(new Set([0, 1, 2]));
   const [flaggedSet, setFlaggedSet] = useState<Set<number>>(new Set([6]));
   const [bookmarked, setBookmarked] = useState<Set<number>>(new Set());
   const [elapsedSeconds, setElapsedSeconds] = useState(1122); // 18:42
+  const [finished, setFinished] = useState(false);
 
   // Selected option for current question (before submission)
   const [pendingAnswer, setPendingAnswer] = useState<string | null>(null);
+  const [lang, setLang] = useState<Lang>("en");
 
-  // Timer
+  // Timer — stops when finished
   useEffect(() => {
+    if (finished) return;
     const interval = setInterval(() => {
       setElapsedSeconds((s) => s + 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [finished]);
 
   const q = QUESTIONS[currentQ];
   const isSubmitted = submittedSet.has(currentQ);
@@ -780,6 +1153,23 @@ export default function PracticeDetailPage() {
     });
   }
 
+  if (finished) {
+    return (
+      <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+        <Box p={{ base: "md", sm: "xl" }} style={{ flex: 1 }}>
+          <SummaryView
+            questions={QUESTIONS}
+            answers={answers}
+            submittedSet={submittedSet}
+            totalSeconds={elapsedSeconds}
+            lang={lang}
+            onBack={() => router.push("/practice")}
+          />
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <Box p={{ base: "md", sm: "xl" }} style={{ flex: 1 }}>
@@ -789,6 +1179,7 @@ export default function PracticeDetailPage() {
             {/* Question Card */}
             <Box
               p="lg"
+              className="no-select"
               style={{ backgroundColor: "white", borderRadius: rem(14) }}
             >
               {/* Header row */}
@@ -816,10 +1207,11 @@ export default function PracticeDetailPage() {
                       flexShrink: 0,
                     }}
                   >
-                    {q.topic}
+                    {lang === "zh" ? (q.zh?.topic ?? q.topic) : q.topic}
                   </Badge>
                 </Group>
                 <Group gap={rem(6)} wrap="nowrap" style={{ flexShrink: 0 }}>
+                  <LanguageToggle lang={lang} onChange={setLang} />
                   <Tooltip label={flaggedSet.has(currentQ) ? "Remove flag" : "Flag question"} withArrow>
                     <UnstyledButton
                       onClick={toggleFlag}
@@ -876,7 +1268,7 @@ export default function PracticeDetailPage() {
                 style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}
               >
                 <Text size="sm" c={INK} lh={1.7}>
-                  {q.text}
+                  {lang === "zh" ? (q.zh?.text ?? q.text) : q.text}
                 </Text>
               </Box>
 
@@ -894,7 +1286,7 @@ export default function PracticeDetailPage() {
                     >
                       <OptionButton
                         optKey={opt.key}
-                        text={opt.text}
+                        text={lang === "zh" ? ((opt as { text_zh?: string }).text_zh ?? opt.text) : opt.text}
                         selected={userAnswer === opt.key}
                         submitted={isSubmitted}
                         isCorrect={isCorrect}
@@ -906,7 +1298,9 @@ export default function PracticeDetailPage() {
               </Stack>
 
               {/* Explanation (shown after submission) */}
-              {isSubmitted && <ExplanationBox explanation={q.explanation} />}
+              {isSubmitted && (
+                <ExplanationBox explanation={lang === "zh" ? (q.zh?.explanation ?? q.explanation) : q.explanation} />
+              )}
             </Box>
 
             {/* Navigation buttons */}
@@ -946,15 +1340,25 @@ export default function PracticeDetailPage() {
                 </Button>
               )}
 
-              <Button
-                radius="xl"
-                rightSection={<IconChevronRight size={15} stroke={2} />}
-                disabled={currentQ === QUESTIONS.length - 1}
-                onClick={handleNext}
-                style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
-              >
-                Next Question
-              </Button>
+              {currentQ === QUESTIONS.length - 1 ? (
+                <Button
+                  radius="xl"
+                  leftSection={<IconCheck size={15} stroke={2.5} />}
+                  onClick={() => setFinished(true)}
+                  style={{ backgroundColor: CORRECT_GREEN, color: "white", fontWeight: 600 }}
+                >
+                  Finish
+                </Button>
+              ) : (
+                <Button
+                  radius="xl"
+                  rightSection={<IconChevronRight size={15} stroke={2} />}
+                  onClick={handleNext}
+                  style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
+                >
+                  Next Question
+                </Button>
+              )}
             </Group>
           </Stack>
 
@@ -982,6 +1386,15 @@ export default function PracticeDetailPage() {
           </Box>
         </Group>
       </Box>
+
+      <FloatingChatbot
+        questionContext={[
+          `Topic: ${q.topic}`,
+          `Question: ${q.text}`,
+          `Options:`,
+          ...q.options.map((o) => `  ${o.key}. ${o.text}`),
+        ].join("\n")}
+      />
     </Box>
   );
 }

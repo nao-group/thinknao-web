@@ -21,6 +21,11 @@
   animation: tabFadeIn 220ms ease;
 }
 
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .hover-zoom {
   transition: transform 200ms ease, box-shadow 200ms ease;
   cursor: pointer;

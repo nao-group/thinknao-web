@@ -25,6 +25,8 @@ import {
   IconNotes,
 } from "@tabler/icons-react";
 import { SAVED_PROBLEMS, type SubjectKey, type Difficulty } from "../data";
+import { FloatingChatbot } from "@/components/floating-chatbot";
+import { LanguageToggle, type Lang } from "@/components/language-toggle";
 
 // ─── Styling constants ─────────────────────────────────────────────────────────
 
@@ -185,6 +187,7 @@ export default function SavedProblemDetailPage() {
 
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [lang, setLang] = useState<Lang>("en");
 
   if (!problem) {
     return (
@@ -215,7 +218,7 @@ export default function SavedProblemDetailPage() {
           {/* ── Main column ── */}
           <Stack style={{ flex: 1, minWidth: 0 }} gap="md">
             {/* Question Card */}
-            <Box p="xl" style={{ backgroundColor: "white", borderRadius: rem(14) }}>
+            <Box p="xl" className="no-select" style={{ backgroundColor: "white", borderRadius: rem(14) }}>
               {/* Header */}
               <Group justify="space-between" align="center" mb="lg">
                 <Group gap={8}>
@@ -231,10 +234,11 @@ export default function SavedProblemDetailPage() {
                     radius="md"
                     style={{ backgroundColor: CREAM, color: PRIMARY, fontWeight: 600 }}
                   >
-                    {problem.topic}
+                    {lang === "zh" ? (problem.zh?.topic ?? problem.topic) : problem.topic}
                   </Badge>
                 </Group>
                 <Group gap={6}>
+                  <LanguageToggle lang={lang} onChange={setLang} />
                   <Badge size="sm" radius="sm" style={{ backgroundColor: diff.bg, color: diff.color, fontWeight: 600 }}>
                     {problem.difficulty}
                   </Badge>
@@ -244,7 +248,9 @@ export default function SavedProblemDetailPage() {
 
               {/* Question text */}
               <Box p="md" mb="lg" style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}>
-                <Text size="sm" c={INK} lh={1.7}>{problem.question}</Text>
+                <Text size="sm" c={INK} lh={1.7}>
+                  {lang === "zh" ? (problem.zh?.question ?? problem.question) : problem.question}
+                </Text>
               </Box>
 
               {/* Options */}
@@ -254,12 +260,14 @@ export default function SavedProblemDetailPage() {
                   const isSelected = submitted && opt.key === selectedOption && !isCorrect;
                   const showResult = submitted;
 
+                  const displayText = lang === "zh" ? (opt.text_zh ?? opt.text) : opt.text;
+
                   if (showResult) {
                     return (
                       <OptionRow
                         key={opt.key}
                         optKey={opt.key}
-                        text={opt.text}
+                        text={displayText}
                         isCorrect={isCorrect}
                         isSelected={isSelected}
                       />
@@ -300,14 +308,16 @@ export default function SavedProblemDetailPage() {
                       >
                         {opt.key}
                       </Box>
-                      <Text size="sm" c={INK} fw={chosen ? 600 : 400}>{opt.text}</Text>
+                      <Text size="sm" c={INK} fw={chosen ? 600 : 400}>{displayText}</Text>
                     </Box>
                   );
                 })}
               </Stack>
 
               {/* Explanation — shown after submit */}
-              {submitted && <ExplanationBox explanation={problem.explanation} />}
+              {submitted && (
+                <ExplanationBox explanation={lang === "zh" ? (problem.zh?.explanation ?? problem.explanation) : problem.explanation} />
+              )}
             </Box>
 
             {/* Navigation row */}
@@ -446,6 +456,16 @@ export default function SavedProblemDetailPage() {
           </Box>
         </Group>
       </Box>
+
+      <FloatingChatbot
+        questionContext={[
+          `Subject: ${problem.subject} — Topic: ${problem.topic}`,
+          `Question: ${problem.question}`,
+          `Options:`,
+          ...problem.options.map((o) => `  ${o.key}. ${o.text}`),
+          `Correct Answer: ${problem.correctAnswer}`,
+        ].join("\n")}
+      />
     </Box>
   );
 }
