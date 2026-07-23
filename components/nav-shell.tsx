@@ -156,6 +156,12 @@ export function NavShell({ children }: { children: React.ReactNode }) {
   const toggleCollapsed = () => setCollapsed((c) => !c);
   const navbarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
 
+  const allNavItems = NAV_SECTIONS.flatMap((s) => s.items);
+  const hasExactMatch = allNavItems.some((i) => i.href === pathname);
+  function isActive(href: string) {
+    return hasExactMatch ? pathname === href : pathname.startsWith(href + "/");
+  }
+
   return (
     <AppShell
       header={{ height: HEADER_HEIGHT }}
@@ -288,7 +294,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
                     <NavItem
                       key={item.href}
                       item={item}
-                      active={pathname === item.href}
+                      active={isActive(item.href)}
                       collapsed={collapsed}
                       onClick={() => router.push(item.href)}
                     />
