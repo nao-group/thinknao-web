@@ -1,4 +1,4 @@
-export type SubjectKey = "Mathematics" | "Physics" | "Chemistry";
+export type SubjectKey = "Mathematics" | "Physics" | "Chemistry" | "Liberal Arts Chinese" | "Science Chinese";
 export type Difficulty = "Easy" | "Medium" | "Hard";
 
 export interface SavedProblem {

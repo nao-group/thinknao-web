@@ -25,6 +25,8 @@ import {
   IconChevronRight,
   IconFlask,
   IconMathFunction,
+  IconBook,
+  IconMicroscope,
   IconPencil,
   IconPlus,
   IconSearch,
@@ -37,13 +39,17 @@ const PRIMARY = "#D4A017";
 const INDIGO = "#6670B0";
 const PANDA = "#C65D2E";
 const CREAM = "#F7E7D3";
+const VIOLET = "#7C3AED";
+const EMERALD = "#059669";
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
 
 const SUBJECTS = [
-  { key: "math", label: "Mathematics", icon: IconMathFunction, iconBg: CREAM, iconColor: PRIMARY },
-  { key: "physics", label: "Physics", icon: IconAtom, iconBg: "#EEF0FF", iconColor: INDIGO },
-  { key: "chemistry", label: "Chemistry", icon: IconFlask, iconBg: "#FDF0EC", iconColor: PANDA },
+  { key: "math",    label: "Mathematics",          icon: IconMathFunction, iconBg: CREAM,     iconColor: PRIMARY },
+  { key: "physics", label: "Physics",               icon: IconAtom,         iconBg: "#EEF0FF", iconColor: INDIGO  },
+  { key: "chem",    label: "Chemistry",             icon: IconFlask,        iconBg: "#FDF0EC", iconColor: PANDA   },
+  { key: "lac",     label: "Liberal Arts Chinese",  icon: IconBook,         iconBg: "#F5F3FF", iconColor: VIOLET  },
+  { key: "sc",      label: "Science Chinese",       icon: IconMicroscope,   iconBg: "#ECFDF5", iconColor: EMERALD },
 ] as const;
 
 type SubjectKey = (typeof SUBJECTS)[number]["key"];
@@ -119,6 +125,28 @@ const PRACTICE_SETS_IN_PROGRESS = [
     created: "Created Jul 17",
     progressColor: "orange",
   },
+  {
+    label: "Liberal Arts Chinese 1",
+    icon: IconBook,
+    iconBg: "#F5F3FF",
+    iconColor: VIOLET,
+    pct: 25,
+    done: 20,
+    total: 80,
+    created: "Created Jul 16",
+    progressColor: "violet",
+  },
+  {
+    label: "Science Chinese 1",
+    icon: IconMicroscope,
+    iconBg: "#ECFDF5",
+    iconColor: EMERALD,
+    pct: 50,
+    done: 40,
+    total: 80,
+    created: "Created Jul 15",
+    progressColor: "teal",
+  },
 ];
 
 const PRACTICE_SETS_COMPLETED = [
@@ -166,6 +194,28 @@ const PRACTICE_SETS_COMPLETED = [
     created: "Created Jul 8",
     progressColor: "yellow",
   },
+  {
+    label: "Liberal Arts Chinese 0",
+    icon: IconBook,
+    iconBg: "#F5F3FF",
+    iconColor: VIOLET,
+    pct: 100,
+    done: 80,
+    total: 80,
+    created: "Created Jul 5",
+    progressColor: "violet",
+  },
+  {
+    label: "Science Chinese 0",
+    icon: IconMicroscope,
+    iconBg: "#ECFDF5",
+    iconColor: EMERALD,
+    pct: 100,
+    done: 80,
+    total: 80,
+    created: "Created Jul 3",
+    progressColor: "teal",
+  },
 ];
 
 const PRACTICE_STATS = [
@@ -178,6 +228,8 @@ const SUBJECT_SCORES = [
   { label: "Mathematics", pct: 82, color: PRIMARY, progressColor: "yellow" },
   { label: "Physics", pct: 68, color: INDIGO, progressColor: "indigo" },
   { label: "Chemistry", pct: 61, color: PANDA, progressColor: "orange" },
+  { label: "Liberal Arts Chinese", pct: 74, color: VIOLET, progressColor: "violet" },
+  { label: "Science Chinese", pct: 57, color: EMERALD, progressColor: "teal" },
 ];
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
@@ -196,7 +248,8 @@ function SubjectCard({
     <UnstyledButton
       onClick={onSelect}
       style={{
-        flex: 1,
+        width: "100%",
+        height: "100%",
         padding: rem(20),
         borderRadius: rem(12),
         border: `2px solid ${selected ? PRIMARY : "#E2E8F0"}`,
@@ -543,16 +596,20 @@ export default function PracticePage() {
               >
                 Select Subject
               </Text>
-              <Group gap="sm" wrap="nowrap" mb="lg">
+              <Box
+                mb="lg"
+                style={{ display: "flex", gap: rem(12), overflowX: "auto", paddingBottom: rem(4) }}
+              >
                 {SUBJECTS.map((s) => (
-                  <SubjectCard
-                    key={s.key}
-                    subject={s}
-                    selected={selectedSubject === s.key}
-                    onSelect={() => setSelectedSubject(s.key)}
-                  />
+                  <Box key={s.key} style={{ width: rem(150), flex: "0 0 auto", alignSelf: "stretch" }}>
+                    <SubjectCard
+                      subject={s}
+                      selected={selectedSubject === s.key}
+                      onSelect={() => setSelectedSubject(s.key)}
+                    />
+                  </Box>
                 ))}
-              </Group>
+              </Box>
 
               {/* Question count + generate */}
               <Group justify="space-between" align="center" wrap="nowrap">

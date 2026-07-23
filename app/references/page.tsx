@@ -16,6 +16,7 @@ import {
 import {
   IconArrowsShuffle,
   IconAtom,
+  IconBook,
   IconCards,
   IconChevronLeft,
   IconChevronRight,
@@ -23,6 +24,7 @@ import {
   IconLayoutGrid,
   IconLayoutList,
   IconMathFunction,
+  IconMicroscope,
   IconSearch,
   IconX,
 } from "@tabler/icons-react";
@@ -37,14 +39,18 @@ const CREAM = "#F7E7D3";
 const MUTED = "#667080";
 const INDIGO = "#6670B0";
 const PANDA = "#C65D2E";
+const VIOLET = "#7C3AED";
+const EMERALD = "#059669";
 
-const SUBJECTS = ["All", "Mathematics", "Physics", "Chemistry"] as const;
+const SUBJECTS = ["All", "Mathematics", "Physics", "Chemistry", "Liberal Arts Chinese", "Science Chinese"] as const;
 type SubjectFilter = (typeof SUBJECTS)[number];
 
 const SUBJECT_META: Record<Subject, { icon: React.ElementType; bg: string; color: string }> = {
-  Mathematics: { icon: IconMathFunction, bg: CREAM, color: PRIMARY },
-  Physics: { icon: IconAtom, bg: "#EEF0FF", color: INDIGO },
-  Chemistry: { icon: IconFlask, bg: "#FDF0EC", color: PANDA },
+  Mathematics:          { icon: IconMathFunction, bg: CREAM,      color: PRIMARY  },
+  Physics:              { icon: IconAtom,         bg: "#EEF0FF",  color: INDIGO   },
+  Chemistry:            { icon: IconFlask,        bg: "#FDF0EC",  color: PANDA    },
+  "Liberal Arts Chinese": { icon: IconBook,       bg: "#F5F3FF",  color: VIOLET   },
+  "Science Chinese":      { icon: IconMicroscope, bg: "#ECFDF5",  color: EMERALD  },
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────

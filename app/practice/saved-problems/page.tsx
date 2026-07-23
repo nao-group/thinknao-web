@@ -59,6 +59,8 @@ const SUBJECT_META: Record<SubjectKey, { icon: React.ElementType; iconBg: string
   Mathematics: { icon: IconMathFunction, iconBg: CREAM, iconColor: PRIMARY },
   Physics: { icon: IconAtom, iconBg: "#EEF0FF", iconColor: INDIGO },
   Chemistry: { icon: IconFlask, iconBg: "#FDF0EC", iconColor: PANDA },
+  "Liberal Arts Chinese": { icon: IconMathFunction, iconBg: CREAM, iconColor: PRIMARY },
+  "Science Chinese": { icon: IconMathFunction, iconBg: CREAM, iconColor: PRIMARY },
 };
 
 // ─── Sub-components ────────────────────────────────────────────────────────────

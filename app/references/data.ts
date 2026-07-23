@@ -1,4 +1,4 @@
-export type Subject = "Mathematics" | "Physics" | "Chemistry";
+export type Subject = "Mathematics" | "Physics" | "Chemistry" | "Liberal Arts Chinese" | "Science Chinese";
 
 export interface WordEntry {
   id: string;
@@ -111,6 +111,20 @@ export const WORDS: WordEntry[] = [
     definition: "A chemical process in which an atom, ion, or molecule gains one or more electrons.",
     example: "Cu²⁺ + 2e⁻ → Cu (copper ion is reduced to copper metal)",
   },
+  // Liberal Arts Chinese
+  { id: "w19", subject: "Liberal Arts Chinese" as Subject, term: "成语 (Chéngyǔ)", definition: "A four-character idiomatic expression rooted in classical Chinese history or literature, conveying deep meaning concisely.", example: "\"望梅止渴\" — quench thirst by thinking of plums (to console oneself with false hopes)." },
+  { id: "w20", subject: "Liberal Arts Chinese" as Subject, term: "拟人 (Nǐrén)", definition: "Personification — a rhetorical device that attributes human qualities, emotions, or actions to non-human things.", example: "\"风在树间低语\" — The wind whispers among the trees." },
+  { id: "w21", subject: "Liberal Arts Chinese" as Subject, term: "比喻 (Bǐyù)", definition: "Metaphor or simile — comparing one thing to another using 像 (like), 如 (as), or 是 (is) to create vivid imagery.", example: "\"月亮像一块银盘\" — The moon is like a silver plate." },
+  { id: "w22", subject: "Liberal Arts Chinese" as Subject, term: "意象 (Yìxiàng)", definition: "Imagery — a vivid picture created through language in poetry or prose that evokes sensory experience and emotion.", example: "The 'falling leaves' (落叶) image often symbolises parting, melancholy, or the passage of time." },
+  { id: "w23", subject: "Liberal Arts Chinese" as Subject, term: "排比 (Páibǐ)", definition: "Parallelism — a rhetorical device using three or more grammatically parallel clauses to build rhythm and emphasis.", example: "\"我们要努力学习，我们要认真思考，我们要勤于实践。\"" },
+  { id: "w24", subject: "Liberal Arts Chinese" as Subject, term: "典故 (Diǎngù)", definition: "Classical allusion — a reference to a famous historical event, person, or literary work to add depth and authority.", example: "\"破釜沉舟\" alludes to Xiang Yu destroying his boats, signifying total commitment." },
+  // Science Chinese
+  { id: "w25", subject: "Science Chinese" as Subject, term: "光合作用 (Guānghé zuòyòng)", definition: "Photosynthesis — the process by which plants use sunlight, water, and CO₂ to produce glucose and oxygen.", example: "6CO₂ + 6H₂O + 光能 → C₆H₁₂O₆ + 6O₂" },
+  { id: "w26", subject: "Science Chinese" as Subject, term: "基因 (Jīyīn)", definition: "Gene — the basic unit of heredity encoded in DNA that determines the characteristics of living organisms.", example: "基因突变可能导致遗传疾病 — Gene mutations may cause hereditary diseases." },
+  { id: "w27", subject: "Science Chinese" as Subject, term: "生物降解 (Shēngwù jiàngjiě)", definition: "Biodegradation — the breakdown of organic matter by microorganisms into simpler, environmentally harmless substances.", example: "可生物降解塑料对环境更友好 — Biodegradable plastics are more environmentally friendly." },
+  { id: "w28", subject: "Science Chinese" as Subject, term: "催化剂 (Cuīhuàjì)", definition: "Catalyst — a substance that increases the rate of a chemical reaction without being consumed in the process.", example: "二氧化锰是双氧水分解的催化剂 — MnO₂ is a catalyst for the decomposition of H₂O₂." },
+  { id: "w29", subject: "Science Chinese" as Subject, term: "惯性 (Guànxìng)", definition: "Inertia — the tendency of an object to resist any change in its state of motion, as stated in Newton's First Law.", example: "急刹车时乘客向前倾 — Passengers lean forward when a vehicle brakes suddenly (due to inertia)." },
+  { id: "w30", subject: "Science Chinese" as Subject, term: "辐射 (Fúshè)", definition: "Radiation — the emission and propagation of energy through space or a medium in the form of waves or particles.", example: "太阳能以辐射形式传播到地球 — Solar energy travels to Earth in the form of radiation." },
 ];
 
 export const FORMULAS: FormulaEntry[] = [
