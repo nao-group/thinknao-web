@@ -220,8 +220,8 @@ function LearningActivity() {
       <SimpleGrid cols={3} mb={24}>
         {[
           { value: "7", label: "Day Streak", color: PRIMARY },
-          { value: "142", label: "Questions Done", color: INK },
-          { value: "74%", label: "Avg. Score", color: INK },
+          { value: "1", label: "Rank", color: INK },
+          { value: "100", label: "Total XP", color: INK },
         ].map(({ value, label, color }) => (
           <Box key={label} ta="center">
             <Text fw={800} style={{ fontSize: rem(22), color }}>
