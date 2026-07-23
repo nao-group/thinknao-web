@@ -25,6 +25,7 @@ import {
   IconChevronRight,
   IconFlask,
   IconMathFunction,
+  IconPencil,
   IconPlus,
   IconSearch,
   IconStar,
@@ -302,6 +303,14 @@ function PracticeSetRow({
   onContinue?: () => void;
 }) {
   const Icon = set.icon;
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(set.label);
+
+  function commitEdit() {
+    setEditing(false);
+    // editValue is preserved; in a real app you'd persist it here
+  }
+
   return (
     <Box
       className="hover-zoom"
@@ -332,9 +341,32 @@ function PracticeSetRow({
       {/* Info + progress */}
       <Box style={{ flex: 1, minWidth: 0 }}>
         <Group justify="space-between" mb={6}>
-          <Text size="sm" fw={600} c={INK}>
-            {set.label}
-          </Text>
+          {editing ? (
+            <TextInput
+              value={editValue}
+              onChange={(e) => setEditValue(e.currentTarget.value)}
+              onBlur={commitEdit}
+              onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") { setEditValue(set.label); setEditing(false); } }}
+              size="xs"
+              autoFocus
+              styles={{ input: { fontWeight: 600, fontSize: rem(14), color: INK, padding: `${rem(2)} ${rem(6)}` } }}
+              style={{ flex: 1 }}
+            />
+          ) : (
+            <Group gap={4} align="center" style={{ flex: 1, minWidth: 0 }}>
+              <Text size="sm" fw={600} c={INK} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {editValue}
+              </Text>
+              <Tooltip label="Rename" withArrow position="top">
+                <UnstyledButton
+                  onClick={() => setEditing(true)}
+                  style={{ display: "flex", alignItems: "center", color: "#94A3B8", flexShrink: 0 }}
+                >
+                  <IconPencil size={13} stroke={1.5} />
+                </UnstyledButton>
+              </Tooltip>
+            </Group>
+          )}
           <Text size="sm" fw={700} c={set.iconColor} style={{ flexShrink: 0 }}>
             {set.pct}%
           </Text>
