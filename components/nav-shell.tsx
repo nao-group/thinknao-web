@@ -52,7 +52,7 @@ const NAV_SECTIONS = [
   {
     label: "OTHERS",
     items: [
-      { label: "Leaderboard", icon: IconChartBar, href: "/dashboard/leaderboard" },
+      { label: "Leaderboard", icon: IconChartBar, href: "/leaderboard" },
       { label: "Community", icon: IconUsers, href: "/dashboard/community" },
     ],
   },
@@ -130,7 +130,7 @@ const PAGE_LABELS: Record<string, string> = {
   "/practice": "Practice",
   "/references": "References",
   "/mock-exam": "Mock Exam",
-  "/dashboard/leaderboard": "Leaderboard",
+  "/leaderboard": "Leaderboard",
   "/dashboard/community": "Community",
   "/profile": "Profile",
   "/practice/saved-problems": "Saved Problems",
