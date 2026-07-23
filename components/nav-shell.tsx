@@ -136,6 +136,14 @@ const PAGE_LABELS: Record<string, string> = {
   "/dashboard/leaderboard": "Leaderboard",
   "/dashboard/community": "Community",
   "/profile": "Profile",
+  "/practice/saved-problems": "Saved Problems",
+};
+
+const BREADCRUMBS: Record<string, { label: string; href: string }[]> = {
+  "/practice/saved-problems": [
+    { label: "Practice", href: "/practice" },
+    { label: "Saved Problems", href: "" },
+  ],
 };
 
 export function NavShell({ children }: { children: React.ReactNode }) {
@@ -205,9 +213,33 @@ export function NavShell({ children }: { children: React.ReactNode }) {
               <Text fw={700} size="xl" c={INK} lh={1.5}>
                 Welcome back, {firstName}!
               </Text>
-              <Text size="sm" c="dimmed">
-                {PAGE_LABELS[pathname] ?? "Dashboard"}
-              </Text>
+              {BREADCRUMBS[pathname] ? (
+                <Group gap={4} align="center">
+                  {BREADCRUMBS[pathname].map((crumb, i) => (
+                    <Group key={crumb.label} gap={4} align="center">
+                      {i > 0 && <Text size="sm" c="dimmed">›</Text>}
+                      {crumb.href ? (
+                        <Text
+                          size="sm"
+                          c={MUTED}
+                          style={{ cursor: "pointer", textDecoration: "none" }}
+                          onClick={() => router.push(crumb.href)}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = INK)}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = MUTED)}
+                        >
+                          {crumb.label}
+                        </Text>
+                      ) : (
+                        <Text size="sm" c="dimmed">{crumb.label}</Text>
+                      )}
+                    </Group>
+                  ))}
+                </Group>
+              ) : (
+                <Text size="sm" c="dimmed">
+                  {PAGE_LABELS[pathname] ?? "Dashboard"}
+                </Text>
+              )}
             </Box>
 
             <Group gap="sm" align="center" style={{ marginLeft: "auto" }}>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Button,
@@ -12,6 +13,7 @@ import {
   Stack,
   Text,
   TextInput,
+  Tooltip,
   UnstyledButton,
   rem,
 } from "@mantine/core";
@@ -408,6 +410,7 @@ function SubjectScoreBar({ label, pct, color, progressColor }: (typeof SUBJECT_S
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function PracticePage() {
+  const router = useRouter();
   const [selectedSubject, setSelectedSubject] = useState<SubjectKey>("math");
   const [selectedCount, setSelectedCount] = useState<number | string>(20);
   const [customCount, setCustomCount] = useState<number | string>("");
@@ -569,6 +572,7 @@ export default function PracticePage() {
                 </Text>
                 <Group gap="sm" align="center">
                   {/* Search icon */}
+                  <Tooltip label="Search practice sets" position="bottom" withArrow>
                   <UnstyledButton
                     onClick={() => setSearchOpen(true)}
                     aria-label="Search practice sets"
@@ -587,8 +591,10 @@ export default function PracticePage() {
                   >
                     <IconSearch size={14} stroke={2} />
                   </UnstyledButton>
+                  </Tooltip>
 
                   {/* Filter icon */}
+                  <Tooltip label="Filter by subject" position="bottom" withArrow>
                   <UnstyledButton
                     onClick={openFilter}
                     aria-label="Filter practice sets"
@@ -607,6 +613,7 @@ export default function PracticePage() {
                   >
                     <IconAdjustmentsHorizontal size={14} stroke={2} />
                   </UnstyledButton>
+                  </Tooltip>
 
                   <Group
                   gap={0}
@@ -738,6 +745,7 @@ export default function PracticePage() {
                     fontWeight: 600,
                     borderRadius: rem(8),
                   }}
+                  onClick={() => router.push("/practice/saved-problems")}
                 >
                   View Saved Problems
                 </Button>
