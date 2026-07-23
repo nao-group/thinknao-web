@@ -50,7 +50,7 @@ function getInitials(name: string) {
 }
 
 function formatJoinDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────

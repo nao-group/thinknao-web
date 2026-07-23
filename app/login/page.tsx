@@ -321,7 +321,7 @@ export default function LoginPage() {
                     </Text>
                     <Text size="xs" c="dimmed">
                       Signed in{" "}
-                      {new Date(s.created_at).toLocaleDateString(undefined, {
+                      {new Date(s.created_at).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
                         year: "numeric",

@@ -146,6 +146,30 @@ const BREADCRUMBS: Record<string, { label: string; href: string }[]> = {
   ],
 };
 
+function slugToLabel(slug: string) {
+  return slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function getBreadcrumbs(pathname: string) {
+  if (BREADCRUMBS[pathname]) return BREADCRUMBS[pathname];
+  const savedProblemMatch = pathname.match(/^\/practice\/saved-problems\/([^/]+)$/);
+  if (savedProblemMatch) {
+    return [
+      { label: "Practice", href: "/practice" },
+      { label: "Saved Problems", href: "/practice/saved-problems" },
+      { label: `Problem ${savedProblemMatch[1]}`, href: "" },
+    ];
+  }
+  const practiceMatch = pathname.match(/^\/practice\/([^/]+)$/);
+  if (practiceMatch) {
+    return [
+      { label: "Practice", href: "/practice" },
+      { label: slugToLabel(practiceMatch[1]), href: "" },
+    ];
+  }
+  return null;
+}
+
 export function NavShell({ children }: { children: React.ReactNode }) {
   const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
   const [collapsed, setCollapsed] = useState(false);
@@ -155,6 +179,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
 
   const toggleCollapsed = () => setCollapsed((c) => !c);
   const navbarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
+  const breadcrumbs = getBreadcrumbs(pathname);
 
   const allNavItems = NAV_SECTIONS.flatMap((s) => s.items);
   const hasExactMatch = allNavItems.some((i) => i.href === pathname);
@@ -219,9 +244,9 @@ export function NavShell({ children }: { children: React.ReactNode }) {
               <Text fw={700} size="xl" c={INK} lh={1.5}>
                 Welcome back, {firstName}!
               </Text>
-              {BREADCRUMBS[pathname] ? (
+              {breadcrumbs ? (
                 <Group gap={4} align="center">
-                  {BREADCRUMBS[pathname].map((crumb, i) => (
+                  {breadcrumbs.map((crumb, i) => (
                     <Group key={crumb.label} gap={4} align="center">
                       {i > 0 && <Text size="sm" c="dimmed">›</Text>}
                       {crumb.href ? (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Badge,
   Box,
@@ -38,14 +39,13 @@ const PAGE_SIZE = 6;
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
 
-const SUBJECTS = [
-  { key: "Mathematics", icon: IconMathFunction, iconBg: CREAM, iconColor: PRIMARY },
-  { key: "Physics", icon: IconAtom, iconBg: "#EEF0FF", iconColor: INDIGO },
-  { key: "Chemistry", icon: IconFlask, iconBg: "#FDF0EC", iconColor: PANDA },
-] as const;
+import { SAVED_PROBLEMS, type SubjectKey, type Difficulty } from "./data";
 
-type SubjectKey = (typeof SUBJECTS)[number]["key"];
-type Difficulty = "Easy" | "Medium" | "Hard";
+const SUBJECTS = [
+  { key: "Mathematics" as SubjectKey, icon: IconMathFunction, iconBg: CREAM, iconColor: PRIMARY },
+  { key: "Physics" as SubjectKey, icon: IconAtom, iconBg: "#EEF0FF", iconColor: INDIGO },
+  { key: "Chemistry" as SubjectKey, icon: IconFlask, iconBg: "#FDF0EC", iconColor: PANDA },
+];
 
 const DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
 
@@ -60,27 +60,6 @@ const SUBJECT_META: Record<SubjectKey, { icon: React.ElementType; iconBg: string
   Physics: { icon: IconAtom, iconBg: "#EEF0FF", iconColor: INDIGO },
   Chemistry: { icon: IconFlask, iconBg: "#FDF0EC", iconColor: PANDA },
 };
-
-const SAVED_PROBLEMS: Array<{
-  id: string;
-  subject: SubjectKey;
-  difficulty: Difficulty;
-  question: string;
-  dateAdded: string;
-}> = [
-  { id: "1", subject: "Mathematics", difficulty: "Medium", question: "If f(x) = 2x² + 3x − 5, find f′(x) and determine all critical points of the function.", dateAdded: "2026-07-22" },
-  { id: "2", subject: "Physics", difficulty: "Hard", question: "A particle moves in a circle of radius r with angular velocity ω. Derive the expression for centripetal acceleration in terms of r and ω.", dateAdded: "2026-07-21" },
-  { id: "3", subject: "Chemistry", difficulty: "Easy", question: "What is the molecular formula of glucose? What type of isomerism does it exhibit?", dateAdded: "2026-07-20" },
-  { id: "4", subject: "Mathematics", difficulty: "Hard", question: "Solve the differential equation dy/dx + 2y = 4x using the integrating factor method.", dateAdded: "2026-07-19" },
-  { id: "5", subject: "Physics", difficulty: "Medium", question: "Explain the photoelectric effect and derive Einstein's photoelectric equation.", dateAdded: "2026-07-18" },
-  { id: "6", subject: "Chemistry", difficulty: "Medium", question: "Describe the mechanism of SN1 and SN2 reactions with appropriate examples and transition state diagrams.", dateAdded: "2026-07-17" },
-  { id: "7", subject: "Mathematics", difficulty: "Easy", question: "Find the area enclosed between the curves y = x² and y = 2x using definite integration.", dateAdded: "2026-07-16" },
-  { id: "8", subject: "Physics", difficulty: "Hard", question: "A parallel plate capacitor is charged to V volts. If the distance between the plates is doubled, find the new energy stored in the capacitor.", dateAdded: "2026-07-15" },
-  { id: "9", subject: "Chemistry", difficulty: "Hard", question: "Explain the hybridization of SF₆ and draw its 3D structure clearly showing all bond angles.", dateAdded: "2026-07-14" },
-  { id: "10", subject: "Mathematics", difficulty: "Medium", question: "Using De Moivre's theorem, find all the cube roots of unity and plot them on the Argand diagram.", dateAdded: "2026-07-13" },
-  { id: "11", subject: "Physics", difficulty: "Easy", question: "State Faraday's laws of electromagnetic induction and provide two practical applications.", dateAdded: "2026-07-12" },
-  { id: "12", subject: "Chemistry", difficulty: "Easy", question: "What are the key differences between crystalline and amorphous solids? Give two examples of each.", dateAdded: "2026-07-11" },
-];
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -117,24 +96,28 @@ function PaginationBtn({
 function ProblemRow({
   problem,
   onRemove,
+  onView,
 }: {
   problem: (typeof SAVED_PROBLEMS)[number];
   onRemove: (id: string) => void;
+  onView: (id: string) => void;
 }) {
   const meta = SUBJECT_META[problem.subject];
   const Icon = meta.icon;
   const diff = DIFFICULTY_STYLE[problem.difficulty];
-  const date = new Date(problem.dateAdded).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  const date = new Date(problem.dateAdded).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   return (
     <Box
       className="hover-zoom"
+      onClick={() => onView(problem.id)}
       style={{
         display: "flex",
         alignItems: "flex-start",
         gap: rem(14),
         padding: `${rem(16)} 0`,
         borderBottom: "1px solid #F1F5F9",
+        cursor: "pointer",
       }}
     >
       {/* Icon */}
@@ -194,7 +177,7 @@ function ProblemRow({
       {/* Remove */}
       <Tooltip label="Remove bookmark" position="left" withArrow>
         <UnstyledButton
-          onClick={() => onRemove(problem.id)}
+          onClick={(e) => { e.stopPropagation(); onRemove(problem.id); }}
           style={{
             width: rem(32),
             height: rem(32),
@@ -216,6 +199,7 @@ function ProblemRow({
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function SavedProblemsPage() {
+  const router = useRouter();
   const [problems, setProblems] = useState(SAVED_PROBLEMS);
   const [page, setPage] = useState(0);
 
@@ -410,7 +394,12 @@ export default function SavedProblemsPage() {
           <Stack key={`${searchQuery}-${appliedSubjects.join()}-${appliedDifficulties.join()}-${sortOrder}`} gap={0} className="tab-fade-in">
             {pagedProblems.length > 0 ? (
               pagedProblems.map((p) => (
-                <ProblemRow key={p.id} problem={p} onRemove={removeBookmark} />
+                <ProblemRow
+                    key={p.id}
+                    problem={p}
+                    onRemove={removeBookmark}
+                    onView={(id) => router.push(`/practice/saved-problems/${id}`)}
+                  />
               ))
             ) : (
               <Box py="xl" style={{ textAlign: "center" }}>

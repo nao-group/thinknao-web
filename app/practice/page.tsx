@@ -292,7 +292,15 @@ function PaginationBtn({
   );
 }
 
-function PracticeSetRow({ set, action = "Continue" }: { set: (typeof PRACTICE_SETS_IN_PROGRESS)[number]; action?: string }) {
+function PracticeSetRow({
+  set,
+  action = "Continue",
+  onContinue,
+}: {
+  set: (typeof PRACTICE_SETS_IN_PROGRESS)[number];
+  action?: string;
+  onContinue?: () => void;
+}) {
   const Icon = set.icon;
   return (
     <Box
@@ -349,6 +357,7 @@ function PracticeSetRow({ set, action = "Continue" }: { set: (typeof PRACTICE_SE
         variant="default"
         radius="sm"
         style={{ flexShrink: 0 }}
+        onClick={onContinue}
       >
         {action}
       </Button>
@@ -648,7 +657,14 @@ export default function PracticePage() {
               {/* Practice set rows */}
               <Stack key={activeTab} gap={0} className="tab-fade-in">
                 {pagedSets.map((set) => (
-                  <PracticeSetRow key={set.label} set={set} action={activeTab === "completed" ? "Review" : "Continue"} />
+                  <PracticeSetRow
+                    key={set.label}
+                    set={set}
+                    action={activeTab === "completed" ? "Review" : "Continue"}
+                    onContinue={() =>
+                      router.push(`/practice/${set.label.toLowerCase().replace(/\s+/g, "-")}`)
+                    }
+                  />
                 ))}
               </Stack>
 
