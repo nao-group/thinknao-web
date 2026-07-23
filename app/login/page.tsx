@@ -25,8 +25,7 @@ import { AuthSplitLayout } from "@/components/auth-split-layout";
 import { useAuthStore } from "@/store/auth";
 import axios from "axios";
 
-const INK = "#0F172A";
-const PRIMARY = "#D4A017";
+import { INK, PRIMARY } from "@/constants/colors";
 
 const inputStyles = {
   input: {

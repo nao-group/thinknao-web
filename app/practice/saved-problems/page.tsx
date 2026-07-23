@@ -29,21 +29,10 @@ import {
   IconMicroscope,
   IconSearch,
 } from "@tabler/icons-react";
-
-const INK = "#0F172A";
-const SURFACE = "#F3F5F7";
-const PRIMARY = "#D4A017";
-const INDIGO = "#6670B0";
-const PANDA = "#C65D2E";
-const CREAM = "#F7E7D3";
-const VIOLET = "#6F42C1";
-const EMERALD = "#059669";
+import { SAVED_PROBLEMS, type SubjectKey, type Difficulty } from "./data";
+import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
 
 const PAGE_SIZE = 6;
-
-// ─── Data ──────────────────────────────────────────────────────────────────────
-
-import { SAVED_PROBLEMS, type SubjectKey, type Difficulty } from "./data";
 
 const SUBJECTS = [
   { key: "Mathematics" as SubjectKey, icon: IconMathFunction, iconBg: CREAM, iconColor: PRIMARY },
@@ -65,8 +54,8 @@ const SUBJECT_META: Record<SubjectKey, { icon: React.ElementType; iconBg: string
   Mathematics: { icon: IconMathFunction, iconBg: CREAM, iconColor: PRIMARY },
   Physics: { icon: IconAtom, iconBg: "#EEF0FF", iconColor: INDIGO },
   Chemistry: { icon: IconFlask, iconBg: "#FDF0EC", iconColor: PANDA },
-  "Liberal Arts Chinese": { icon: IconMathFunction, iconBg: CREAM, iconColor: PRIMARY },
-  "Science Chinese": { icon: IconMathFunction, iconBg: CREAM, iconColor: PRIMARY },
+  "Liberal Arts Chinese": { icon: IconBook,        iconBg: "#F5F3FF", iconColor: VIOLET  },
+  "Science Chinese":      { icon: IconMicroscope,  iconBg: "#ECFDF5", iconColor: EMERALD },
 };
 
 // ─── Sub-components ────────────────────────────────────────────────────────────

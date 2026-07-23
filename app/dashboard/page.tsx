@@ -18,12 +18,7 @@ import {
 } from "@tabler/icons-react";
 import { AnnouncementCarousel } from "@/components/announcement-carousel";
 
-const INK = "#0F172A";
-const SURFACE = "#F3F5F7";
-const PRIMARY = "#D4A017";
-const INDIGO = "#6670B0";
-const PANDA = "#C65D2E";
-const CREAM = "#F7E7D3";
+import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA } from "@/constants/colors";
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 

@@ -30,33 +30,19 @@ import { SAVED_PROBLEMS, type SubjectKey, type Difficulty } from "../data";
 import { FloatingChatbot } from "@/components/floating-chatbot";
 import { LanguageToggle, type Lang } from "@/components/language-toggle";
 
+import {
+  INK, SURFACE, PRIMARY, CREAM, MUTED, INDIGO, PANDA, VIOLET, EMERALD,
+  CORRECT_BG, CORRECT_BORDER, CORRECT_GREEN, CORRECT_DARK,
+  WRONG_BG, WRONG_BORDER, WRONG_RED, WRONG_DARK,
+} from "@/constants/colors";
+
 // ─── Styling constants ─────────────────────────────────────────────────────────
-
-const INK = "#0F172A";
-const SURFACE = "#F3F5F7";
-const PRIMARY = "#D4A017";
-const CREAM = "#F7E7D3";
-const MUTED = "#667080";
-const INDIGO = "#6670B0";
-const PANDA = "#C65D2E";
-
-const CORRECT_BG = "#F0FDF4";
-const CORRECT_BORDER = "#86EFAC";
-const CORRECT_GREEN = "#16A34A";
-const CORRECT_DARK = "#166534";
-const WRONG_BG = "#FEF2F2";
-const WRONG_BORDER = "#FCA5A5";
-const WRONG_RED = "#DC2626";
-const WRONG_DARK = "#991B1B";
 
 const DIFFICULTY_STYLE: Record<Difficulty, { bg: string; color: string }> = {
   Easy: { bg: "#DCFCE7", color: "#16A34A" },
   Medium: { bg: CREAM, color: PRIMARY },
   Hard: { bg: "#FEE2E2", color: "#DC2626" },
 };
-
-const VIOLET = "#7C3AED";
-const EMERALD = "#059669";
 
 const SUBJECT_META: Record<SubjectKey, { icon: React.ElementType; iconBg: string; iconColor: string }> = {
   Mathematics:            { icon: IconMathFunction, iconBg: CREAM,     iconColor: PRIMARY  },

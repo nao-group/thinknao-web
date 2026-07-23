@@ -31,17 +31,7 @@ import { LanguageToggle, type Lang } from "@/components/language-toggle";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const INK = "#0F172A";
-const SURFACE = "#F3F5F7";
-const PRIMARY = "#D4A017";
-const CREAM = "#F7E7D3";
-const MUTED = "#667080";
-const INDIGO = "#6670B0";
-const PANDA = "#C65D2E";
-const VIOLET = "#7C3AED";
-const EMERALD = "#059669";
-const CORRECT_GREEN = "#16A34A";
-const WRONG_RED = "#DC2626";
+import { INK, SURFACE, PRIMARY, CREAM, MUTED, INDIGO, PANDA, VIOLET, EMERALD, CORRECT_GREEN, WRONG_RED } from "@/constants/colors";
 
 const PASS_MARK = 60;
 

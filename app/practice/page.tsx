@@ -33,14 +33,7 @@ import {
   IconStar,
 } from "@tabler/icons-react";
 
-const INK = "#0F172A";
-const SURFACE = "#F3F5F7";
-const PRIMARY = "#D4A017";
-const INDIGO = "#6670B0";
-const PANDA = "#C65D2E";
-const CREAM = "#F7E7D3";
-const VIOLET = "#7C3AED";
-const EMERALD = "#059669";
+import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
 

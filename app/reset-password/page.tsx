@@ -17,7 +17,7 @@ import { notifications } from "@mantine/notifications";
 import { AuthSplitLayout } from "@/components/auth-split-layout";
 import axios from "axios";
 
-const INK = "#0F172A";
+import { INK } from "@/constants/colors";
 
 const inputStyles = {
   input: { borderRadius: rem(10), fontSize: rem(14) },

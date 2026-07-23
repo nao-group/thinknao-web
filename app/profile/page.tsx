@@ -26,11 +26,7 @@ import {
 } from "@tabler/icons-react";
 import api from "@/lib/api";
 
-const INK = "#0F172A";
-const SURFACE = "#F3F5F7";
-const PRIMARY = "#D4A017";
-const INDIGO = "#6670B0";
-const CREAM = "#F7E7D3";
+import { INK, SURFACE, PRIMARY, CREAM, INDIGO } from "@/constants/colors";
 
 interface UserProfile {
   id: string;

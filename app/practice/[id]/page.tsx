@@ -30,25 +30,12 @@ import {
 import { FloatingChatbot } from "@/components/floating-chatbot";
 import { LanguageToggle, type Lang } from "@/components/language-toggle";
 
-// ─── Styling constants ─────────────────────────────────────────────────────────
-
-const INK = "#0F172A";
-const SURFACE = "#F3F5F7";
-const PRIMARY = "#D4A017";
-const CREAM = "#F7E7D3";
-const MUTED = "#667080";
-
-const CORRECT_BG = "#F0FDF4";
-const CORRECT_BORDER = "#86EFAC";
-const CORRECT_GREEN = "#16A34A";
-const CORRECT_DARK = "#166534";
-const WRONG_BG = "#FEF2F2";
-const WRONG_BORDER = "#FCA5A5";
-const WRONG_RED = "#DC2626";
-const WRONG_DARK = "#991B1B";
-
-const NAV_CORRECT = "#2D6A4F";
-const NAV_WRONG = "#991B1B";
+import {
+  INK, SURFACE, PRIMARY, CREAM, MUTED,
+  CORRECT_BG, CORRECT_BORDER, CORRECT_GREEN, CORRECT_DARK,
+  WRONG_BG, WRONG_BORDER, WRONG_RED, WRONG_DARK,
+  NAV_CORRECT, NAV_WRONG,
+} from "@/constants/colors";
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
 
