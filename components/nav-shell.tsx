@@ -46,7 +46,7 @@ const NAV_SECTIONS = [
     items: [
       { label: "Practice", icon: IconPencil, href: "/practice" },
       { label: "References", icon: IconBook, href: "/references" },
-      { label: "Mock Exam", icon: IconAlignJustified, href: "/dashboard/mock-exam" },
+      { label: "Mock Exam", icon: IconAlignJustified, href: "/mock-exam" },
     ],
   },
   {
@@ -129,7 +129,7 @@ const PAGE_LABELS: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/practice": "Practice",
   "/references": "References",
-  "/dashboard/mock-exam": "Mock Exam",
+  "/mock-exam": "Mock Exam",
   "/dashboard/leaderboard": "Leaderboard",
   "/dashboard/community": "Community",
   "/profile": "Profile",
