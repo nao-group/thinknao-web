@@ -234,7 +234,7 @@ export default function RegisterPage() {
             label="Verification Code"
             placeholder="Enter 6-digit OTP"
             value={otp}
-            onChange={(e) => setOtp(e.target.value)}
+            onChange={(e) => setOtp(e.target.value.replace(/\s/g, ""))}
             required
             disabled={!otpSent}
             leftSection={<IconShield size={16} stroke={1.5} color="#667080" />}
