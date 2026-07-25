@@ -195,7 +195,17 @@ function getBreadcrumbs(pathname: string) {
 
 export function NavShell({ children }: { children: React.ReactNode }) {
   const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("nav-collapsed") === "true";
+  });
+
+  const toggleCollapsed = () =>
+    setCollapsed((c) => {
+      const next = !c;
+      localStorage.setItem("nav-collapsed", String(next));
+      return next;
+    });
   const pathname = usePathname();
   const router = useRouter();
   const firstName = useAuthStore((s) => s.user?.full_name?.split(" ")[0] ?? "");
@@ -203,7 +213,6 @@ export function NavShell({ children }: { children: React.ReactNode }) {
   const email = useAuthStore((s) => s.user?.email ?? "");
   const initials = fullName ? fullName.slice(0, 1).toUpperCase() : "?";
 
-  const toggleCollapsed = () => setCollapsed((c) => !c);
   const navbarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
   const breadcrumbs = getBreadcrumbs(pathname);
 
