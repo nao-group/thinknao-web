@@ -14,12 +14,15 @@ import {
   UnstyledButton,
   rem,
 } from "@mantine/core";
+import { LatexText } from "@/components/latex-text";
 import {
+  IconAlertCircle,
   IconAlertTriangle,
   IconAtom,
   IconBook,
   IconChevronLeft,
   IconChevronRight,
+  IconCircleCheck,
   IconClock,
   IconFlask,
   IconMathFunction,
@@ -27,6 +30,7 @@ import {
   IconTrophy,
   IconX,
 } from "@tabler/icons-react";
+import { ReportModal } from "@/components/report-modal";
 import { LanguageToggle, type Lang } from "@/components/language-toggle";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
@@ -364,6 +368,7 @@ export default function MockExamPage() {
   const [timedOut, setTimedOut] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [result, setResult] = useState<ExamResult | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const answersRef = useRef(answers);
   answersRef.current = answers;
@@ -752,8 +757,31 @@ export default function MockExamPage() {
             {/* Question column */}
             <Stack style={{ flex: 1, minWidth: 0 }} gap="md">
               <Box p="xl" className="no-select" style={{ backgroundColor: "white", borderRadius: rem(14) }}>
+                <Group justify="flex-end" mb="sm">
+                  <Tooltip label="Report a problem" withArrow position="left">
+                    <UnstyledButton
+                      onClick={() => setReportOpen(true)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: rem(5),
+                        padding: `${rem(5)} ${rem(10)}`,
+                        borderRadius: rem(999),
+                        border: "1.5px solid #E2E8F0",
+                        backgroundColor: "white",
+                        color: MUTED,
+                        fontSize: rem(12),
+                        fontWeight: 500,
+                        transition: "all 150ms ease",
+                      }}
+                    >
+                      <IconAlertCircle size={13} stroke={2} />
+                      Report
+                    </UnstyledButton>
+                  </Tooltip>
+                </Group>
                 <Box p="md" mb="lg" style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}>
-                  <Text size="sm" c={INK} lh={1.7}>{qText}</Text>
+                  <Text size="md" c={INK} lh={1.7}><LatexText>{qText}</LatexText></Text>
                 </Box>
                 <Stack gap="sm">
                   {qOptions.map((opt) => {
@@ -773,7 +801,7 @@ export default function MockExamPage() {
                         <Box style={{ width: rem(32), height: rem(32), borderRadius: "50%", backgroundColor: chosen ? PRIMARY : SURFACE, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: rem(13), fontWeight: 700, color: chosen ? INK : MUTED }}>
                           {opt.key}
                         </Box>
-                        <Text size="sm" c={INK} fw={chosen ? 600 : 400}>{opt.text}</Text>
+                        <Text size="md" c={INK} fw={chosen ? 600 : 400}><LatexText>{opt.text}</LatexText></Text>
                       </Box>
                     );
                   })}
@@ -844,6 +872,8 @@ export default function MockExamPage() {
             </Box>
           </Group>
         </Box>
+
+        <ReportModal opened={reportOpen} onClose={() => setReportOpen(false)} />
 
         <Modal
           opened={submitOpen}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  Anchor,
   Avatar,
   Badge,
   Box,
@@ -16,6 +17,9 @@ import {
 } from "@mantine/core";
 import {
   IconBolt,
+  IconBrandInstagram,
+  IconBrandLinkedin,
+  IconBrandTiktok,
   IconCalendarEvent,
   IconLock,
   IconMapPin,
@@ -38,6 +42,10 @@ interface UserProfile {
   current_school: string | null;
   dream_university: string | null;
   target_major: string | null;
+  bio: string | null;
+  instagram: string | null;
+  tiktok: string | null;
+  linkedin: string | null;
   created_at: string;
 }
 
@@ -131,6 +139,74 @@ function SectionCard({ children }: { children: React.ReactNode }) {
     <Box p="xl" style={{ backgroundColor: "white", borderRadius: rem(14) }}>
       {children}
     </Box>
+  );
+}
+
+function ReadonlyBio({ value }: { value: string }) {
+  return (
+    <Box>
+      <Text size="xs" fw={600} c="dimmed" tt="uppercase" style={{ letterSpacing: "0.06em" }} mb={6}>
+        Bio
+      </Text>
+      <Box
+        px="sm"
+        py="xs"
+        style={{
+          backgroundColor: SURFACE,
+          borderRadius: rem(8),
+          minHeight: rem(72),
+        }}
+      >
+        <Text size="sm" c={value ? INK : "dimmed"} lh={1.6}>
+          {value || "No bio yet."}
+        </Text>
+      </Box>
+    </Box>
+  );
+}
+
+function SocialLink({
+  icon: Icon,
+  iconColor,
+  iconBg,
+  label,
+  handle,
+  baseUrl,
+}: {
+  icon: React.ElementType;
+  iconColor: string;
+  iconBg: string;
+  label: string;
+  handle: string | null;
+  baseUrl: string;
+}) {
+  return (
+    <Group gap={12} align="center">
+      <Box
+        style={{
+          width: rem(36),
+          height: rem(36),
+          borderRadius: rem(9),
+          backgroundColor: iconBg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <Icon size={18} stroke={1.5} color={iconColor} />
+      </Box>
+      <Box style={{ minWidth: 0 }}>
+        <Text size="xs" fw={600} c="dimmed">{label}</Text>
+        {handle ? (
+          <Anchor href={`${baseUrl}${handle}`} target="_blank" size="sm" fw={600} c={INK} underline="hover" truncate>
+            @{handle}
+          </Anchor>
+        ) : (
+          <Text size="sm" c="dimmed">Not set</Text>
+        )}
+      </Box>
+    </Group>
   );
 }
 
@@ -284,14 +360,18 @@ export default function ProfilePage() {
                 <Stack gap="md">
                   <Skeleton height={56} radius="sm" />
                   <Skeleton height={56} radius="sm" />
+                  <Skeleton height={80} radius="sm" />
                 </Stack>
               ) : (
-                <SimpleGrid cols={2} spacing="md">
-                  <ReadonlyField label="Full Name" value={profile?.full_name ?? ""} />
-                  <ReadonlyField label="Email" value={profile?.email ?? ""} />
-                  <ReadonlyField label="Current School" value={profile?.current_school ?? ""} />
-                  <ReadonlyField label="Province" value={profile?.province ?? ""} />
-                </SimpleGrid>
+                <Stack gap="md">
+                  <SimpleGrid cols={2} spacing="md">
+                    <ReadonlyField label="Full Name" value={profile?.full_name ?? ""} />
+                    <ReadonlyField label="Email" value={profile?.email ?? ""} />
+                    <ReadonlyField label="Current School" value={profile?.current_school ?? ""} />
+                    <ReadonlyField label="Province" value={profile?.province ?? ""} />
+                  </SimpleGrid>
+                  <ReadonlyBio value={profile?.bio ?? ""} />
+                </Stack>
               )}
             </SectionCard>
 
@@ -392,6 +472,50 @@ export default function ProfilePage() {
                       {profile?.target_major ?? "Not set"}
                     </Text>
                   </Box>
+                )}
+              </SectionCard>
+
+              {/* Social Links */}
+              <SectionCard>
+                <Group justify="space-between" mb="md">
+                  <Text fw={700} size="sm" c={INK}>Social Links</Text>
+                  <Box style={{ cursor: "pointer" }}>
+                    <IconPencil size={14} stroke={1.5} color="#667080" />
+                  </Box>
+                </Group>
+                {loading ? (
+                  <Stack gap="sm">
+                    <Skeleton height={36} radius="sm" />
+                    <Skeleton height={36} radius="sm" />
+                    <Skeleton height={36} radius="sm" />
+                  </Stack>
+                ) : (
+                  <Stack gap="sm">
+                    <SocialLink
+                      icon={IconBrandInstagram}
+                      iconColor="#E1306C"
+                      iconBg="#FFF0F5"
+                      label="Instagram"
+                      handle={profile?.instagram ?? null}
+                      baseUrl="https://instagram.com/"
+                    />
+                    <SocialLink
+                      icon={IconBrandTiktok}
+                      iconColor="#010101"
+                      iconBg="#F1F5F9"
+                      label="TikTok"
+                      handle={profile?.tiktok ?? null}
+                      baseUrl="https://tiktok.com/@"
+                    />
+                    <SocialLink
+                      icon={IconBrandLinkedin}
+                      iconColor="#0A66C2"
+                      iconBg="#EFF6FF"
+                      label="LinkedIn"
+                      handle={profile?.linkedin ?? null}
+                      baseUrl="https://linkedin.com/in/"
+                    />
+                  </Stack>
                 )}
               </SectionCard>
 

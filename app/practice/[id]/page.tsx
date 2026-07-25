@@ -15,6 +15,7 @@ import {
   rem,
 } from "@mantine/core";
 import {
+  IconAlertCircle,
   IconBookmark,
   IconBookmarkFilled,
   IconCheck,
@@ -28,6 +29,8 @@ import {
   IconNotes,
 } from "@tabler/icons-react";
 import { FloatingChatbot } from "@/components/floating-chatbot";
+import { LatexText } from "@/components/latex-text";
+import { ReportModal } from "@/components/report-modal";
 import { LanguageToggle, type Lang } from "@/components/language-toggle";
 
 import {
@@ -602,8 +605,8 @@ function OptionButton({
           </Text>
         )}
       </Box>
-      <Text size="sm" fw={500} c={textColor} style={{ flex: 1 }}>
-        {text}
+      <Text size="md" fw={500} c={textColor} style={{ flex: 1 }}>
+        <LatexText>{text}</LatexText>
       </Text>
       {rightBadge}
     </Box>
@@ -631,11 +634,11 @@ function ExplanationBox({
           Answer Key &amp; Explanation
         </Text>
       </Group>
-      <Text size="sm" fw={700} c={CORRECT_DARK} mb={rem(8)}>
+      <Text size="md" fw={700} c={CORRECT_DARK} mb={rem(8)}>
         Correct Answer: {explanation.correctStatement}
       </Text>
-      <Text size="sm" c={INK} mb={rem(8)}>
-        {explanation.intro}
+      <Text size="md" c={INK} mb={rem(8)}>
+        <LatexText>{explanation.intro}</LatexText>
       </Text>
       <Stack gap={rem(4)} mb={rem(12)}>
         {explanation.steps.map((step, i) => (
@@ -646,12 +649,12 @@ function ExplanationBox({
                 height: rem(6),
                 borderRadius: "50%",
                 backgroundColor: PRIMARY,
-                marginTop: rem(7),
+                marginTop: rem(9),
                 flexShrink: 0,
               }}
             />
-            <Text size="sm" c={INK}>
-              {step}
+            <Text size="md" c={INK}>
+              <LatexText>{step}</LatexText>
             </Text>
           </Group>
         ))}
@@ -663,8 +666,8 @@ function ExplanationBox({
           padding: `${rem(8)} ${rem(12)}`,
         }}
       >
-        <Text size="sm" fw={700} c={CORRECT_DARK}>
-          {explanation.conclusion}
+        <Text size="md" fw={700} c={CORRECT_DARK}>
+          <LatexText>{explanation.conclusion}</LatexText>
         </Text>
       </Box>
     </Box>
@@ -1076,6 +1079,7 @@ export default function PracticeDetailPage() {
   // Selected option for current question (before submission)
   const [pendingAnswer, setPendingAnswer] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>("en");
+  const [reportOpen, setReportOpen] = useState(false);
 
   // Timer — stops when finished
   useEffect(() => {
@@ -1239,6 +1243,18 @@ export default function PracticeDetailPage() {
                       )}
                     </UnstyledButton>
                   </Tooltip>
+                  <Tooltip label="Report a problem" withArrow>
+                    <UnstyledButton
+                      onClick={() => setReportOpen(true)}
+                      style={{
+                        width: rem(32), height: rem(32), borderRadius: rem(8),
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        backgroundColor: SURFACE,
+                      }}
+                    >
+                      <IconAlertCircle size={16} color={MUTED} stroke={1.5} />
+                    </UnstyledButton>
+                  </Tooltip>
                   <Group gap={rem(5)} style={{ flexShrink: 0 }}>
                     <IconClock size={15} color={MUTED} stroke={1.5} />
                     <Text size="sm" fw={600} c={MUTED} style={{ fontVariantNumeric: "tabular-nums" }}>
@@ -1254,8 +1270,8 @@ export default function PracticeDetailPage() {
                 p="md"
                 style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}
               >
-                <Text size="sm" c={INK} lh={1.7}>
-                  {lang === "zh" ? (q.zh?.text ?? q.text) : q.text}
+                <Text size="md" c={INK} lh={1.7}>
+                  <LatexText>{lang === "zh" ? (q.zh?.text ?? q.text) : q.text}</LatexText>
                 </Text>
               </Box>
 
@@ -1373,6 +1389,8 @@ export default function PracticeDetailPage() {
           </Box>
         </Group>
       </Box>
+
+      <ReportModal opened={reportOpen} onClose={() => setReportOpen(false)} />
 
       <FloatingChatbot
         questionContext={[

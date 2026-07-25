@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Badge,
   Box,
   Button,
+  Divider,
   Group,
+  Modal,
   Stack,
   Text,
   TextInput,
@@ -13,6 +14,7 @@ import {
   UnstyledButton,
   rem,
 } from "@mantine/core";
+import { LatexText } from "@/components/latex-text";
 import {
   IconArrowsShuffle,
   IconAtom,
@@ -193,13 +195,29 @@ function SubjectBadge({ subject }: { subject: Subject }) {
   );
 }
 
+// ── Shared Chinese header helper ──────────────────────────────────────────────
+
+function ChineseLabel({ zh, pinyin, term }: { zh?: string; pinyin?: string; term: string }) {
+  if (!zh) {
+    return <Text fw={700} size="lg" c={INK} style={{ lineHeight: 1.2 }}>{term}</Text>;
+  }
+  return (
+    <Box>
+      <Text fw={800} size="xl" c={INK} style={{ lineHeight: 1.1, letterSpacing: "-0.01em" }}>{zh}</Text>
+      {pinyin && <Text size="xs" c={PRIMARY} fw={600} style={{ letterSpacing: "0.03em" }}>{pinyin}</Text>}
+      <Text size="xs" c={MUTED} mt={1}>{term}</Text>
+    </Box>
+  );
+}
+
 // ── Grid cards ────────────────────────────────────────────────────────────────
 
-function WordCard({ entry }: { entry: WordEntry }) {
+function WordCard({ entry, onClick }: { entry: WordEntry; onClick: () => void }) {
   return (
     <Box
       p="md"
       className="hover-zoom"
+      onClick={onClick}
       style={{
         backgroundColor: "white",
         borderRadius: rem(14),
@@ -212,7 +230,7 @@ function WordCard({ entry }: { entry: WordEntry }) {
       }}
     >
       <Group justify="space-between" align="flex-start">
-        <Text fw={700} size="lg" c={INK} style={{ lineHeight: 1.2 }}>{entry.term}</Text>
+        <ChineseLabel zh={entry.zh} pinyin={entry.pinyin} term={entry.term} />
         <SubjectBadge subject={entry.subject} />
       </Group>
       <Text size="sm" c={MUTED} lh={1.55} style={{ flex: 1 }}>
@@ -229,12 +247,13 @@ function WordCard({ entry }: { entry: WordEntry }) {
   );
 }
 
-function FormulaCard({ entry }: { entry: FormulaEntry }) {
+function FormulaCard({ entry, onClick }: { entry: FormulaEntry; onClick: () => void }) {
   const meta = SUBJECT_META[entry.subject];
   return (
     <Box
       p="md"
       className="hover-zoom"
+      onClick={onClick}
       style={{
         backgroundColor: "white",
         borderRadius: rem(14),
@@ -247,7 +266,7 @@ function FormulaCard({ entry }: { entry: FormulaEntry }) {
       }}
     >
       <Group justify="space-between" align="flex-start">
-        <Text fw={700} size="sm" c={INK}>{entry.name}</Text>
+        <ChineseLabel zh={entry.zhName} pinyin={entry.pinyin} term={entry.name} />
         <SubjectBadge subject={entry.subject} />
       </Group>
       <Box
@@ -259,12 +278,7 @@ function FormulaCard({ entry }: { entry: FormulaEntry }) {
           borderLeft: `3px solid ${meta.iconColor}`,
         }}
       >
-        <Text
-          size="sm"
-          fw={700}
-          c={meta.iconColor}
-          style={{ fontFamily: "monospace", letterSpacing: "0.02em" }}
-        >
+        <Text size="sm" fw={700} c={meta.iconColor} style={{ fontFamily: "monospace", letterSpacing: "0.02em" }}>
           {entry.formula}
         </Text>
       </Box>
@@ -277,12 +291,13 @@ function FormulaCard({ entry }: { entry: FormulaEntry }) {
 
 // ── List rows ─────────────────────────────────────────────────────────────────
 
-function WordRow({ entry }: { entry: WordEntry }) {
+function WordRow({ entry, onClick }: { entry: WordEntry; onClick: () => void }) {
   return (
     <Box
       px="md"
       py="sm"
       className="hover-zoom"
+      onClick={onClick}
       style={{
         backgroundColor: "white",
         borderRadius: rem(10),
@@ -290,10 +305,19 @@ function WordRow({ entry }: { entry: WordEntry }) {
         display: "flex",
         alignItems: "center",
         gap: rem(16),
+        cursor: "pointer",
       }}
     >
-      <Box style={{ width: rem(120), flexShrink: 0 }}>
-        <Text size="sm" fw={700} c={INK}>{entry.term}</Text>
+      <Box style={{ width: rem(140), flexShrink: 0 }}>
+        {entry.zh ? (
+          <>
+            <Text size="md" fw={800} c={INK} style={{ lineHeight: 1.1 }}>{entry.zh}</Text>
+            {entry.pinyin && <Text size="xs" c={PRIMARY} fw={600}>{entry.pinyin}</Text>}
+            <Text size="xs" c={MUTED}>{entry.term}</Text>
+          </>
+        ) : (
+          <Text size="sm" fw={700} c={INK}>{entry.term}</Text>
+        )}
       </Box>
       <Box style={{ width: rem(110), flexShrink: 0 }}>
         <SubjectBadge subject={entry.subject} />
@@ -310,13 +334,14 @@ function WordRow({ entry }: { entry: WordEntry }) {
   );
 }
 
-function FormulaRow({ entry }: { entry: FormulaEntry }) {
+function FormulaRow({ entry, onClick }: { entry: FormulaEntry; onClick: () => void }) {
   const meta = SUBJECT_META[entry.subject];
   return (
     <Box
       px="md"
       py="sm"
       className="hover-zoom"
+      onClick={onClick}
       style={{
         backgroundColor: "white",
         borderRadius: rem(10),
@@ -324,31 +349,25 @@ function FormulaRow({ entry }: { entry: FormulaEntry }) {
         display: "flex",
         alignItems: "center",
         gap: rem(16),
+        cursor: "pointer",
       }}
     >
-      <Box style={{ width: rem(150), flexShrink: 0 }}>
-        <Text size="sm" fw={700} c={INK}>{entry.name}</Text>
+      <Box style={{ width: rem(160), flexShrink: 0 }}>
+        {entry.zhName ? (
+          <>
+            <Text size="md" fw={800} c={INK} style={{ lineHeight: 1.1 }}>{entry.zhName}</Text>
+            {entry.pinyin && <Text size="xs" c={PRIMARY} fw={600}>{entry.pinyin}</Text>}
+            <Text size="xs" c={MUTED}>{entry.name}</Text>
+          </>
+        ) : (
+          <Text size="sm" fw={700} c={INK}>{entry.name}</Text>
+        )}
       </Box>
       <Box style={{ width: rem(110), flexShrink: 0 }}>
         <SubjectBadge subject={entry.subject} />
       </Box>
-      <Box
-        px="xs"
-        py={3}
-        style={{
-          backgroundColor: meta.iconBg,
-          borderRadius: rem(6),
-          flexShrink: 0,
-          maxWidth: rem(240),
-        }}
-      >
-        <Text
-          size="xs"
-          fw={700}
-          c={meta.iconColor}
-          style={{ fontFamily: "monospace" }}
-          lineClamp={1}
-        >
+      <Box px="xs" py={3} style={{ backgroundColor: meta.iconBg, borderRadius: rem(6), flexShrink: 0, maxWidth: rem(240) }}>
+        <Text size="xs" fw={700} c={meta.iconColor} style={{ fontFamily: "monospace" }} lineClamp={1}>
           {entry.formula}
         </Text>
       </Box>
@@ -356,6 +375,150 @@ function FormulaRow({ entry }: { entry: FormulaEntry }) {
         {entry.description}
       </Text>
     </Box>
+  );
+}
+
+// ── Detail modals ─────────────────────────────────────────────────────────────
+
+function WordDetailModal({ entry, onClose }: { entry: WordEntry | null; onClose: () => void }) {
+  const meta = entry ? SUBJECT_META[entry.subject] : null;
+  return (
+    <Modal
+      opened={!!entry}
+      onClose={onClose}
+      radius="lg"
+      size="md"
+      overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
+      transitionProps={{ transition: "pop", duration: 200 }}
+      title={entry && meta ? <SubjectBadge subject={entry.subject} /> : null}
+    >
+      {entry && meta && (
+        <>
+          {/* Chinese headline */}
+          <Box mb="lg" style={{ textAlign: "center" }}>
+            {entry.zh && (
+              <Text fw={800} style={{ fontSize: rem(48), lineHeight: 1.1, color: INK, letterSpacing: "-0.02em" }}>
+                {entry.zh}
+              </Text>
+            )}
+            {entry.pinyin && (
+              <Text size="md" fw={600} c={PRIMARY} mt={4} style={{ letterSpacing: "0.04em" }}>
+                {entry.pinyin}
+              </Text>
+            )}
+            <Text size="md" fw={600} c={MUTED} mt={entry.zh ? 2 : 0}>
+              {entry.term}
+            </Text>
+          </Box>
+
+          <Divider mb="md" />
+
+          {/* Definition */}
+          <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }} mb={6}>
+            Definition
+          </Text>
+          <Text size="sm" c={INK} lh={1.7} mb="lg">
+            {entry.definition}
+          </Text>
+
+          {/* Example */}
+          {entry.example && (
+            <>
+              <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }} mb={6}>
+                Example
+              </Text>
+              <Box p="sm" style={{ backgroundColor: SURFACE, borderRadius: rem(10), borderLeft: `3px solid ${meta.iconColor}` }}>
+                <Text size="sm" c={INK} lh={1.6} style={{ fontStyle: "italic" }}>
+                  <LatexText>{entry.example}</LatexText>
+                </Text>
+              </Box>
+            </>
+          )}
+        </>
+      )}
+    </Modal>
+  );
+}
+
+function FormulaDetailModal({ entry, onClose }: { entry: FormulaEntry | null; onClose: () => void }) {
+  const meta = entry ? SUBJECT_META[entry.subject] : null;
+  return (
+    <Modal
+      opened={!!entry}
+      onClose={onClose}
+      radius="lg"
+      size="md"
+      overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
+      transitionProps={{ transition: "pop", duration: 200 }}
+      title={entry ? <SubjectBadge subject={entry.subject} /> : null}
+    >
+      {entry && meta && (
+        <>
+          {/* Chinese headline */}
+          <Box mb="lg" style={{ textAlign: "center" }}>
+            {entry.zhName && (
+              <Text fw={800} style={{ fontSize: rem(36), lineHeight: 1.1, color: INK, letterSpacing: "-0.02em" }}>
+                {entry.zhName}
+              </Text>
+            )}
+            {entry.pinyin && (
+              <Text size="md" fw={600} c={PRIMARY} mt={4} style={{ letterSpacing: "0.04em" }}>
+                {entry.pinyin}
+              </Text>
+            )}
+            <Text size="md" fw={600} c={MUTED} mt={entry.zhName ? 2 : 0}>
+              {entry.name}
+            </Text>
+          </Box>
+
+          {/* Formula block */}
+          <Box
+            px="lg"
+            py="md"
+            mb="lg"
+            style={{
+              backgroundColor: meta.iconBg,
+              borderRadius: rem(12),
+              borderLeft: `4px solid ${meta.iconColor}`,
+              textAlign: "center",
+            }}
+          >
+            <Text fw={800} style={{ fontFamily: "monospace", fontSize: rem(20), color: meta.iconColor, letterSpacing: "0.04em" }}>
+              <LatexText>{entry.formula}</LatexText>
+            </Text>
+          </Box>
+
+          <Divider mb="md" />
+
+          {/* Description */}
+          <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }} mb={6}>
+            Description
+          </Text>
+          <Text size="sm" c={INK} lh={1.7} mb={entry.variables ? "lg" : 0}>
+            {entry.description}
+          </Text>
+
+          {/* Variables */}
+          {entry.variables && entry.variables.length > 0 && (
+            <>
+              <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }} mb={8}>
+                Variables
+              </Text>
+              <Stack gap={6}>
+                {entry.variables.map((v) => (
+                  <Group key={v} gap={8} align="flex-start">
+                    <Box style={{ width: rem(5), height: rem(5), borderRadius: "50%", backgroundColor: meta.iconColor, marginTop: rem(7), flexShrink: 0 }} />
+                    <Text size="sm" c={INK} style={{ fontFamily: "monospace" }}>
+                      <LatexText>{v}</LatexText>
+                    </Text>
+                  </Group>
+                ))}
+              </Stack>
+            </>
+          )}
+        </>
+      )}
+    </Modal>
   );
 }
 
@@ -735,6 +898,8 @@ export default function ReferencesPage() {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [studyMode, setStudyMode] = useState(false);
   const [page, setPage] = useState(1);
+  const [selectedWord, setSelectedWord] = useState<WordEntry | null>(null);
+  const [selectedFormula, setSelectedFormula] = useState<FormulaEntry | null>(null);
 
   const filteredWords = useMemo(() =>
     WORDS.filter((w) =>
@@ -882,13 +1047,13 @@ export default function ReferencesPage() {
                   }}
                 >
                   {(pageSlice(filteredWords) as typeof filteredWords).map((w) => (
-                    <WordCard key={w.id} entry={w} />
+                    <WordCard key={w.id} entry={w} onClick={() => setSelectedWord(w)} />
                   ))}
                 </Box>
               ) : (
                 <Stack gap={8}>
                   {(pageSlice(filteredWords) as typeof filteredWords).map((w) => (
-                    <WordRow key={w.id} entry={w} />
+                    <WordRow key={w.id} entry={w} onClick={() => setSelectedWord(w)} />
                   ))}
                 </Stack>
               )
@@ -903,13 +1068,13 @@ export default function ReferencesPage() {
                 }}
               >
                 {(pageSlice(filteredFormulas) as typeof filteredFormulas).map((f) => (
-                  <FormulaCard key={f.id} entry={f} />
+                  <FormulaCard key={f.id} entry={f} onClick={() => setSelectedFormula(f)} />
                 ))}
               </Box>
             ) : (
               <Stack gap={8}>
                 {(pageSlice(filteredFormulas) as typeof filteredFormulas).map((f) => (
-                  <FormulaRow key={f.id} entry={f} />
+                  <FormulaRow key={f.id} entry={f} onClick={() => setSelectedFormula(f)} />
                 ))}
               </Stack>
             )}
@@ -918,6 +1083,10 @@ export default function ReferencesPage() {
           </Box>
         </Box>
       </Box>
+
+      {/* Detail modals */}
+      <WordDetailModal entry={selectedWord} onClose={() => setSelectedWord(null)} />
+      <FormulaDetailModal entry={selectedFormula} onClose={() => setSelectedFormula(null)} />
 
       {/* Flashcard study overlay */}
       {studyMode && flashcardItems.length > 0 && (

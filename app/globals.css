@@ -57,7 +57,6 @@
   opacity: 1;
 }
 
-.hover-zoom:hover svg,
-.nav-item:hover svg {
+.hover-zoom:hover svg {
   animation: icon-spin 400ms ease forwards;
 }

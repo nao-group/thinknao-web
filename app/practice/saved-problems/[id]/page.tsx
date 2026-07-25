@@ -12,7 +12,9 @@ import {
   UnstyledButton,
   rem,
 } from "@mantine/core";
+import { LatexText } from "@/components/latex-text";
 import {
+  IconAlertCircle,
   IconAtom,
   IconBook,
   IconBookmarkFilled,
@@ -26,6 +28,7 @@ import {
   IconMicroscope,
   IconNotes,
 } from "@tabler/icons-react";
+import { ReportModal } from "@/components/report-modal";
 import { SAVED_PROBLEMS, type SubjectKey, type Difficulty } from "../data";
 import { FloatingChatbot } from "@/components/floating-chatbot";
 import { LanguageToggle, type Lang } from "@/components/language-toggle";
@@ -124,8 +127,8 @@ function OptionRow({
           optKey
         )}
       </Box>
-      <Text size="sm" c={textColor} fw={isCorrect || isSelected ? 600 : 400} style={{ flex: 1 }}>
-        {text}
+      <Text size="md" c={textColor} fw={isCorrect || isSelected ? 600 : 400} style={{ flex: 1 }}>
+        <LatexText>{text}</LatexText>
       </Text>
       {rightBadge}
     </Box>
@@ -146,22 +149,22 @@ function ExplanationBox({ explanation }: { explanation: (typeof SAVED_PROBLEMS)[
         <IconNotes size={16} stroke={1.5} color={PRIMARY} />
         <Text size="sm" fw={700} c={PRIMARY}>Answer Key &amp; Explanation</Text>
       </Group>
-      <Text size="sm" fw={700} c={CORRECT_DARK} mb={8}>
+      <Text size="md" fw={700} c={CORRECT_DARK} mb={8}>
         Correct Answer: {explanation.correctStatement}
       </Text>
-      <Text size="sm" c={INK} mb={10}>{explanation.intro}</Text>
+      <Text size="md" c={INK} mb={10}><LatexText>{explanation.intro}</LatexText></Text>
       <Stack gap={4} mb={12}>
         {explanation.steps.map((step, i) => (
           <Group key={i} gap={8} align="flex-start">
             <Box
-              style={{ width: rem(6), height: rem(6), borderRadius: "50%", backgroundColor: PRIMARY, flexShrink: 0, marginTop: rem(7) }}
+              style={{ width: rem(6), height: rem(6), borderRadius: "50%", backgroundColor: PRIMARY, flexShrink: 0, marginTop: rem(9) }}
             />
-            <Text size="sm" c={INK}>{step}</Text>
+            <Text size="md" c={INK}><LatexText>{step}</LatexText></Text>
           </Group>
         ))}
       </Stack>
       <Box p="sm" style={{ backgroundColor: "#F5E6CC", borderRadius: rem(8) }}>
-        <Text size="sm" fw={700} c={CORRECT_DARK}>{explanation.conclusion}</Text>
+        <Text size="md" fw={700} c={CORRECT_DARK}><LatexText>{explanation.conclusion}</LatexText></Text>
       </Box>
     </Box>
   );
@@ -181,6 +184,7 @@ export default function SavedProblemDetailPage() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [lang, setLang] = useState<Lang>("en");
+  const [reportOpen, setReportOpen] = useState(false);
 
   if (!problem) {
     return (
@@ -236,13 +240,25 @@ export default function SavedProblemDetailPage() {
                     {problem.difficulty}
                   </Badge>
                   <IconBookmarkFilled size={16} color={PRIMARY} />
+                  <Tooltip label="Report a problem" withArrow>
+                    <UnstyledButton
+                      onClick={() => setReportOpen(true)}
+                      style={{
+                        width: rem(28), height: rem(28), borderRadius: rem(7),
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        backgroundColor: SURFACE,
+                      }}
+                    >
+                      <IconAlertCircle size={15} color={MUTED} stroke={1.5} />
+                    </UnstyledButton>
+                  </Tooltip>
                 </Group>
               </Group>
 
               {/* Question text */}
               <Box p="md" mb="lg" style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}>
-                <Text size="sm" c={INK} lh={1.7}>
-                  {lang === "zh" ? (problem.zh?.question ?? problem.question) : problem.question}
+                <Text size="md" c={INK} lh={1.7}>
+                  <LatexText>{lang === "zh" ? (problem.zh?.question ?? problem.question) : problem.question}</LatexText>
                 </Text>
               </Box>
 
@@ -449,6 +465,8 @@ export default function SavedProblemDetailPage() {
           </Box>
         </Group>
       </Box>
+
+      <ReportModal opened={reportOpen} onClose={() => setReportOpen(false)} />
 
       <FloatingChatbot
         questionContext={[

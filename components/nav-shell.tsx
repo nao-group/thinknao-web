@@ -44,8 +44,8 @@ const NAV_SECTIONS = [
   {
     label: "LEARNING",
     items: [
-      { label: "Practice", icon: IconPencil, href: "/practice" },
       { label: "References", icon: IconBook, href: "/references" },
+      { label: "Practice", icon: IconPencil, href: "/practice" },
       { label: "Mock Exam", icon: IconAlignJustified, href: "/mock-exam" },
     ],
   },
@@ -96,7 +96,6 @@ function NavItem({
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="nav-item"
       style={{
         display: "flex",
         alignItems: "center",
@@ -112,7 +111,11 @@ function NavItem({
         transition: "background-color 150ms ease, color 150ms ease",
       }}
     >
-      <Icon size={17} stroke={1.5} />
+      <Icon
+        size={17}
+        stroke={1.5}
+        style={hovered ? { animation: "icon-spin 400ms ease forwards" } : undefined}
+      />
       {!collapsed && item.label}
     </UnstyledButton>
   );
@@ -128,6 +131,25 @@ function NavItem({
   return button;
 }
 
+
+const GREETING_PREFIX: Record<string, string> = {
+  "/dashboard":           "Welcome back",
+  "/practice":            "Let's practice",
+  "/references":          "Study time",
+  "/mock-exam":           "Test yourself",
+  "/leaderboard":         "How do you rank",
+  "/dashboard/community": "Connect & share",
+  "/profile":             "Your profile",
+};
+
+function getGreeting(pathname: string): string {
+  if (GREETING_PREFIX[pathname]) return GREETING_PREFIX[pathname];
+  // Fall back to the closest parent route (longest prefix match)
+  const match = Object.keys(GREETING_PREFIX)
+    .filter((k) => pathname.startsWith(k + "/"))
+    .sort((a, b) => b.length - a.length)[0];
+  return match ? GREETING_PREFIX[match] : "Welcome back";
+}
 
 const PAGE_LABELS: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -177,6 +199,9 @@ export function NavShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const firstName = useAuthStore((s) => s.user?.full_name?.split(" ")[0] ?? "");
+  const fullName = useAuthStore((s) => s.user?.full_name ?? "");
+  const email = useAuthStore((s) => s.user?.email ?? "");
+  const initials = fullName ? fullName.slice(0, 1).toUpperCase() : "?";
 
   const toggleCollapsed = () => setCollapsed((c) => !c);
   const navbarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
@@ -243,7 +268,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
           <Group flex={1} px={{ base: "md", sm: "xl" }} justify="space-between" align="center" wrap="nowrap">
             <Box visibleFrom="sm">
               <Text fw={700} size="xl" c={INK} lh={1.5}>
-                Welcome back, {firstName}!
+                {getGreeting(pathname)}, {firstName}!
               </Text>
               {breadcrumbs ? (
                 <Group gap={4} align="center">
@@ -331,7 +356,56 @@ export function NavShell({ children }: { children: React.ReactNode }) {
           </Stack>
         </ScrollArea>
 
-        {/* Unlock card */}
+        {/* Profile button */}
+        <Box
+          px={collapsed ? rem(8) : "xs"}
+          py="xs"
+          style={{ borderTop: "1px solid #E2E8F0" }}
+        >
+          <UnstyledButton
+            onClick={() => router.push("/profile")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: collapsed ? "center" : "flex-start",
+              gap: rem(10),
+              padding: collapsed ? `${rem(9)} 0` : `${rem(9)} ${rem(12)}`,
+              borderRadius: rem(10),
+              width: "100%",
+              transition: "background-color 150ms ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(245, 158, 11, 0.08)")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+          >
+            <Box
+              style={{
+                width: rem(28),
+                height: rem(28),
+                borderRadius: "50%",
+                backgroundColor: INK,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Text size="xs" fw={700} c="white" style={{ lineHeight: 1 }}>
+                {initials}
+              </Text>
+            </Box>
+            {!collapsed && (
+              <Box style={{ minWidth: 0 }}>
+                <Text size="sm" fw={600} c={INK} style={{ lineHeight: 1.2 }} truncate>
+                  {fullName || "Profile"}
+                </Text>
+                <Text size="xs" c={MUTED} truncate>
+                  {email}
+                </Text>
+              </Box>
+            )}
+          </UnstyledButton>
+        </Box>
+
         {/* Collapse toggle — desktop only */}
         <Box
           visibleFrom="sm"
