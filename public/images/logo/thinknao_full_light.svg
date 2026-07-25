@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="210.42082mm"
+   height="38.78331mm"
+   viewBox="0 0 210.42082 38.78331"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.4 (dcaf3e7, 2026-05-05)"
+   sodipodi:docname="thinknao_full_light.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="1.1114464"
+     inkscape:cx="485.40351"
+     inkscape:cy="66.130043"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <inkscape:page
+       x="0"
+       y="0"
+       width="210.42081"
+       height="38.78331"
+       id="page1"
+       margin="0"
+       bleed="0" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       style="fill:#d4a017;fill-opacity:1;stroke:#d4a017;stroke-width:0.292345;stroke-opacity:1"
+       d="M 109.50835,8.6800618 V 37.767055 h 5.61622 V 17.481604 l 17.68691,20.285451 h 5.44856 V 34.833213 L 115.12457,8.6800618 Z"
+       id="path1" />
+    <path
+       style="fill:#d4a017;fill-opacity:1;stroke:#d4a017;stroke-width:0.292345;stroke-opacity:1"
+       d="m 132.68575,8.7638872 h 5.53238 V 31.186854 l -5.61621,-5.867694 z"
+       id="path2" />
+    <path
+       style="fill:#d4a017;fill-opacity:1;stroke:#d4a017;stroke-width:0.292345;stroke-opacity:1"
+       d="m 144.88216,37.557494 h 6.20299 l 10.26847,-21.584728 10.31036,21.668552 6.32874,0.04189 -13.831,-28.9612573 -5.49047,0.083814 z"
+       id="path3" />
+    <path
+       style="fill:#d4a017;fill-opacity:1;stroke:#d4a017;stroke-width:0.292345;stroke-opacity:1"
+       d="m 154.76104,1.0285608 h 3.34891 l 3.3341,3.1414458 3.28962,-3.23035576 3.63045,0.11854496 -4.62325,4.8899929 h -4.4899 z"
+       id="path4" />
+    <path
+       id="path5"
+       style="fill:#d4a017;fill-opacity:1;stroke:#d4a017;stroke-width:0.309619;stroke-opacity:1"
+       d="M 193.9612,8.402379 A 14.870152,14.870152 0 0 0 179.091,23.272567 14.870152,14.870152 0 0 0 193.9612,38.142756 14.870152,14.870152 0 0 0 208.83138,23.272567 14.870152,14.870152 0 0 0 193.9612,8.402379 Z m 0,4.923657 A 10.197925,10.07219 0 0 1 204.15891,23.398384 10.197925,10.07219 0 0 1 193.9612,33.470743 10.197925,10.07219 0 0 1 183.76348,23.398384 10.197925,10.07219 0 0 1 193.9612,13.326036 Z" />
+    <circle
+       style="fill:#d4a017;fill-opacity:1;stroke:#d4a017;stroke-width:0.316309;stroke-opacity:1"
+       id="path7"
+       cx="193.96109"
+       cy="23.475025"
+       r="3.7181959" />
+    <text
+       xml:space="preserve"
+       style="font-size:40.0313px;font-family:sans-serif;-inkscape-font-specification:sans-serif;writing-mode:lr-tb;direction:ltr;fill:#d4a017;fill-opacity:1;stroke:#d4a017;stroke-width:1.59181;stroke-dasharray:none;stroke-opacity:1"
+       x="0.19803789"
+       y="36.435562"
+       id="text7"><tspan
+         sodipodi:role="line"
+         id="tspan7"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:40.0313px;font-family:Poppins;-inkscape-font-specification:Poppins;fill:#f3f5f7;fill-opacity:1;stroke:#f3f5f7;stroke-width:1.59181;stroke-dasharray:none;stroke-opacity:1"
+         x="0.19803789"
+         y="36.435562">Think</tspan></text>
+  </g>
+</svg>

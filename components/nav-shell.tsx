@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   AppShell,
@@ -58,22 +58,24 @@ const NAV_SECTIONS = [
   },
 ];
 
-function LogoMark() {
+function LogoMark({ collapsed }: { collapsed?: boolean }) {
+  if (collapsed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src="/images/logo/thinknao_o.svg"
+        alt="ThinkNao"
+        style={{ width: rem(36), height: rem(36), objectFit: "contain", flexShrink: 0 }}
+      />
+    );
+  }
   return (
-    <Box
-      style={{
-        width: rem(36),
-        height: rem(36),
-        borderRadius: rem(8),
-        backgroundColor: INK,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-      }}
-    >
-      <IconLayoutGrid size={20} stroke={1.5} color="white" />
-    </Box>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/images/logo/thinknao_full.svg"
+      alt="ThinkNao"
+      style={{ height: rem(32), objectFit: "contain", flexShrink: 0 }}
+    />
   );
 }
 
@@ -195,10 +197,11 @@ function getBreadcrumbs(pathname: string) {
 
 export function NavShell({ children }: { children: React.ReactNode }) {
   const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("nav-collapsed") === "true";
-  });
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    setCollapsed(localStorage.getItem("nav-collapsed") === "true");
+  }, []);
 
   const toggleCollapsed = () =>
     setCollapsed((c) => {
@@ -252,25 +255,13 @@ export function NavShell({ children }: { children: React.ReactNode }) {
               cursor: "pointer",
             }}
           >
-            <Group gap={10} wrap="nowrap">
-              <LogoMark />
-              {!collapsed && (
-                <Text fw={700} size="md" c={INK} lh={1} style={{ whiteSpace: "nowrap" }}>
-                  ThinkNao
-                </Text>
-              )}
-            </Group>
+            <LogoMark collapsed={collapsed} />
           </UnstyledButton>
 
           {/* Mobile burger + logo */}
           <Group hiddenFrom="sm" px="md" gap="sm" align="center">
             <Burger opened={mobileOpened} onClick={toggleMobile} size="sm" color={INK} />
-            <Group gap={10} wrap="nowrap">
-              <LogoMark />
-              <Text fw={700} size="md" c={INK} lh={1}>
-                ThinkNao
-              </Text>
-            </Group>
+            <LogoMark collapsed={false} />
           </Group>
 
           {/* Welcome + actions */}

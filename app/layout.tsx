@@ -18,6 +18,9 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "ThinkNao",
   description: "Study smarter for your CSCA exam.",
+  icons: {
+    icon: "/images/logo/thinknao_o.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

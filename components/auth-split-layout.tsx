@@ -1,29 +1,15 @@
 import { Box, Group, Text, rem } from "@mantine/core";
-import { IconLayoutGrid } from "@tabler/icons-react";
 
 const FEATURES = ["Practice & Mock Exams", "AI Assistant", "Flashcards"];
 
 function ThinkNaoLogo() {
   return (
-    <Group gap={10} wrap="nowrap">
-      <Box
-        style={{
-          width: rem(36),
-          height: rem(36),
-          borderRadius: rem(8),
-          backgroundColor: "white",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
-        <IconLayoutGrid size={20} stroke={1.5} color="#0F172A" />
-      </Box>
-      <Text fw={700} size="md" c="white" lh={1}>
-        ThinkNao
-      </Text>
-    </Group>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/images/logo/thinknao_full_light.svg"
+      alt="ThinkNao"
+      style={{ height: rem(36), objectFit: "contain" }}
+    />
   );
 }
 
@@ -62,7 +48,9 @@ export function AuthSplitLayout({ children }: { children: React.ReactNode }) {
           }}
         />
 
-        <ThinkNaoLogo />
+        <Box style={{ alignSelf: "flex-start" }}>
+          <ThinkNaoLogo />
+        </Box>
 
         <Box>
           <Text
