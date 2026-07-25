@@ -18,7 +18,6 @@ import {
   IconFlask,
   IconMathFunction,
   IconAtom,
-  IconStar,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { AnnouncementCarousel } from "@/components/announcement-carousel";
@@ -276,40 +275,49 @@ function LearningActivity() {
   );
 }
 
-function UnlockCard() {
+function SubscriptionCard() {
   return (
-    <Box p="md" style={{ borderRadius: rem(14), backgroundColor: INK }}>
-      <Box
-        mb={10}
-        style={{
-          width: rem(32),
-          height: rem(32),
-          borderRadius: rem(8),
-          backgroundColor: "rgba(255,255,255,0.12)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <IconStar size={16} stroke={1.5} color="white" />
-      </Box>
-      <Text fw={700} size="sm" c="white" mb={4}>
-        Unlock Full Access
-      </Text>
-      <Text size="xs" c="rgba(255,255,255,0.55)" mb={12} lh={1.5}>
-        Get unlimited practice sets & mock exams for your CSCA prep.
-      </Text>
+    <Box p="lg" style={{ backgroundColor: INK, borderRadius: rem(14) }}>
+      <Group justify="space-between" mb="md">
+        <Text fw={700} size="sm" c="white">Subscription</Text>
+        <Box
+          px={8}
+          py={2}
+          style={{
+            backgroundColor: PRIMARY,
+            borderRadius: rem(4),
+            fontSize: rem(11),
+            fontWeight: 700,
+            color: "white",
+            letterSpacing: "0.04em",
+          }}
+        >
+          PRO
+        </Box>
+      </Group>
+      <Stack gap={8} mb="md">
+        <Group justify="space-between">
+          <Text size="xs" c="rgba(255,255,255,0.5)">Status</Text>
+          <Group gap={5}>
+            <Box style={{ width: rem(7), height: rem(7), borderRadius: "50%", backgroundColor: "#22C55E" }} />
+            <Text size="xs" fw={600} c="#22C55E">Active</Text>
+          </Group>
+        </Group>
+        <Group justify="space-between">
+          <Text size="xs" c="rgba(255,255,255,0.5)">Expires</Text>
+          <Text size="xs" fw={600} c="white">Aug 13, 2026</Text>
+        </Group>
+        <Group justify="space-between">
+          <Text size="xs" c="rgba(255,255,255,0.5)">Days remaining</Text>
+          <Text size="xs" fw={700} c={PRIMARY}>23 days</Text>
+        </Group>
+      </Stack>
       <Button
         fullWidth
-        size="xs"
-        style={{
-          backgroundColor: "rgba(255,255,255,0.15)",
-          color: "white",
-          fontWeight: 600,
-          borderRadius: rem(8),
-        }}
+        size="sm"
+        style={{ backgroundColor: PRIMARY, color: "white", fontWeight: 600, borderRadius: rem(8) }}
       >
-        Subscribe Now
+        Manage Subscription
       </Button>
     </Box>
   );
@@ -371,7 +379,7 @@ export default function DashboardPage() {
           <Box visibleFrom="lg" style={{ width: rem(280), flexShrink: 0 }}>
             <Stack gap="md">
               <LearningActivity />
-              <UnlockCard />
+              <SubscriptionCard />
             </Stack>
           </Box>
         </Group>
