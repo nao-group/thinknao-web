@@ -60,3 +60,21 @@
 .hover-zoom:hover svg {
   animation: icon-spin 400ms ease forwards;
 }
+
+/* ── Button elevation on hover ───────────────────────────────────────────────── */
+
+button.mantine-Button-root:not([data-disabled]):not(:disabled) {
+  transition: transform 150ms ease, box-shadow 150ms ease !important;
+  will-change: transform;
+}
+
+button.mantine-Button-root:not([data-disabled]):not(:disabled):hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+button.mantine-Button-root:not([data-disabled]):not(:disabled):active {
+  transform: translateY(1px) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+  transition-duration: 60ms !important;
+}

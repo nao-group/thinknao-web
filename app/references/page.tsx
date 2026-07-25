@@ -102,6 +102,40 @@ function TabBar({
   );
 }
 
+function SubjectChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <UnstyledButton
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: `${rem(5)} ${rem(13)}`,
+        borderRadius: rem(999),
+        backgroundColor: active ? INK : hovered ? "#F8FAFC" : "white",
+        color: active ? "white" : hovered ? INK : MUTED,
+        border: `1.5px solid ${active ? INK : hovered ? "#94A3B8" : "#E2E8F0"}`,
+        fontSize: rem(13),
+        fontWeight: active ? 600 : hovered ? 500 : 400,
+        whiteSpace: "nowrap",
+        transform: hovered && !active ? "translateY(-1px)" : "translateY(0)",
+        boxShadow: hovered && !active ? "0 4px 12px rgba(0,0,0,0.08)" : "none",
+        transition: "all 150ms ease",
+      }}
+    >
+      {label}
+    </UnstyledButton>
+  );
+}
+
 function SubjectChips({
   value,
   onChange,
@@ -111,28 +145,9 @@ function SubjectChips({
 }) {
   return (
     <Group gap={6} wrap="nowrap">
-      {SUBJECTS.map((s) => {
-        const active = value === s;
-        return (
-          <UnstyledButton
-            key={s}
-            onClick={() => onChange(s)}
-            style={{
-              padding: `${rem(5)} ${rem(13)}`,
-              borderRadius: rem(999),
-              backgroundColor: active ? INK : "white",
-              color: active ? "white" : MUTED,
-              border: `1.5px solid ${active ? INK : "#E2E8F0"}`,
-              fontSize: rem(13),
-              fontWeight: active ? 600 : 400,
-              whiteSpace: "nowrap",
-              transition: "all 150ms ease",
-            }}
-          >
-            {s}
-          </UnstyledButton>
-        );
-      })}
+      {SUBJECTS.map((s) => (
+        <SubjectChip key={s} label={s} active={value === s} onClick={() => onChange(s)} />
+      ))}
     </Group>
   );
 }

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import {
   Box,
   Button,
@@ -6,6 +9,7 @@ import {
   SimpleGrid,
   Stack,
   Text,
+  Tooltip,
   rem,
 } from "@mantine/core";
 import {
@@ -16,6 +20,7 @@ import {
   IconAtom,
   IconStar,
 } from "@tabler/icons-react";
+import Link from "next/link";
 import { AnnouncementCarousel } from "@/components/announcement-carousel";
 
 import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA } from "@/constants/colors";
@@ -185,16 +190,17 @@ function InProgressItem({ label, done, total, pct, color }: (typeof IN_PROGRESS)
 }
 
 const WEEK = [
-  { day: "M", pct: 18 },
-  { day: "T", pct: 72 },
-  { day: "W", pct: 58 },
-  { day: "T", pct: 48 },
-  { day: "F", pct: 65 },
-  { day: "S", pct: 12 },
-  { day: "S", pct: 80, current: true },
+  { day: "Mon", pct: 18, xp: 45 },
+  { day: "Tue", pct: 72, xp: 180 },
+  { day: "Wed", pct: 58, xp: 145 },
+  { day: "Thu", pct: 48, xp: 120 },
+  { day: "Fri", pct: 65, xp: 162 },
+  { day: "Sat", pct: 12, xp: 30 },
+  { day: "Sun", pct: 80, xp: 200, current: true },
 ];
 
 function LearningActivity() {
+  const [hoveredBar, setHoveredBar] = useState<number | null>(null);
   return (
     <Box
       p="lg"
@@ -216,7 +222,7 @@ function LearningActivity() {
         {[
           { value: "7", label: "Day Streak", color: PRIMARY },
           { value: "1", label: "Rank", color: INK },
-          { value: "100", label: "Total XP", color: INK },
+          { value: "100", label: "Monthly XP", color: INK },
         ].map(({ value, label, color }) => (
           <Box key={label} ta="center">
             <Text fw={800} style={{ fontSize: rem(22), color }}>
@@ -233,29 +239,39 @@ function LearningActivity() {
       <Text size="xs" c="dimmed" mb={12}>
         This week
       </Text>
-      <Group align="flex-end" justify="space-between" style={{ height: rem(80) }}>
-        {WEEK.map(({ day, pct, current }, i) => (
-          <Stack key={i} align="center" gap={4} style={{ flex: 1 }}>
-            <Box
-              style={{
-                width: "100%",
-                maxWidth: rem(28),
-                height: rem(Math.max(4, (pct / 100) * 64)),
-                borderRadius: rem(4),
-                backgroundColor: current ? INK : "#E2E8F0",
-                transition: "height 300ms ease",
-              }}
-            />
-            <Text
-              size="xs"
-              fw={current ? 700 : 400}
-              c={current ? INK : "dimmed"}
-            >
-              {day}
-            </Text>
-          </Stack>
-        ))}
-      </Group>
+      <Box style={{ overflowX: "auto", marginInline: rem(-4) }}>
+        <Group align="flex-end" justify="space-between" wrap="nowrap" style={{ height: rem(80), minWidth: rem(200), paddingInline: rem(2), gap: rem(6) }}>
+          {WEEK.map(({ day, pct, xp, current }, i) => {
+            const isHovered = hoveredBar === i;
+            return (
+              <Tooltip key={i} label={`${day}: ${xp} XP`} withArrow position="top" fz="xs">
+                <Stack
+                  align="center"
+                  gap={2}
+                  style={{ flex: 1, minWidth: rem(24), cursor: "default" }}
+                  onMouseEnter={() => setHoveredBar(i)}
+                  onMouseLeave={() => setHoveredBar(null)}
+                >
+                  <Box
+                    style={{
+                      width: rem(20),
+                      height: rem(Math.max(4, (pct / 100) * 64)),
+                      borderRadius: rem(4),
+                      backgroundColor: isHovered ? (current ? "#374151" : "#94A3B8") : current ? INK : "#E2E8F0",
+                      transform: isHovered ? "scaleY(1.12) scaleX(1.08)" : "scaleY(1) scaleX(1)",
+                      transformOrigin: "bottom",
+                      transition: "transform 150ms ease, background-color 150ms ease",
+                    }}
+                  />
+                  <Text size="xs" fw={current || isHovered ? 700 : 400} c={current ? INK : isHovered ? "#475569" : "dimmed"}>
+                    {day}
+                  </Text>
+                </Stack>
+              </Tooltip>
+            );
+          })}
+        </Group>
+      </Box>
     </Box>
   );
 }
@@ -322,12 +338,9 @@ export default function DashboardPage() {
                 <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed">
                   Your Last Practice Sets
                 </Text>
-                <Group
-                  gap={4}
-                  style={{ cursor: "pointer", color: PRIMARY, fontWeight: 600, fontSize: rem(13) }}
-                >
+                <Link href="/practice" style={{ display: "flex", alignItems: "center", gap: rem(4), color: PRIMARY, fontWeight: 600, fontSize: rem(13), textDecoration: "none" }}>
                   View all <IconChevronRight size={14} />
-                </Group>
+                </Link>
               </Group>
               <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
                 {PROBLEM_SETS.map((ps) => (
@@ -342,12 +355,9 @@ export default function DashboardPage() {
                 <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed">
                   In Progress
                 </Text>
-                <Group
-                  gap={4}
-                  style={{ cursor: "pointer", color: PRIMARY, fontWeight: 600, fontSize: rem(13) }}
-                >
+                <Link href="/practice" style={{ display: "flex", alignItems: "center", gap: rem(4), color: PRIMARY, fontWeight: 600, fontSize: rem(13), textDecoration: "none" }}>
                   View all <IconChevronRight size={14} />
-                </Group>
+                </Link>
               </Group>
               <Stack gap="sm">
                 {IN_PROGRESS.map((item) => (
