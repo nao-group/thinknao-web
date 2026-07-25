@@ -9,6 +9,7 @@ import {
   Group,
   Stack,
   Text,
+  Tooltip,
   UnstyledButton,
   rem,
 } from "@mantine/core";
