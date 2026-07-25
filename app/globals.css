@@ -26,12 +26,38 @@
   -webkit-user-select: none;
 }
 
+@keyframes icon-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 .hover-zoom {
+  position: relative;
   transition: transform 200ms ease, box-shadow 200ms ease;
   cursor: pointer;
 }
 
+.hover-zoom::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: rgba(245, 158, 11, 0.07);
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+
 .hover-zoom:hover {
   transform: scale(1.02);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.18), 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.hover-zoom:hover::before {
+  opacity: 1;
+}
+
+.hover-zoom:hover svg,
+.nav-item:hover svg {
+  animation: icon-spin 400ms ease forwards;
 }

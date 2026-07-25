@@ -49,6 +49,14 @@ type SubjectKey = (typeof SUBJECTS)[number]["key"];
 
 const QUESTION_COUNTS = [10, 20, 40, "Custom"] as const;
 
+const SUBJECT_MATERIALS: Record<SubjectKey, string[]> = {
+  lac:     ["Reading Comprehension", "Analytical Writing", "Vocabulary", "Grammar"],
+  sc:      ["Technical Reading", "Data Interpretation", "Technical Vocabulary", "Procedure Description"],
+  math:    ["Elementary Functions", "Sequences", "Functions", "Calculus", "Analytic Geometry", "Vectors", "Complex Numbers", "Solid Geometry", "Space Coordinate System", "Inequalities", "Sets", "Probability and Statistics"],
+  physics: ["Kinematics", "Dynamics", "Work and Energy", "Momentum", "Electrostatics", "Electric Circuits", "Magnetic Fields", "Mechanical Vibrations", "Wave Properties", "Optics", "Molecular Kinetic Theory", "Temperature and Heat", "Gas Laws", "Laws of Thermodynamics", "Atomic Structure", "Nuclear Physics"],
+  chem:    ["Mole Calculation", "Matter and Classification of Substances", "Atomic Structure and Periodic Table", "Chemical Bonding and Intermolecular Forces", "Chemical Nomenclature and Equation Writing", "Redox Reactions", "Ionic Reactions and Tests", "Chemical Reaction Rate and Equilibrium", "Electrolyte Solution Theory", "Solution Concentration and pH", "Ideal Gas Law", "Inorganic Properties", "Basic Organic Chemistry", "Chemical Experiment and Application", "Industrial Chemistry Process"],
+};
+
 const PAGE_SIZE = 3;
 
 const PRACTICE_SETS_IN_PROGRESS = [
@@ -240,6 +248,7 @@ function SubjectCard({
   return (
     <UnstyledButton
       onClick={onSelect}
+      className="hover-zoom"
       style={{
         width: "100%",
         height: "100%",
@@ -305,6 +314,36 @@ function QuestionCountPill({
       }}
     >
       {value}
+    </UnstyledButton>
+  );
+}
+
+function MaterialPill({
+  label,
+  selected,
+  onToggle,
+}: {
+  label: string;
+  selected: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <UnstyledButton
+      onClick={onToggle}
+      style={{
+        padding: `${rem(6)} ${rem(12)}`,
+        borderRadius: rem(999),
+        backgroundColor: selected ? INK : "white",
+        border: `1.5px solid ${selected ? INK : "#CBD5E1"}`,
+        fontSize: rem(13),
+        fontWeight: selected ? 600 : 400,
+        color: selected ? "white" : INK,
+        transition: "all 150ms ease",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
     </UnstyledButton>
   );
 }
@@ -499,9 +538,20 @@ function SubjectScoreBar({ label, pct, color, progressColor }: (typeof SUBJECT_S
 export default function PracticePage() {
   const router = useRouter();
   const [selectedSubject, setSelectedSubject] = useState<SubjectKey>("math");
-  const [selectedCount, setSelectedCount] = useState<number | string>(20);
-  const [customCount, setCustomCount] = useState<number | string>("");
   const [activeTab, setActiveTab] = useState<"in-progress" | "completed">("in-progress");
+
+  // Generate modal state
+  const [generateOpen, setGenerateOpen] = useState(false);
+  const [modalMaterial, setModalMaterial] = useState<string | null>(null);
+  const [modalCount, setModalCount] = useState<number | string>(20);
+  const [modalCustomCount, setModalCustomCount] = useState<number | string>("");
+
+  function openGenerateModal() {
+    setModalMaterial(null);
+    setModalCount(20);
+    setModalCustomCount("");
+    setGenerateOpen(true);
+  }
   const [practicePage, setPracticePage] = useState(0);
 
   const [searchOpen, setSearchOpen] = useState(false);
@@ -591,7 +641,7 @@ export default function PracticePage() {
               </Text>
               <Box
                 mb="lg"
-                style={{ display: "flex", gap: rem(12), overflowX: "auto", paddingBottom: rem(4) }}
+                style={{ display: "flex", gap: rem(12), overflowX: "auto", paddingBottom: rem(4), paddingTop: rem(4), paddingLeft: rem(4), paddingRight: rem(4) }}
               >
                 {SUBJECTS.map((s) => (
                   <Box key={s.key} style={{ width: rem(150), flex: "0 0 auto", alignSelf: "stretch" }}>
@@ -604,48 +654,14 @@ export default function PracticePage() {
                 ))}
               </Box>
 
-              {/* Question count + generate */}
-              <Group justify="space-between" align="center" wrap="nowrap">
-                <Box>
-                  <Text
-                    size="xs"
-                    fw={700}
-                    tt="uppercase"
-                    style={{ letterSpacing: "0.06em" }}
-                    c="dimmed"
-                    mb="sm"
-                  >
-                    Questions
-                  </Text>
-                  <Group gap="sm" align="center">
-                    {QUESTION_COUNTS.map((count) => (
-                      <QuestionCountPill
-                        key={count}
-                        value={count}
-                        selected={selectedCount === count}
-                        onSelect={() => setSelectedCount(count)}
-                      />
-                    ))}
-                    {selectedCount === "Custom" && (
-                      <NumberInput
-                        value={customCount}
-                        onChange={setCustomCount}
-                        placeholder="e.g. 15"
-                        min={1}
-                        max={200}
-                        size="xs"
-                        radius="xl"
-                        style={{ width: rem(90) }}
-                        styles={{ input: { textAlign: "center" } }}
-                      />
-                    )}
-                  </Group>
-                </Box>
+              {/* Generate button */}
+              <Group justify="flex-end">
                 <Button
                   leftSection={<IconPlus size={15} stroke={2} />}
-                  size="base"
+                  size="md"
                   radius="lg"
-                  style={{ backgroundColor: INK, color: "white", fontWeight: 600, flexShrink: 0, paddingLeft: rem(15) }}
+                  onClick={openGenerateModal}
+                  style={{ backgroundColor: INK, color: "white", fontWeight: 600, paddingLeft: rem(15) }}
                 >
                   Generate Practice Set
                 </Button>
@@ -964,6 +980,114 @@ export default function PracticePage() {
           </Box>
         )}
       </Modal>
+
+      {/* ── Generate modal ── */}
+      {(() => {
+        const subject = SUBJECTS.find((s) => s.key === selectedSubject)!;
+        const SubjectIcon = subject.icon;
+        const allMaterials = SUBJECT_MATERIALS[selectedSubject];
+        return (
+          <Modal
+            opened={generateOpen}
+            onClose={() => setGenerateOpen(false)}
+            title={
+              <Group gap={10} align="center">
+                <Box
+                  style={{
+                    width: rem(34),
+                    height: rem(34),
+                    borderRadius: rem(9),
+                    backgroundColor: subject.iconBg,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <SubjectIcon size={18} stroke={1.5} color={subject.iconColor} />
+                </Box>
+                <Box>
+                  <Text fw={700} size="md" c={INK}>{subject.label}</Text>
+                  <Text size="xs" c="dimmed">Configure your practice set</Text>
+                </Box>
+              </Group>
+            }
+            radius="lg"
+            size="lg"
+            overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
+          >
+            {/* Materials */}
+            <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mb="sm">
+              Material
+            </Text>
+            <Box
+              mb="xl"
+              style={{ display: "flex", flexWrap: "wrap", gap: rem(8) }}
+            >
+              {allMaterials.map((m) => (
+                <MaterialPill
+                  key={m}
+                  label={m}
+                  selected={modalMaterial === m}
+                  onToggle={() => setModalMaterial(m)}
+                />
+              ))}
+            </Box>
+
+            {/* Question count */}
+            <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mb="sm">
+              Number of Questions
+            </Text>
+            <Group gap="sm" align="center" mb="xl">
+              {QUESTION_COUNTS.map((count) => (
+                <QuestionCountPill
+                  key={count}
+                  value={count}
+                  selected={modalCount === count}
+                  onSelect={() => setModalCount(count)}
+                />
+              ))}
+              {modalCount === "Custom" && (
+                <NumberInput
+                  value={modalCustomCount}
+                  onChange={setModalCustomCount}
+                  placeholder="e.g. 15"
+                  min={1}
+                  max={200}
+                  size="xs"
+                  radius="xl"
+                  style={{ width: rem(90) }}
+                  styles={{ input: { textAlign: "center" } }}
+                />
+              )}
+            </Group>
+
+            <Group justify="space-between">
+              <Button
+                variant="outline"
+                color="dark"
+                radius="md"
+                onClick={() => setGenerateOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                leftSection={<IconPlus size={15} stroke={2} />}
+                radius="md"
+                disabled={modalMaterial === null}
+                style={{
+                  backgroundColor: modalMaterial === null ? "#94A3B8" : INK,
+                  color: "white",
+                  fontWeight: 600,
+                  opacity: 1,
+                }}
+              >
+                Generate Practice Set
+              </Button>
+            </Group>
+          </Modal>
+        );
+      })()}
 
       {/* ── Filter modal ── */}
       <Modal

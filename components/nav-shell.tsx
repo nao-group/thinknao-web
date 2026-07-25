@@ -89,10 +89,14 @@ function NavItem({
   onClick: () => void;
 }) {
   const Icon = item.icon;
+  const [hovered, setHovered] = useState(false);
 
   const button = (
     <UnstyledButton
       onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="nav-item"
       style={{
         display: "flex",
         alignItems: "center",
@@ -103,8 +107,8 @@ function NavItem({
         width: "100%",
         fontSize: rem(14),
         fontWeight: active ? 600 : 400,
-        color: active ? "white" : MUTED,
-        backgroundColor: active ? ACTIVE_BG : "transparent",
+        color: active ? "white" : hovered ? INK : MUTED,
+        backgroundColor: active ? ACTIVE_BG : hovered ? "rgba(245, 158, 11, 0.08)" : "transparent",
         transition: "background-color 150ms ease, color 150ms ease",
       }}
     >

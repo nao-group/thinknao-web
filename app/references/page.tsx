@@ -282,6 +282,7 @@ function WordRow({ entry }: { entry: WordEntry }) {
     <Box
       px="md"
       py="sm"
+      className="hover-zoom"
       style={{
         backgroundColor: "white",
         borderRadius: rem(10),
@@ -315,6 +316,7 @@ function FormulaRow({ entry }: { entry: FormulaEntry }) {
     <Box
       px="md"
       py="sm"
+      className="hover-zoom"
       style={{
         backgroundColor: "white",
         borderRadius: rem(10),
