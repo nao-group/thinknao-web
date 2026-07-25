@@ -11,6 +11,7 @@ import {
   SimpleGrid,
   Stack,
   Text,
+  Tooltip,
   UnstyledButton,
   rem,
 } from "@mantine/core";
