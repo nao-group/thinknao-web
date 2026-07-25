@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Accordion,
   Box,
   Button,
   Checkbox,
@@ -21,6 +22,7 @@ import {
   IconAdjustmentsHorizontal,
   IconAtom,
   IconBookmark,
+  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
   IconFlask,
@@ -33,7 +35,7 @@ import {
   IconStar,
 } from "@tabler/icons-react";
 
-import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
+import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD, MUTED } from "@/constants/colors";
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
 
@@ -226,12 +228,76 @@ const PRACTICE_STATS = [
 ];
 
 const SUBJECT_SCORES = [
-  { label: "Mathematics", pct: 82, color: PRIMARY, progressColor: "yellow" },
-  { label: "Physics", pct: 68, color: INDIGO, progressColor: "indigo" },
-  { label: "Chemistry", pct: 61, color: PANDA, progressColor: "orange" },
-  { label: "Liberal Arts Chinese", pct: 74, color: VIOLET, progressColor: "violet" },
-  { label: "Science Chinese", pct: 57, color: EMERALD, progressColor: "teal" },
+  { label: "Mathematics",          pct: 82, color: PRIMARY, progressColor: "yellow" },
+  { label: "Physics",               pct: 68, color: INDIGO,  progressColor: "indigo" },
+  { label: "Chemistry",             pct: 61, color: PANDA,   progressColor: "orange" },
+  { label: "Liberal Arts Chinese",  pct: 74, color: VIOLET,  progressColor: "violet" },
+  { label: "Science Chinese",       pct: 57, color: EMERALD, progressColor: "teal"   },
 ];
+
+const MATERIAL_SCORES: Record<string, { label: string; pct: number }[]> = {
+  "Mathematics": [
+    { label: "Elementary Functions",      pct: 90 },
+    { label: "Sequences",                 pct: 85 },
+    { label: "Functions",                 pct: 88 },
+    { label: "Calculus",                  pct: 72 },
+    { label: "Analytic Geometry",         pct: 80 },
+    { label: "Vectors",                   pct: 84 },
+    { label: "Complex Numbers",           pct: 78 },
+    { label: "Solid Geometry",            pct: 86 },
+    { label: "Space Coordinate System",   pct: 83 },
+    { label: "Inequalities",              pct: 88 },
+    { label: "Sets",                      pct: 92 },
+    { label: "Probability and Statistics",pct: 76 },
+  ],
+  "Physics": [
+    { label: "Kinematics",               pct: 74 },
+    { label: "Dynamics",                 pct: 70 },
+    { label: "Work and Energy",          pct: 72 },
+    { label: "Momentum",                 pct: 68 },
+    { label: "Electrostatics",           pct: 65 },
+    { label: "Electric Circuits",        pct: 62 },
+    { label: "Magnetic Fields",          pct: 60 },
+    { label: "Mechanical Vibrations",    pct: 66 },
+    { label: "Wave Properties",          pct: 70 },
+    { label: "Optics",                   pct: 73 },
+    { label: "Molecular Kinetic Theory", pct: 68 },
+    { label: "Temperature and Heat",     pct: 71 },
+    { label: "Gas Laws",                 pct: 69 },
+    { label: "Laws of Thermodynamics",   pct: 64 },
+    { label: "Atomic Structure",         pct: 70 },
+    { label: "Nuclear Physics",          pct: 58 },
+  ],
+  "Chemistry": [
+    { label: "Mole Calculation",                          pct: 68 },
+    { label: "Matter and Classification of Substances",   pct: 72 },
+    { label: "Atomic Structure and Periodic Table",       pct: 65 },
+    { label: "Chemical Bonding and Intermolecular Forces",pct: 60 },
+    { label: "Chemical Nomenclature and Equation Writing",pct: 58 },
+    { label: "Redox Reactions",                           pct: 62 },
+    { label: "Ionic Reactions and Tests",                 pct: 55 },
+    { label: "Chemical Reaction Rate and Equilibrium",    pct: 58 },
+    { label: "Electrolyte Solution Theory",               pct: 52 },
+    { label: "Solution Concentration and pH",             pct: 64 },
+    { label: "Ideal Gas Law",                             pct: 70 },
+    { label: "Inorganic Properties",                      pct: 60 },
+    { label: "Basic Organic Chemistry",                   pct: 56 },
+    { label: "Chemical Experiment and Application",       pct: 68 },
+    { label: "Industrial Chemistry Process",              pct: 54 },
+  ],
+  "Liberal Arts Chinese": [
+    { label: "Reading Comprehension", pct: 78 },
+    { label: "Analytical Writing",    pct: 68 },
+    { label: "Vocabulary",            pct: 80 },
+    { label: "Grammar",               pct: 72 },
+  ],
+  "Science Chinese": [
+    { label: "Technical Reading",      pct: 62 },
+    { label: "Data Interpretation",    pct: 55 },
+    { label: "Technical Vocabulary",   pct: 58 },
+    { label: "Procedure Description",  pct: 52 },
+  ],
+};
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -517,19 +583,53 @@ function StatRow({
   );
 }
 
-function SubjectScoreBar({ label, pct, color, progressColor }: (typeof SUBJECT_SCORES)[number]) {
+function SubjectScoreAccordion({
+  scores,
+}: {
+  scores: (typeof SUBJECT_SCORES)[number][];
+}) {
   return (
-    <Box mb={rem(12)}>
-      <Group justify="space-between" mb={4}>
-        <Text size="sm" c={INK} fw={500}>
-          {label}
-        </Text>
-        <Text size="sm" fw={700} c={color}>
-          {pct}%
-        </Text>
-      </Group>
-      <Progress value={pct} size="sm" radius="xl" color={progressColor} />
-    </Box>
+    <Accordion
+      chevron={<IconChevronDown size={14} stroke={2} />}
+      styles={{
+        item:    { border: "none", marginBottom: rem(4) },
+        control: { padding: `${rem(6)} 0`, borderRadius: rem(8) },
+        chevron: { color: MUTED },
+        panel:   { padding: `0 0 ${rem(8)} 0` },
+      }}
+    >
+      {scores.map(({ label, pct, color, progressColor }) => (
+        <Accordion.Item key={label} value={label}>
+          <Accordion.Control>
+            <Group justify="space-between" align="center" wrap="nowrap" pr={rem(4)}>
+              <Text size="sm" c={INK} fw={500}>{label}</Text>
+              <Text size="sm" fw={700} c={color} style={{ flexShrink: 0 }}>{pct}%</Text>
+            </Group>
+            <Progress value={pct} size="sm" radius="xl" color={progressColor} mt={rem(6)} />
+          </Accordion.Control>
+          <Accordion.Panel>
+            <Box
+              pl={rem(10)}
+              style={{ borderLeft: `2px solid ${color}33` }}
+            >
+              {MATERIAL_SCORES[label].map((m) => (
+                <Box key={m.label} mb={rem(10)}>
+                  <Group justify="space-between" mb={rem(3)}>
+                    <Text size="xs" c={MUTED} style={{ lineHeight: 1.3, flex: 1, paddingRight: rem(8) }}>
+                      {m.label}
+                    </Text>
+                    <Text size="xs" fw={700} c={color} style={{ flexShrink: 0 }}>
+                      {m.pct}%
+                    </Text>
+                  </Group>
+                  <Progress value={m.pct} size="xs" radius="xl" color={progressColor} />
+                </Box>
+              ))}
+            </Box>
+          </Accordion.Panel>
+        </Accordion.Item>
+      ))}
+    </Accordion>
   );
 }
 
@@ -902,9 +1002,7 @@ export default function PracticePage() {
                 >
                   Avg Score by Subject
                 </Text>
-                {SUBJECT_SCORES.map((s) => (
-                  <SubjectScoreBar key={s.label} {...s} />
-                ))}
+                <SubjectScoreAccordion scores={SUBJECT_SCORES} />
               </Box>
             </Stack>
           </Box>
