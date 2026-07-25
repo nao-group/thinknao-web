@@ -410,12 +410,12 @@ function UserProfileDrawer({
       overlayProps={{ backgroundOpacity: 0.25, blur: 1 }}
       transitionProps={{ transition: "slide-left", duration: 220 }}
       styles={{
-        body: { padding: 0 },
-        content: { borderRadius: `${rem(16)} 0 0 ${rem(16)}`, overflow: "hidden" },
+        body: { padding: 0, height: "100%", display: "flex", flexDirection: "column" },
+        content: { borderRadius: `${rem(16)} 0 0 ${rem(16)}`, overflow: "hidden", display: "flex", flexDirection: "column" },
       }}
     >
       {entry && (
-        <>
+        <Box style={{ display: "flex", flexDirection: "column", height: "100%" }}>
           {/* Banner + avatar */}
           <Box
             style={{
@@ -482,7 +482,7 @@ function UserProfileDrawer({
           </Box>
 
           {/* Scrollable content */}
-          <Box style={{ overflowY: "auto", height: `calc(100% - ${rem(160)})` }}>
+          <Box style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
             <Box px="lg" pt="md" pb="xl">
               {/* Name + XP */}
               <Group justify="space-between" align="flex-start" mb={4}>
@@ -578,7 +578,7 @@ function UserProfileDrawer({
               )}
             </Box>
           </Box>
-        </>
+        </Box>
       )}
     </Drawer>
   );
