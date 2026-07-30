@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Badge,
   Box,
   Button,
   Group,
+  Modal,
   Stack,
   Text,
   Tooltip,
@@ -14,6 +15,7 @@ import {
   rem,
 } from "@mantine/core";
 import { LatexText } from "@/components/latex-text";
+import { MarkdownLatexText } from "@/components/markdown-latex-text";
 import {
   IconAlertCircle,
   IconAtom,
@@ -28,6 +30,9 @@ import {
   IconMathFunction,
   IconMicroscope,
   IconNotes,
+  IconZoomIn,
+  IconZoomOut,
+  IconZoomReset,
 } from "@tabler/icons-react";
 import { ReportModal } from "@/components/report-modal";
 import { SAVED_PROBLEMS, type SubjectKey, type Difficulty } from "../data";
@@ -150,23 +155,30 @@ function ExplanationBox({ explanation }: { explanation: (typeof SAVED_PROBLEMS)[
         <IconNotes size={16} stroke={1.5} color={PRIMARY} />
         <Text size="sm" fw={700} c={PRIMARY}>Answer Key &amp; Explanation</Text>
       </Group>
-      <Text size="md" fw={700} c={CORRECT_DARK} mb={8}>
-        Correct Answer: {explanation.correctStatement}
-      </Text>
-      <Text size="md" c={INK} mb={10}><LatexText>{explanation.intro}</LatexText></Text>
-      <Stack gap={4} mb={12}>
-        {explanation.steps.map((step, i) => (
-          <Group key={i} gap={8} align="flex-start">
-            <Box
-              style={{ width: rem(6), height: rem(6), borderRadius: "50%", backgroundColor: PRIMARY, flexShrink: 0, marginTop: rem(9) }}
-            />
-            <Text size="md" c={INK}><LatexText>{step}</LatexText></Text>
-          </Group>
-        ))}
-      </Stack>
-      <Box p="sm" style={{ backgroundColor: "#F5E6CC", borderRadius: rem(8) }}>
-        <Text size="md" fw={700} c={CORRECT_DARK}><LatexText>{explanation.conclusion}</LatexText></Text>
-      </Box>
+
+      {explanation.markdown ? (
+        <MarkdownLatexText>{explanation.markdown}</MarkdownLatexText>
+      ) : (
+        <>
+          <Text size="md" fw={700} c={CORRECT_DARK} mb={8}>
+            Correct Answer: {explanation.correctStatement}
+          </Text>
+          <Text size="md" c={INK} mb={10}><LatexText>{explanation.intro}</LatexText></Text>
+          <Stack gap={4} mb={12}>
+            {explanation.steps.map((step, i) => (
+              <Group key={i} gap={8} align="flex-start">
+                <Box
+                  style={{ width: rem(6), height: rem(6), borderRadius: "50%", backgroundColor: PRIMARY, flexShrink: 0, marginTop: rem(9) }}
+                />
+                <Text size="md" c={INK}><LatexText>{step}</LatexText></Text>
+              </Group>
+            ))}
+          </Stack>
+          <Box p="sm" style={{ backgroundColor: "#F5E6CC", borderRadius: rem(8) }}>
+            <Text size="md" fw={700} c={CORRECT_DARK}><LatexText>{explanation.conclusion}</LatexText></Text>
+          </Box>
+        </>
+      )}
     </Box>
   );
 }
@@ -186,6 +198,41 @@ export default function SavedProblemDetailPage() {
   const [submitted, setSubmitted] = useState(false);
   const [lang, setLang] = useState<Lang>("en");
   const [reportOpen, setReportOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragOrigin = useRef<{ mx: number; my: number; px: number; py: number } | null>(null);
+
+  const ZOOM_STEP = 0.25;
+  const ZOOM_MIN = 0.5;
+  const ZOOM_MAX = 3;
+
+  function openLightbox() { setZoom(1); setPan({ x: 0, y: 0 }); setLightboxOpen(true); }
+
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (zoom <= 1) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragOrigin.current = { mx: e.clientX, my: e.clientY, px: pan.x, py: pan.y };
+    setDragging(true);
+  }
+
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!dragOrigin.current) return;
+    const { mx, my, px, py } = dragOrigin.current;
+    setPan({ x: px + (e.clientX - mx), y: py + (e.clientY - my) });
+  }
+
+  function handlePointerUp() {
+    dragOrigin.current = null;
+    setDragging(false);
+  }
+
+  function changeZoom(next: number) {
+    const clamped = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +next.toFixed(2)));
+    setZoom(clamped);
+    if (clamped <= 1) setPan({ x: 0, y: 0 });
+  }
 
   if (!problem) {
     return (
@@ -263,6 +310,25 @@ export default function SavedProblemDetailPage() {
                 </Text>
               </Box>
 
+              {/* Question image */}
+              {problem.image && (
+                <Box mb="lg" style={{ display: "flex", justifyContent: "center" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={problem.image}
+                    alt="Question figure"
+                    onClick={openLightbox}
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: rem(280),
+                      borderRadius: rem(8),
+                      objectFit: "contain",
+                      cursor: "zoom-in",
+                    }}
+                  />
+                </Box>
+              )}
+
               {/* Options */}
               <Stack gap="sm" mb="lg">
                 {problem.options.map((opt) => {
@@ -318,7 +384,7 @@ export default function SavedProblemDetailPage() {
                       >
                         {opt.key}
                       </Box>
-                      <Text size="sm" c={INK} fw={chosen ? 600 : 400}>{displayText}</Text>
+                      <Text size="sm" c={INK} fw={chosen ? 600 : 400}><LatexText>{displayText}</LatexText></Text>
                     </Box>
                   );
                 })}
@@ -466,6 +532,142 @@ export default function SavedProblemDetailPage() {
           </Box>
         </Group>
       </Box>
+
+      {/* Image lightbox */}
+      {problem?.image && (
+        <Modal
+          opened={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+          size="auto"
+          centered
+          withCloseButton={false}
+          padding={0}
+          styles={{
+            content: { backgroundColor: "transparent", boxShadow: "none", overflow: "visible" },
+            overlay: { backgroundColor: "rgba(0,0,0,0.85)" },
+          }}
+        >
+          <Box style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: rem(12) }}>
+            {/* Toolbar */}
+            <Group
+              gap={6}
+              style={{
+                backgroundColor: "rgba(255,255,255,0.12)",
+                backdropFilter: "blur(8px)",
+                borderRadius: rem(10),
+                padding: `${rem(6)} ${rem(10)}`,
+              }}
+            >
+              <Tooltip label="Zoom out" withArrow>
+                <UnstyledButton
+                  disabled={zoom <= ZOOM_MIN}
+                  onClick={() => changeZoom(zoom - ZOOM_STEP)}
+                  style={{
+                    width: rem(32), height: rem(32), borderRadius: rem(7),
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    backgroundColor: zoom <= ZOOM_MIN ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.15)",
+                    cursor: zoom <= ZOOM_MIN ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <IconZoomOut size={16} color="white" stroke={1.8} />
+                </UnstyledButton>
+              </Tooltip>
+
+              <Text size="xs" fw={600} style={{ color: "white", minWidth: rem(36), textAlign: "center" }}>
+                {Math.round(zoom * 100)}%
+              </Text>
+
+              <Tooltip label="Zoom in" withArrow>
+                <UnstyledButton
+                  disabled={zoom >= ZOOM_MAX}
+                  onClick={() => changeZoom(zoom + ZOOM_STEP)}
+                  style={{
+                    width: rem(32), height: rem(32), borderRadius: rem(7),
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    backgroundColor: zoom >= ZOOM_MAX ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.15)",
+                    cursor: zoom >= ZOOM_MAX ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <IconZoomIn size={16} color="white" stroke={1.8} />
+                </UnstyledButton>
+              </Tooltip>
+
+              <Box style={{ width: "1px", height: rem(20), backgroundColor: "rgba(255,255,255,0.2)" }} />
+
+              <Tooltip label="Reset zoom" withArrow>
+                <UnstyledButton
+                  onClick={() => changeZoom(1)}
+                  style={{
+                    width: rem(32), height: rem(32), borderRadius: rem(7),
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    backgroundColor: "rgba(255,255,255,0.15)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <IconZoomReset size={16} color="white" stroke={1.8} />
+                </UnstyledButton>
+              </Tooltip>
+
+              <Box style={{ width: "1px", height: rem(20), backgroundColor: "rgba(255,255,255,0.2)" }} />
+
+              <Tooltip label="Close" withArrow>
+                <UnstyledButton
+                  onClick={() => setLightboxOpen(false)}
+                  style={{
+                    width: rem(32), height: rem(32), borderRadius: rem(7),
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    backgroundColor: "rgba(255,255,255,0.15)",
+                    cursor: "pointer",
+                    fontSize: rem(16),
+                    color: "white",
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  ✕
+                </UnstyledButton>
+              </Tooltip>
+            </Group>
+
+            {/* Image */}
+            <Box
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerLeave={handlePointerUp}
+              style={{
+                overflow: "hidden",
+                maxWidth: "90vw",
+                maxHeight: "80vh",
+                width: "80vw",
+                height: "80vh",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: zoom > 1 ? (dragging ? "grabbing" : "grab") : "default",
+                userSelect: "none",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={problem.image}
+                alt="Question figure"
+                draggable={false}
+                style={{
+                  transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                  transformOrigin: "center center",
+                  transition: dragging ? "none" : "transform 200ms ease",
+                  maxWidth: "80vw",
+                  maxHeight: "80vh",
+                  display: "block",
+                  borderRadius: rem(8),
+                  pointerEvents: "none",
+                }}
+              />
+            </Box>
+          </Box>
+        </Modal>
+      )}
 
       <ReportModal opened={reportOpen} onClose={() => setReportOpen(false)} />
 

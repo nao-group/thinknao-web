@@ -9,6 +9,7 @@ export interface SavedProblem {
   setName: string;
   setSlug: string;
   question: string;
+  image?: string;
   options: { key: string; text: string; text_zh?: string }[];
   correctAnswer: string;
   explanation: {
@@ -16,6 +17,7 @@ export interface SavedProblem {
     intro: string;
     steps: string[];
     conclusion: string;
+    markdown?: string;
   };
   dateAdded: string;
   zh?: {
@@ -26,6 +28,7 @@ export interface SavedProblem {
       intro: string;
       steps: string[];
       conclusion: string;
+      markdown?: string;
     };
   };
 }
@@ -81,12 +84,12 @@ export const SAVED_PROBLEMS: SavedProblem[] = [
     topic: "Circular Motion",
     setName: "Physics 3",
     setSlug: "physics-3",
-    question: "A particle moves in a circle of radius r with angular velocity ω. Derive the expression for centripetal acceleration in terms of r and ω.",
+    question: "When a sound wave travels from air into water, what happens to its wavelength?",
     options: [
-      { key: "A", text: "a = ω²r" },
-      { key: "B", text: "a = ωr²" },
-      { key: "C", text: "a = ω/r" },
-      { key: "D", text: "a = r/ω²" },
+      { key: "A", text: "becomes longer" },
+      { key: "B", text: "becomes shorter" },
+      { key: "C", text: "remains unchanged" },
+      { key: "D", text: "cannot be determined" },
     ],
     correctAnswer: "A",
     explanation: {
@@ -99,6 +102,20 @@ export const SAVED_PROBLEMS: SavedProblem[] = [
         "Simplify: a = ω²r",
       ],
       conclusion: "∴ Centripetal acceleration a = ω²r",
+      markdown: `Given (已知):
+When a sound wave (声波) travels from one medium to another, its **frequency (频率)** remains unchanged.
+**Speed of sound (声速)** in water (水) is greater than in air (空气).
+
+Using the relationship **$v = f \\lambda$**,
+
+Since $f$ is constant (常数), $\\lambda \\propto v$.
+Because $v_{\\text{water}} > v_{\\text{air}}$,
+$\\lambda_{\\text{water}} > \\lambda_{\\text{air}}$.
+Thus, the **wavelength (波长)** becomes **longer (变长)**.
+
+> The answer is (A).
+
+Other choices: B would be shorter (变短) if speed decreased; C would be unchanged (不变) if speed unchanged; D cannot be determined (无法确定) is wrong because we know the speed increases.`,
     },
     zh: {
       topic: "圆周运动",
@@ -548,5 +565,46 @@ export const SAVED_PROBLEMS: SavedProblem[] = [
       },
     },
     dateAdded: "2026-07-11",
+  },
+  {
+    id: "13",
+    subject: "Physics",
+    difficulty: "Medium",
+    topic: "Simple Harmonic Motion",
+    setName: "Physics 3",
+    setSlug: "physics-3",
+    question: "The figure shows the vibration graph of a spring oscillator performing simple harmonic motion. Which of the following statements is correct?",
+    image: "https://650pbmmvezmpnfrw.public.blob.vercel-storage.com/question-images/PH-MV-0002-og14v9z0JVpNTaD0Gqt58SzJgKP8jN.png",
+    options: [
+      { key: "A", text: "Amplitude is 2 cm", text_zh: "振幅为 2 cm" },
+      { key: "B", text: "Period is 2 s", text_zh: "周期为 2 s" },
+      { key: "C", text: "Frequency is 0.5 Hz", text_zh: "频率为 0.5 Hz" },
+      { key: "D", text: "At $t = 1$ s, the velocity of the spring oscillator is maximum", text_zh: "在 $t = 1$ s 时，弹簧振子的速度最大" },
+    ],
+    correctAnswer: "A",
+    explanation: {
+      correctStatement: "A — Amplitude is 2 cm",
+      intro: "",
+      steps: [],
+      conclusion: "",
+      markdown: `From the graph, the oscillator starts at $x = 0$, reaches its trough $x = -2$ cm at $t = 1$ s, returns to zero at $t = 2$ s, peaks at $x = +2$ cm at $t = 3$ s, and returns to zero at $t = 4$ s.
+
+**A. Amplitude is 2 cm** — True ✓
+The amplitude $A$ equals the maximum displacement magnitude: $A = 2$ cm. ✓
+
+**B. Period is 2 s** — False ✗
+One complete cycle spans $t = 0$ to $t = 4$ s, so $T = 4$ s, not 2 s.
+
+**C. Frequency is 0.5 Hz** — False ✗
+$f = \\dfrac{1}{T} = \\dfrac{1}{4} = 0.25$ Hz, not 0.5 Hz.
+
+**D. At $t = 1$ s, velocity is maximum** — False ✗
+At $t = 1$ s the displacement is at its trough ($x = -2$ cm). In SHM, velocity $v = 0$ at maximum displacement — velocity is maximum only when $x = 0$.
+
+> The answer is (A).
+
+Summary: $A = 2$ cm, $T = 4$ s, $f = 0.25$ Hz. Velocity is maximum at $x = 0$ ($t = 0, 2, 4$ s) and zero at the extremes ($t = 1, 3$ s).`,
+    },
+    dateAdded: "2026-07-10",
   },
 ];

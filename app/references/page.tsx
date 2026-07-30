@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Button,
   Divider,
   Group,
-  Modal,
   Stack,
   Text,
   TextInput,
@@ -393,149 +392,333 @@ function FormulaRow({ entry, onClick }: { entry: FormulaEntry; onClick: () => vo
   );
 }
 
+// ── Gallery shell ─────────────────────────────────────────────────────────────
+
+const G_GAP = 16; // px gap between cards in the strip
+
+function GalleryShell({
+  opened, onClose, count, idx,
+  hasPrev, hasNext, onPrev, onNext,
+  renderSlot,
+}: {
+  opened: boolean;
+  onClose: () => void;
+  count: number;
+  idx: number;
+  hasPrev: boolean;
+  hasNext: boolean;
+  onPrev: () => void;
+  onNext: () => void;
+  renderSlot: (slot: "prev" | "current" | "next") => React.ReactNode;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [cw, setCw] = useState(680);
+  const [slideX, setSlideX] = useState(0);
+  const [noTrans, setNoTrans] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [navDir, setNavDir] = useState<"prev" | "next" | null>(null);
+  const pendingDir = useRef<"prev" | "next" | null>(null);
+  const swipeStartX = useRef<number | null>(null);
+
+  // Derived layout values (all in px)
+  const peek = Math.min(80, Math.floor(cw * 0.12));
+  const cardW = cw - 2 * peek;
+  const step = cardW + G_GAP;
+  const baseX = -step + peek; // centers slot-1 (current) in the container
+
+  // Measure once when gallery opens
+  useEffect(() => {
+    if (!opened || !containerRef.current) return;
+    const w = containerRef.current.clientWidth;
+    setCw(w);
+    const p = Math.min(80, Math.floor(w * 0.12));
+    setSlideX(-(w - 2 * p + G_GAP) + p);
+  }, [opened]);
+
+  function navigate(dir: "prev" | "next") {
+    if (busy) return;
+    if (dir === "next" && !hasNext) return;
+    if (dir === "prev" && !hasPrev) return;
+    setBusy(true);
+    setNoTrans(false);
+    setNavDir(dir);
+    pendingDir.current = dir;
+    setSlideX(dir === "next" ? baseX - step : baseX + step);
+  }
+
+  function handleTransitionEnd(e: React.TransitionEvent<HTMLDivElement>) {
+    // Only react to the strip's own transform transition
+    if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
+    const dir = pendingDir.current;
+    if (!dir) return;
+    pendingDir.current = null;
+    // Disable transition, update index, snap strip back, clear navDir — all in one paint
+    setNoTrans(true);
+    setNavDir(null);
+    if (dir === "next") onNext(); else onPrev();
+    setSlideX(baseX);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      setNoTrans(false);
+      setBusy(false);
+    }));
+  }
+
+  // Keyboard navigation — use refs to avoid stale closures
+  const navRef = useRef(navigate);
+  navRef.current = navigate;
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    if (!opened) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") navRef.current("prev");
+      else if (e.key === "ArrowRight") navRef.current("next");
+      else if (e.key === "Escape") closeRef.current();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [opened]);
+
+  // Swipe / drag
+  function handlePointerDown(e: React.PointerEvent) { swipeStartX.current = e.clientX; }
+  function handlePointerUp(e: React.PointerEvent) {
+    if (swipeStartX.current === null) return;
+    const delta = e.clientX - swipeStartX.current;
+    swipeStartX.current = null;
+    if (Math.abs(delta) > 60) navigate(delta < 0 ? "next" : "prev");
+  }
+
+  if (!opened) return null;
+
+  const EASE = "cubic-bezier(0.25,0.46,0.45,0.94)";
+  const DUR = 380;
+
+  // During navigation, the incoming slot scales up and sharpens while the outgoing scales down and blurs.
+  function slotIsBecomingActive(slot: "prev" | "current" | "next"): boolean {
+    return (navDir === "next" && slot === "next") || (navDir === "prev" && slot === "prev");
+  }
+  function slotIsBecomingInactive(slot: "prev" | "current" | "next"): boolean {
+    return navDir !== null && slot === "current";
+  }
+
+  function slotStyle(slot: "prev" | "current" | "next"): React.CSSProperties {
+    const hasSide = slot === "prev" ? hasPrev : hasNext;
+    const becomingActive = slotIsBecomingActive(slot);
+    const becomingInactive = slotIsBecomingInactive(slot);
+    const isActive = slot === "current" && !becomingInactive || becomingActive;
+    const scale = isActive ? "scale(1.06)" : "scale(0.88) translateY(8px)";
+    const blur = isActive ? "none" : (hasSide ? "blur(3px) brightness(0.68)" : "none");
+    const zIdx = isActive ? 3 : (slot === "current" && becomingInactive) ? 2 : 1;
+    const trans = noTrans ? "none" : `opacity ${DUR}ms ${EASE}, filter ${DUR}ms ${EASE}, transform ${DUR}ms ${EASE}, box-shadow ${DUR}ms ${EASE}`;
+
+    return {
+      position: "relative",
+      zIndex: zIdx,
+      width: cardW,
+      flexShrink: 0,
+      backgroundColor: "white",
+      borderRadius: rem(16),
+      padding: rem(24),
+      maxHeight: "78vh",
+      overflowY: isActive ? "auto" : "hidden",
+      userSelect: "none",
+      opacity: hasSide || slot === "current" ? 1 : 0,
+      filter: blur,
+      transform: scale,
+      transformOrigin: "center center",
+      boxShadow: isActive ? "0 32px 80px rgba(0,0,0,0.55)" : "none",
+      pointerEvents: (slot !== "current" && hasSide && !busy) ? "auto" : slot === "current" ? "auto" : "none",
+      cursor: slot !== "current" ? "pointer" : "default",
+      transition: trans,
+    };
+  }
+
+  return (
+    <Box
+      style={{ position: "fixed", inset: 0, zIndex: 300, backgroundColor: "rgba(15,23,42,0.88)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+    >
+      {/* Backdrop — click outside card to close */}
+      <Box style={{ position: "absolute", inset: 0 }} onClick={onClose} />
+
+      {/* Top bar */}
+      <Group
+        justify="space-between"
+        align="center"
+        style={{ position: "relative", zIndex: 1, width: "min(720px, 95vw)", marginBottom: rem(16) }}
+      >
+        <Text size="sm" c="rgba(255,255,255,0.5)" fw={600}>{idx + 1} / {count}</Text>
+        <UnstyledButton
+          onClick={onClose}
+          style={{ width: rem(32), height: rem(32), borderRadius: rem(8), backgroundColor: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}
+        >
+          <IconX size={16} stroke={2} color="rgba(255,255,255,0.8)" />
+        </UnstyledButton>
+      </Group>
+
+      {/* Gallery viewport — clips the strip to show peek */}
+      <Box
+        ref={containerRef}
+        style={{ position: "relative", zIndex: 1, width: "min(680px, 95vw)" }}
+      >
+        {/* Sliding strip of 3 card slots */}
+        <Box
+          style={{
+            display: "flex",
+            gap: rem(G_GAP),
+            transform: `translateX(${slideX}px)`,
+            transition: noTrans ? "none" : `transform ${DUR}ms ${EASE}`,
+          }}
+          onTransitionEnd={handleTransitionEnd}
+        >
+          <Box onClick={() => !busy && navigate("prev")} style={slotStyle("prev")}>{renderSlot("prev")}</Box>
+          <Box style={slotStyle("current")}>{renderSlot("current")}</Box>
+          <Box onClick={() => !busy && navigate("next")} style={slotStyle("next")}>{renderSlot("next")}</Box>
+        </Box>
+      </Box>
+
+      {/* Arrow buttons flanking the gallery */}
+      {hasPrev && (
+        <Box onClick={() => navigate("prev")} style={{ position: "absolute", left: rem(16), top: "50%", transform: "translateY(-50%)", zIndex: 2, width: rem(40), height: rem(40), borderRadius: rem(999), backgroundColor: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <IconChevronLeft size={20} stroke={2} color="white" />
+        </Box>
+      )}
+      {hasNext && (
+        <Box onClick={() => navigate("next")} style={{ position: "absolute", right: rem(16), top: "50%", transform: "translateY(-50%)", zIndex: 2, width: rem(40), height: rem(40), borderRadius: rem(999), backgroundColor: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <IconChevronRight size={20} stroke={2} color="white" />
+        </Box>
+      )}
+    </Box>
+  );
+}
+
 // ── Detail modals ─────────────────────────────────────────────────────────────
 
-function WordDetailModal({ entry, onClose }: { entry: WordEntry | null; onClose: () => void }) {
-  const meta = entry ? SUBJECT_META[entry.subject] : null;
+function WordDetailModal({
+  entries, idx, onIdxChange, onClose,
+}: {
+  entries: WordEntry[];
+  idx: number | null;
+  onIdxChange: (i: number) => void;
+  onClose: () => void;
+}) {
+  function renderSlot(slot: "prev" | "current" | "next") {
+    const i = idx ?? 0;
+    const e = slot === "prev" ? (i > 0 ? entries[i - 1] : null)
+            : slot === "next" ? (i < entries.length - 1 ? entries[i + 1] : null)
+            : entries[i];
+    if (!e) return null;
+    const meta = SUBJECT_META[e.subject];
+    return (
+      <Stack gap={0}>
+        <SubjectBadge subject={e.subject} />
+        <Box mt="md" mb="lg" style={{ textAlign: "center" }}>
+          {e.zh && <Text fw={800} style={{ fontSize: rem(48), lineHeight: 1.1, color: INK, letterSpacing: "-0.02em" }}>{e.zh}</Text>}
+          {e.pinyin && <Text size="md" fw={600} c={PRIMARY} mt={4} style={{ letterSpacing: "0.04em" }}>{e.pinyin}</Text>}
+          <Text size="md" fw={600} c={MUTED} mt={e.zh ? 2 : 0}>{e.term}</Text>
+        </Box>
+        {slot === "current" && (
+          <>
+            <Divider mb="md" />
+            <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }} mb={6}>Definition</Text>
+            <Text size="sm" c={INK} lh={1.7} mb="lg">{e.definition}</Text>
+            {e.example && (
+              <>
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }} mb={6}>Example</Text>
+                <Box p="sm" style={{ backgroundColor: SURFACE, borderRadius: rem(10), borderLeft: `3px solid ${meta.iconColor}` }}>
+                  <Text size="sm" c={INK} lh={1.6} style={{ fontStyle: "italic" }}><LatexText>{e.example}</LatexText></Text>
+                </Box>
+              </>
+            )}
+          </>
+        )}
+      </Stack>
+    );
+  }
+
   return (
-    <Modal
-      opened={!!entry}
+    <GalleryShell
+      opened={idx !== null}
       onClose={onClose}
-      radius="lg"
-      size="md"
-      overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
-      transitionProps={{ transition: "pop", duration: 200 }}
-      title={entry && meta ? <SubjectBadge subject={entry.subject} /> : null}
-    >
-      {entry && meta && (
-        <>
-          {/* Chinese headline */}
-          <Box mb="lg" style={{ textAlign: "center" }}>
-            {entry.zh && (
-              <Text fw={800} style={{ fontSize: rem(48), lineHeight: 1.1, color: INK, letterSpacing: "-0.02em" }}>
-                {entry.zh}
-              </Text>
-            )}
-            {entry.pinyin && (
-              <Text size="md" fw={600} c={PRIMARY} mt={4} style={{ letterSpacing: "0.04em" }}>
-                {entry.pinyin}
-              </Text>
-            )}
-            <Text size="md" fw={600} c={MUTED} mt={entry.zh ? 2 : 0}>
-              {entry.term}
-            </Text>
-          </Box>
-
-          <Divider mb="md" />
-
-          {/* Definition */}
-          <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }} mb={6}>
-            Definition
-          </Text>
-          <Text size="sm" c={INK} lh={1.7} mb="lg">
-            {entry.definition}
-          </Text>
-
-          {/* Example */}
-          {entry.example && (
-            <>
-              <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }} mb={6}>
-                Example
-              </Text>
-              <Box p="sm" style={{ backgroundColor: SURFACE, borderRadius: rem(10), borderLeft: `3px solid ${meta.iconColor}` }}>
-                <Text size="sm" c={INK} lh={1.6} style={{ fontStyle: "italic" }}>
-                  <LatexText>{entry.example}</LatexText>
-                </Text>
-              </Box>
-            </>
-          )}
-        </>
-      )}
-    </Modal>
+      count={entries.length}
+      idx={idx ?? 0}
+      hasPrev={idx !== null && idx > 0}
+      hasNext={idx !== null && idx < entries.length - 1}
+      onPrev={() => onIdxChange((idx ?? 0) - 1)}
+      onNext={() => onIdxChange((idx ?? 0) + 1)}
+      renderSlot={renderSlot}
+    />
   );
 }
 
-function FormulaDetailModal({ entry, onClose }: { entry: FormulaEntry | null; onClose: () => void }) {
-  const meta = entry ? SUBJECT_META[entry.subject] : null;
+function FormulaDetailModal({
+  entries, idx, onIdxChange, onClose,
+}: {
+  entries: FormulaEntry[];
+  idx: number | null;
+  onIdxChange: (i: number) => void;
+  onClose: () => void;
+}) {
+  function renderSlot(slot: "prev" | "current" | "next") {
+    const i = idx ?? 0;
+    const e = slot === "prev" ? (i > 0 ? entries[i - 1] : null)
+            : slot === "next" ? (i < entries.length - 1 ? entries[i + 1] : null)
+            : entries[i];
+    if (!e) return null;
+    const meta = SUBJECT_META[e.subject];
+    return (
+      <Stack gap={0}>
+        <SubjectBadge subject={e.subject} />
+        <Box mt="md" mb="lg" style={{ textAlign: "center" }}>
+          {e.zhName && <Text fw={800} style={{ fontSize: rem(36), lineHeight: 1.1, color: INK, letterSpacing: "-0.02em" }}>{e.zhName}</Text>}
+          {e.pinyin && <Text size="md" fw={600} c={PRIMARY} mt={4} style={{ letterSpacing: "0.04em" }}>{e.pinyin}</Text>}
+          <Text size="md" fw={600} c={MUTED} mt={e.zhName ? 2 : 0}>{e.name}</Text>
+        </Box>
+        <Box px="lg" py="md" mb="lg" style={{ backgroundColor: meta.iconBg, borderRadius: rem(12), borderLeft: `4px solid ${meta.iconColor}`, textAlign: "center" }}>
+          <Text fw={800} style={{ fontFamily: "monospace", fontSize: rem(20), color: meta.iconColor, letterSpacing: "0.04em" }}>
+            <LatexText>{e.formula}</LatexText>
+          </Text>
+        </Box>
+        {slot === "current" && (
+          <>
+            <Divider mb="md" />
+            <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }} mb={6}>Description</Text>
+            <Text size="sm" c={INK} lh={1.7} mb={e.variables ? "lg" : 0}>{e.description}</Text>
+            {e.variables && e.variables.length > 0 && (
+              <>
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }} mb={8}>Variables</Text>
+                <Stack gap={6}>
+                  {e.variables.map((v) => (
+                    <Group key={v} gap={8} align="flex-start">
+                      <Box style={{ width: rem(5), height: rem(5), borderRadius: "50%", backgroundColor: meta.iconColor, marginTop: rem(7), flexShrink: 0 }} />
+                      <Text size="sm" c={INK} style={{ fontFamily: "monospace" }}><LatexText>{v}</LatexText></Text>
+                    </Group>
+                  ))}
+                </Stack>
+              </>
+            )}
+          </>
+        )}
+      </Stack>
+    );
+  }
+
   return (
-    <Modal
-      opened={!!entry}
+    <GalleryShell
+      opened={idx !== null}
       onClose={onClose}
-      radius="lg"
-      size="md"
-      overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
-      transitionProps={{ transition: "pop", duration: 200 }}
-      title={entry ? <SubjectBadge subject={entry.subject} /> : null}
-    >
-      {entry && meta && (
-        <>
-          {/* Chinese headline */}
-          <Box mb="lg" style={{ textAlign: "center" }}>
-            {entry.zhName && (
-              <Text fw={800} style={{ fontSize: rem(36), lineHeight: 1.1, color: INK, letterSpacing: "-0.02em" }}>
-                {entry.zhName}
-              </Text>
-            )}
-            {entry.pinyin && (
-              <Text size="md" fw={600} c={PRIMARY} mt={4} style={{ letterSpacing: "0.04em" }}>
-                {entry.pinyin}
-              </Text>
-            )}
-            <Text size="md" fw={600} c={MUTED} mt={entry.zhName ? 2 : 0}>
-              {entry.name}
-            </Text>
-          </Box>
-
-          {/* Formula block */}
-          <Box
-            px="lg"
-            py="md"
-            mb="lg"
-            style={{
-              backgroundColor: meta.iconBg,
-              borderRadius: rem(12),
-              borderLeft: `4px solid ${meta.iconColor}`,
-              textAlign: "center",
-            }}
-          >
-            <Text fw={800} style={{ fontFamily: "monospace", fontSize: rem(20), color: meta.iconColor, letterSpacing: "0.04em" }}>
-              <LatexText>{entry.formula}</LatexText>
-            </Text>
-          </Box>
-
-          <Divider mb="md" />
-
-          {/* Description */}
-          <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }} mb={6}>
-            Description
-          </Text>
-          <Text size="sm" c={INK} lh={1.7} mb={entry.variables ? "lg" : 0}>
-            {entry.description}
-          </Text>
-
-          {/* Variables */}
-          {entry.variables && entry.variables.length > 0 && (
-            <>
-              <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }} mb={8}>
-                Variables
-              </Text>
-              <Stack gap={6}>
-                {entry.variables.map((v) => (
-                  <Group key={v} gap={8} align="flex-start">
-                    <Box style={{ width: rem(5), height: rem(5), borderRadius: "50%", backgroundColor: meta.iconColor, marginTop: rem(7), flexShrink: 0 }} />
-                    <Text size="sm" c={INK} style={{ fontFamily: "monospace" }}>
-                      <LatexText>{v}</LatexText>
-                    </Text>
-                  </Group>
-                ))}
-              </Stack>
-            </>
-          )}
-        </>
-      )}
-    </Modal>
+      count={entries.length}
+      idx={idx ?? 0}
+      hasPrev={idx !== null && idx > 0}
+      hasNext={idx !== null && idx < entries.length - 1}
+      onPrev={() => onIdxChange((idx ?? 0) - 1)}
+      onNext={() => onIdxChange((idx ?? 0) + 1)}
+      renderSlot={renderSlot}
+    />
   );
 }
+
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 
@@ -913,8 +1096,8 @@ export default function ReferencesPage() {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [studyMode, setStudyMode] = useState(false);
   const [page, setPage] = useState(1);
-  const [selectedWord, setSelectedWord] = useState<WordEntry | null>(null);
-  const [selectedFormula, setSelectedFormula] = useState<FormulaEntry | null>(null);
+  const [selectedWordIdx, setSelectedWordIdx] = useState<number | null>(null);
+  const [selectedFormulaIdx, setSelectedFormulaIdx] = useState<number | null>(null);
 
   const filteredWords = useMemo(() =>
     WORDS.filter((w) =>
@@ -1062,13 +1245,13 @@ export default function ReferencesPage() {
                   }}
                 >
                   {(pageSlice(filteredWords) as typeof filteredWords).map((w) => (
-                    <WordCard key={w.id} entry={w} onClick={() => setSelectedWord(w)} />
+                    <WordCard key={w.id} entry={w} onClick={() => setSelectedWordIdx(filteredWords.findIndex((x) => x.id === w.id))} />
                   ))}
                 </Box>
               ) : (
                 <Stack gap={8}>
                   {(pageSlice(filteredWords) as typeof filteredWords).map((w) => (
-                    <WordRow key={w.id} entry={w} onClick={() => setSelectedWord(w)} />
+                    <WordRow key={w.id} entry={w} onClick={() => setSelectedWordIdx(filteredWords.findIndex((x) => x.id === w.id))} />
                   ))}
                 </Stack>
               )
@@ -1083,13 +1266,13 @@ export default function ReferencesPage() {
                 }}
               >
                 {(pageSlice(filteredFormulas) as typeof filteredFormulas).map((f) => (
-                  <FormulaCard key={f.id} entry={f} onClick={() => setSelectedFormula(f)} />
+                  <FormulaCard key={f.id} entry={f} onClick={() => setSelectedFormulaIdx(filteredFormulas.findIndex((x) => x.id === f.id))} />
                 ))}
               </Box>
             ) : (
               <Stack gap={8}>
                 {(pageSlice(filteredFormulas) as typeof filteredFormulas).map((f) => (
-                  <FormulaRow key={f.id} entry={f} onClick={() => setSelectedFormula(f)} />
+                  <FormulaRow key={f.id} entry={f} onClick={() => setSelectedFormulaIdx(filteredFormulas.findIndex((x) => x.id === f.id))} />
                 ))}
               </Stack>
             )}
@@ -1100,8 +1283,18 @@ export default function ReferencesPage() {
       </Box>
 
       {/* Detail modals */}
-      <WordDetailModal entry={selectedWord} onClose={() => setSelectedWord(null)} />
-      <FormulaDetailModal entry={selectedFormula} onClose={() => setSelectedFormula(null)} />
+      <WordDetailModal
+        entries={filteredWords}
+        idx={selectedWordIdx}
+        onIdxChange={setSelectedWordIdx}
+        onClose={() => setSelectedWordIdx(null)}
+      />
+      <FormulaDetailModal
+        entries={filteredFormulas}
+        idx={selectedFormulaIdx}
+        onIdxChange={setSelectedFormulaIdx}
+        onClose={() => setSelectedFormulaIdx(null)}
+      />
 
       {/* Flashcard study overlay */}
       {studyMode && flashcardItems.length > 0 && (
