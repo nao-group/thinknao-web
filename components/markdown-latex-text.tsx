@@ -11,7 +11,7 @@ function renderMath(latex: string, display: boolean): string {
   return katex.renderToString(latex, { throwOnError: false, displayMode: display });
 }
 
-function parseMath(text: string, keyPrefix: string): React.ReactNode[] {
+function parseMath(text: string, keyPrefix: string): React.ReactElement[] {
   return text.split(MATH_RE).map((part, i) => {
     const key = `${keyPrefix}-m${i}`;
     if (part.startsWith("$$") && part.endsWith("$$")) {
@@ -35,8 +35,8 @@ function parseMath(text: string, keyPrefix: string): React.ReactNode[] {
   });
 }
 
-function parseInline(text: string, keyPrefix: string): React.ReactNode[] {
-  return text.split(BOLD_RE).flatMap((part, i) => {
+function parseInline(text: string, keyPrefix: string): React.ReactElement[] {
+  return text.split(BOLD_RE).flatMap((part, i): React.ReactElement[] => {
     const key = `${keyPrefix}-b${i}`;
     if (part.startsWith("**") && part.endsWith("**")) {
       return [<strong key={key}>{parseMath(part.slice(2, -2), key)}</strong>];
