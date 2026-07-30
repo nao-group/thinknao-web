@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Anchor,
   Avatar,
@@ -8,11 +8,15 @@ import {
   Box,
   Button,
   Group,
+  Loader,
   PasswordInput,
+  Select,
   SimpleGrid,
   Skeleton,
   Stack,
   Text,
+  Textarea,
+  TextInput,
   rem,
 } from "@mantine/core";
 import {
@@ -21,6 +25,7 @@ import {
   IconBrandLinkedin,
   IconBrandTiktok,
   IconCalendarEvent,
+  IconCamera,
   IconLock,
   IconMapPin,
   IconPencil,
@@ -28,9 +33,42 @@ import {
   IconTarget,
   IconTrophy,
 } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
 import api from "@/lib/api";
+import { ImageCropModal } from "@/components/image-crop-modal";
 
 import { INK, SURFACE, PRIMARY, CREAM, INDIGO } from "@/constants/colors";
+
+const fieldInputStyles = {
+  label: { fontSize: rem(12), fontWeight: 600, color: INK, marginBottom: rem(6) },
+  input: {
+    backgroundColor: SURFACE,
+    borderRadius: rem(8),
+    fontSize: rem(14),
+    border: "none",
+  },
+};
+
+function useEditableSection<T extends Record<string, string>>() {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<T>({} as T);
+  const [saving, setSaving] = useState(false);
+
+  return {
+    editing,
+    draft,
+    setDraft,
+    saving,
+    setSaving,
+    start(values: T) {
+      setDraft(values);
+      setEditing(true);
+    },
+    cancel() {
+      setEditing(false);
+    },
+  };
+}
 
 interface UserProfile {
   id: string;
@@ -46,6 +84,8 @@ interface UserProfile {
   instagram: string | null;
   tiktok: string | null;
   linkedin: string | null;
+  avatar_url: string | null;
+  banner_url: string | null;
   created_at: string;
 }
 
@@ -55,6 +95,13 @@ function getInitials(name: string) {
 
 function formatJoinDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function getErrorMessage(err: unknown, fallback: string): string {
+  const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail) && detail[0] && typeof detail[0].msg === "string") return detail[0].msg;
+  return fallback;
 }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
@@ -170,15 +217,13 @@ function SocialLink({
   iconColor,
   iconBg,
   label,
-  handle,
-  baseUrl,
+  url,
 }: {
   icon: React.ElementType;
   iconColor: string;
   iconBg: string;
   label: string;
-  handle: string | null;
-  baseUrl: string;
+  url: string | null;
 }) {
   return (
     <Group gap={12} align="center">
@@ -198,9 +243,9 @@ function SocialLink({
       </Box>
       <Box style={{ minWidth: 0 }}>
         <Text size="xs" fw={600} c="dimmed">{label}</Text>
-        {handle ? (
-          <Anchor href={`${baseUrl}${handle}`} target="_blank" size="sm" fw={600} c={INK} underline="hover" truncate>
-            @{handle}
+        {url ? (
+          <Anchor href={url} target="_blank" size="sm" fw={600} c={INK} underline="hover" truncate style={{ display: "block", maxWidth: rem(180) }}>
+            {url.replace(/^https?:\/\//, "")}
           </Anchor>
         ) : (
           <Text size="sm" c="dimmed">Not set</Text>
@@ -216,47 +261,213 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const [cropTarget, setCropTarget] = useState<{ kind: "avatar" | "banner"; imageSrc: string } | null>(null);
+
+  const [provinces, setProvinces] = useState<{ value: string; label: string }[]>([]);
+
+  const personal = useEditableSection<{ full_name: string; current_school: string; province: string; bio: string }>();
+  const dreamUni = useEditableSection<{ dream_university: string }>();
+  const targetMajor = useEditableSection<{ target_major: string }>();
+  const socialLinks = useEditableSection<{ instagram: string; tiktok: string; linkedin: string }>();
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordErrors, setPasswordErrors] = useState<{ current?: string; new?: string; confirm?: string }>({});
+  const [passwordSaving, setPasswordSaving] = useState(false);
+
   useEffect(() => {
     api.get<UserProfile>("/api/user/profile")
       .then((res) => setProfile(res.data))
       .finally(() => setLoading(false));
+
+    api.get<{ data: { code: string; name: string }[] }>("/api/onboarding/provinces")
+      .then((res) => setProvinces(res.data.data.map((p) => ({ value: p.name, label: p.name }))))
+      .catch(() => {});
   }, []);
 
   const initials = profile ? getInitials(profile.full_name) : "";
   const joinDate = profile ? formatJoinDate(profile.created_at) : "—";
 
+  async function saveProfileFields(values: Record<string, string>) {
+    try {
+      const res = await api.patch<UserProfile>("/api/user/profile", values);
+      setProfile(res.data);
+      notifications.show({
+        title: "Saved",
+        message: "Your profile has been updated.",
+        color: "green",
+        autoClose: 3000,
+      });
+    } catch (err) {
+      notifications.show({
+        title: "Couldn't save changes",
+        message: getErrorMessage(err, "Please try again."),
+        color: "red",
+        autoClose: 4000,
+      });
+      throw err;
+    }
+  }
+
+  async function handleSectionSave<T extends Record<string, string>>(section: ReturnType<typeof useEditableSection<T>>) {
+    section.setSaving(true);
+    try {
+      await saveProfileFields(section.draft);
+      section.cancel();
+    } catch {
+      // Error already surfaced via notification — keep the section open so the user can retry.
+    } finally {
+      section.setSaving(false);
+    }
+  }
+
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setCropTarget({ kind, imageSrc: URL.createObjectURL(file) });
+  }
+
+  function closeCropModal() {
+    if (cropTarget) URL.revokeObjectURL(cropTarget.imageSrc);
+    setCropTarget(null);
+  }
+
+  async function handleCroppedUpload(blob: Blob) {
+    if (!cropTarget) return;
+    const { kind } = cropTarget;
+    const setUploading = kind === "avatar" ? setAvatarUploading : setBannerUploading;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", blob, `${kind}.jpg`);
+      const res = await api.post<{ avatar_url?: string; banner_url?: string }>(
+        `/api/user/profile/${kind}`,
+        formData,
+        { headers: { "Content-Type": undefined } }
+      );
+      setProfile((p) => {
+        if (!p) return p;
+        if (kind === "avatar") return { ...p, avatar_url: res.data.avatar_url ?? p.avatar_url };
+        return { ...p, banner_url: res.data.banner_url ?? p.banner_url };
+      });
+      notifications.show({
+        title: "Updated",
+        message: `Your ${kind === "avatar" ? "profile picture" : "banner"} has been updated.`,
+        color: "green",
+        autoClose: 3000,
+      });
+      closeCropModal();
+    } catch (err) {
+      notifications.show({
+        title: "Upload failed",
+        message: getErrorMessage(err, "Please try again."),
+        color: "red",
+        autoClose: 4000,
+      });
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleChangePassword() {
+    const errors: typeof passwordErrors = {};
+    if (!currentPassword) errors.current = "Enter your current password.";
+    if (newPassword.length < 8) errors.new = "Must be at least 8 characters.";
+    if (confirmPassword !== newPassword) errors.confirm = "Passwords do not match.";
+    setPasswordErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    setPasswordSaving(true);
+    try {
+      await api.post("/api/user/change-password", {
+        current_password: currentPassword,
+        new_password: newPassword,
+        confirm_password: confirmPassword,
+      });
+      notifications.show({
+        title: "Password updated",
+        message: "Your password has been changed.",
+        color: "green",
+        autoClose: 3000,
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordErrors({});
+    } catch (err) {
+      const message = getErrorMessage(err, "Please try again.");
+      if (message.toLowerCase().includes("current password")) {
+        setPasswordErrors({ current: message });
+      } else {
+        notifications.show({
+          title: "Couldn't update password",
+          message,
+          color: "red",
+          autoClose: 4000,
+        });
+      }
+    } finally {
+      setPasswordSaving(false);
+    }
+  }
+
   return (
     <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        style={{ display: "none" }}
+        onChange={(e) => handleFileSelected(e, "avatar")}
+      />
+      <input
+        ref={bannerInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        style={{ display: "none" }}
+        onChange={(e) => handleFileSelected(e, "banner")}
+      />
+
       {/* Banner */}
       <Box
         style={{
           position: "relative",
           height: rem(180),
-          background: `linear-gradient(135deg, ${INK} 0%, #1E2A4A 60%, #252060 100%)`,
+          background: profile?.banner_url
+            ? `url(${profile.banner_url}) center / cover no-repeat`
+            : `linear-gradient(135deg, ${INK} 0%, #1E2A4A 60%, #252060 100%)`,
           overflow: "hidden",
           flexShrink: 0,
         }}
       >
-        {[
-          { size: 280, top: -80, right: 320, opacity: 0.07 },
-          { size: 200, top: -40, right: 160, opacity: 0.06 },
-          { size: 380, top: -140, right: 80, opacity: 0.05 },
-        ].map((ring, i) => (
-          <Box
-            key={i}
-            style={{
-              position: "absolute",
-              top: rem(ring.top),
-              right: rem(ring.right),
-              width: rem(ring.size),
-              height: rem(ring.size),
-              borderRadius: "50%",
-              border: `1px solid rgba(255,255,255,${ring.opacity})`,
-              pointerEvents: "none",
-            }}
-          />
-        ))}
+        {!profile?.banner_url &&
+          [
+            { size: 280, top: -80, right: 320, opacity: 0.07 },
+            { size: 200, top: -40, right: 160, opacity: 0.06 },
+            { size: 380, top: -140, right: 80, opacity: 0.05 },
+          ].map((ring, i) => (
+            <Box
+              key={i}
+              style={{
+                position: "absolute",
+                top: rem(ring.top),
+                right: rem(ring.right),
+                width: rem(ring.size),
+                height: rem(ring.size),
+                borderRadius: "50%",
+                border: `1px solid rgba(255,255,255,${ring.opacity})`,
+                pointerEvents: "none",
+              }}
+            />
+          ))}
         <Box
+          onClick={() => !bannerUploading && bannerInputRef.current?.click()}
           style={{
             position: "absolute",
             top: rem(16),
@@ -264,14 +475,18 @@ export default function ProfilePage() {
             width: rem(32),
             height: rem(32),
             borderRadius: rem(8),
-            backgroundColor: "rgba(255,255,255,0.1)",
+            backgroundColor: "rgba(255,255,255,0.15)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             cursor: "pointer",
           }}
         >
-          <IconPencil size={14} stroke={1.5} color="rgba(255,255,255,0.7)" />
+          {bannerUploading ? (
+            <Loader size={14} color="white" />
+          ) : (
+            <IconPencil size={14} stroke={1.5} color="rgba(255,255,255,0.85)" />
+          )}
         </Box>
       </Box>
 
@@ -284,20 +499,46 @@ export default function ProfilePage() {
           style={{ marginTop: rem(-52) }}
           wrap="nowrap"
         >
-          <Avatar
-            size={130}
-            radius="xl"
-            style={{
-              backgroundColor: PRIMARY,
-              border: `4px solid white`,
-              fontSize: rem(26),
-              fontWeight: 700,
-              color: "white",
-              flexShrink: 0,
-            }}
+          <Box
+            onClick={() => !avatarUploading && avatarInputRef.current?.click()}
+            style={{ position: "relative", cursor: "pointer", flexShrink: 0 }}
           >
-            {loading ? "" : initials}
-          </Avatar>
+            <Avatar
+              size={130}
+              radius="xl"
+              src={profile?.avatar_url ?? undefined}
+              style={{
+                backgroundColor: PRIMARY,
+                border: `4px solid white`,
+                fontSize: rem(26),
+                fontWeight: 700,
+                color: "white",
+              }}
+            >
+              {loading ? "" : initials}
+            </Avatar>
+            <Box
+              style={{
+                position: "absolute",
+                bottom: rem(4),
+                right: rem(4),
+                width: rem(32),
+                height: rem(32),
+                borderRadius: "50%",
+                backgroundColor: INK,
+                border: "3px solid white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {avatarUploading ? (
+                <Loader size={13} color="white" />
+              ) : (
+                <IconCamera size={14} stroke={1.5} color="white" />
+              )}
+            </Box>
+          </Box>
 
           <Box pb={4} style={{ flex: 1, minWidth: 0 }}>
             {loading ? (
@@ -352,15 +593,90 @@ export default function ProfilePage() {
             <SectionCard>
               <Group justify="space-between" mb="lg">
                 <Text fw={700} size="sm" c={INK}>Personal Information</Text>
-                <Button leftSection={<IconPencil size={13} stroke={1.5} />} size="xs" variant="default">
-                  Edit
-                </Button>
+                {personal.editing ? (
+                  <Group gap={8}>
+                    <Button size="xs" variant="default" onClick={personal.cancel} disabled={personal.saving}>
+                      Cancel
+                    </Button>
+                    <Button
+                      size="xs"
+                      loading={personal.saving}
+                      onClick={() => handleSectionSave(personal)}
+                      style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
+                    >
+                      Save
+                    </Button>
+                  </Group>
+                ) : (
+                  <Button
+                    leftSection={<IconPencil size={13} stroke={1.5} />}
+                    size="xs"
+                    variant="default"
+                    disabled={loading}
+                    onClick={() =>
+                      personal.start({
+                        full_name: profile?.full_name ?? "",
+                        current_school: profile?.current_school ?? "",
+                        province: profile?.province ?? "",
+                        bio: profile?.bio ?? "",
+                      })
+                    }
+                  >
+                    Edit
+                  </Button>
+                )}
               </Group>
               {loading ? (
                 <Stack gap="md">
                   <Skeleton height={56} radius="sm" />
                   <Skeleton height={56} radius="sm" />
                   <Skeleton height={80} radius="sm" />
+                </Stack>
+              ) : personal.editing ? (
+                <Stack gap="md">
+                  <SimpleGrid cols={2} spacing="md">
+                    <TextInput
+                      label="Full Name"
+                      value={personal.draft.full_name}
+                      onChange={(e) => {
+                        const value = e.currentTarget.value;
+                        personal.setDraft((d) => ({ ...d, full_name: value }));
+                      }}
+                      styles={fieldInputStyles}
+                    />
+                    <ReadonlyField label="Email" value={profile?.email ?? ""} />
+                    <TextInput
+                      label="Current School"
+                      placeholder="e.g. Manila Science High School"
+                      value={personal.draft.current_school}
+                      onChange={(e) => {
+                        const value = e.currentTarget.value;
+                        personal.setDraft((d) => ({ ...d, current_school: value }));
+                      }}
+                      styles={fieldInputStyles}
+                    />
+                    <Select
+                      label="Province"
+                      placeholder="Select province"
+                      data={provinces}
+                      value={personal.draft.province || null}
+                      onChange={(v) => personal.setDraft((d) => ({ ...d, province: v ?? "" }))}
+                      searchable
+                      leftSection={provinces.length === 0 ? <Loader size={14} color="gray" /> : undefined}
+                      styles={fieldInputStyles}
+                    />
+                  </SimpleGrid>
+                  <Textarea
+                    label="Bio"
+                    placeholder="Tell others a bit about yourself"
+                    value={personal.draft.bio}
+                    onChange={(e) => {
+                      const value = e.currentTarget.value;
+                      personal.setDraft((d) => ({ ...d, bio: value }));
+                    }}
+                    minRows={3}
+                    styles={fieldInputStyles}
+                  />
                 </Stack>
               ) : (
                 <Stack gap="md">
@@ -400,24 +716,44 @@ export default function ProfilePage() {
                   <Text size="xs" fw={600} c="dimmed" tt="uppercase" style={{ letterSpacing: "0.06em" }} mb={6}>
                     Current Password
                   </Text>
-                  <PasswordInput placeholder="Enter current password" />
+                  <PasswordInput
+                    placeholder="Enter current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.currentTarget.value)}
+                    error={passwordErrors.current}
+                  />
                 </Box>
                 <SimpleGrid cols={2} spacing="md">
                   <Box>
                     <Text size="xs" fw={600} c="dimmed" tt="uppercase" style={{ letterSpacing: "0.06em" }} mb={6}>
                       New Password
                     </Text>
-                    <PasswordInput placeholder="Enter new password" />
+                    <PasswordInput
+                      placeholder="Enter new password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.currentTarget.value)}
+                      error={passwordErrors.new}
+                    />
                   </Box>
                   <Box>
                     <Text size="xs" fw={600} c="dimmed" tt="uppercase" style={{ letterSpacing: "0.06em" }} mb={6}>
                       Confirm Password
                     </Text>
-                    <PasswordInput placeholder="Confirm new password" />
+                    <PasswordInput
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.currentTarget.value)}
+                      error={passwordErrors.confirm}
+                    />
                   </Box>
                 </SimpleGrid>
                 <Group justify="flex-end">
-                  <Button size="sm" style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}>
+                  <Button
+                    size="sm"
+                    loading={passwordSaving}
+                    onClick={handleChangePassword}
+                    style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
+                  >
                     Update Password
                   </Button>
                 </Group>
@@ -435,12 +771,39 @@ export default function ProfilePage() {
                     <IconSchool size={16} stroke={1.5} color={PRIMARY} />
                     <Text fw={700} size="sm" c={INK}>Dream University</Text>
                   </Group>
-                  <Box style={{ cursor: "pointer" }}>
-                    <IconPencil size={14} stroke={1.5} color="#667080" />
-                  </Box>
+                  {!dreamUni.editing && (
+                    <Box
+                      style={{ cursor: loading ? "default" : "pointer" }}
+                      onClick={() => !loading && dreamUni.start({ dream_university: profile?.dream_university ?? "" })}
+                    >
+                      <IconPencil size={14} stroke={1.5} color="#667080" />
+                    </Box>
+                  )}
                 </Group>
                 {loading ? (
                   <Skeleton height={36} radius="sm" mb="sm" />
+                ) : dreamUni.editing ? (
+                  <Stack gap="sm" mb="sm">
+                    <TextInput
+                      placeholder="e.g. University of the Philippines"
+                      value={dreamUni.draft.dream_university}
+                      onChange={(e) => dreamUni.setDraft({ dream_university: e.currentTarget.value })}
+                      styles={fieldInputStyles}
+                    />
+                    <Group justify="flex-end" gap={8}>
+                      <Button size="xs" variant="default" onClick={dreamUni.cancel} disabled={dreamUni.saving}>
+                        Cancel
+                      </Button>
+                      <Button
+                        size="xs"
+                        loading={dreamUni.saving}
+                        onClick={() => handleSectionSave(dreamUni)}
+                        style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
+                      >
+                        Save
+                      </Button>
+                    </Group>
+                  </Stack>
                 ) : (
                   <Box px="sm" py="xs" mb="sm" style={{ backgroundColor: SURFACE, borderRadius: rem(8) }}>
                     <Text size="sm" c={profile?.dream_university ? INK : "dimmed"} fw={profile?.dream_university ? 500 : 400}>
@@ -460,12 +823,39 @@ export default function ProfilePage() {
                     <IconTarget size={16} stroke={1.5} color={INDIGO} />
                     <Text fw={700} size="sm" c={INK}>Target Major</Text>
                   </Group>
-                  <Box style={{ cursor: "pointer" }}>
-                    <IconPencil size={14} stroke={1.5} color="#667080" />
-                  </Box>
+                  {!targetMajor.editing && (
+                    <Box
+                      style={{ cursor: loading ? "default" : "pointer" }}
+                      onClick={() => !loading && targetMajor.start({ target_major: profile?.target_major ?? "" })}
+                    >
+                      <IconPencil size={14} stroke={1.5} color="#667080" />
+                    </Box>
+                  )}
                 </Group>
                 {loading ? (
                   <Skeleton height={36} radius="sm" />
+                ) : targetMajor.editing ? (
+                  <Stack gap="sm">
+                    <TextInput
+                      placeholder="e.g. Computer Science"
+                      value={targetMajor.draft.target_major}
+                      onChange={(e) => targetMajor.setDraft({ target_major: e.currentTarget.value })}
+                      styles={fieldInputStyles}
+                    />
+                    <Group justify="flex-end" gap={8}>
+                      <Button size="xs" variant="default" onClick={targetMajor.cancel} disabled={targetMajor.saving}>
+                        Cancel
+                      </Button>
+                      <Button
+                        size="xs"
+                        loading={targetMajor.saving}
+                        onClick={() => handleSectionSave(targetMajor)}
+                        style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
+                      >
+                        Save
+                      </Button>
+                    </Group>
+                  </Stack>
                 ) : (
                   <Box px="sm" py="xs" style={{ backgroundColor: SURFACE, borderRadius: rem(8) }}>
                     <Text size="sm" c={profile?.target_major ? INK : "dimmed"} fw={profile?.target_major ? 500 : 400}>
@@ -479,15 +869,73 @@ export default function ProfilePage() {
               <SectionCard>
                 <Group justify="space-between" mb="md">
                   <Text fw={700} size="sm" c={INK}>Social Links</Text>
-                  <Box style={{ cursor: "pointer" }}>
-                    <IconPencil size={14} stroke={1.5} color="#667080" />
-                  </Box>
+                  {!socialLinks.editing && (
+                    <Box
+                      style={{ cursor: loading ? "default" : "pointer" }}
+                      onClick={() =>
+                        !loading &&
+                        socialLinks.start({
+                          instagram: profile?.instagram ?? "",
+                          tiktok: profile?.tiktok ?? "",
+                          linkedin: profile?.linkedin ?? "",
+                        })
+                      }
+                    >
+                      <IconPencil size={14} stroke={1.5} color="#667080" />
+                    </Box>
+                  )}
                 </Group>
                 {loading ? (
                   <Stack gap="sm">
                     <Skeleton height={36} radius="sm" />
                     <Skeleton height={36} radius="sm" />
                     <Skeleton height={36} radius="sm" />
+                  </Stack>
+                ) : socialLinks.editing ? (
+                  <Stack gap="sm">
+                    <TextInput
+                      label="Instagram URL"
+                      placeholder="https://instagram.com/yourhandle"
+                      value={socialLinks.draft.instagram}
+                      onChange={(e) => {
+                        const value = e.currentTarget.value;
+                        socialLinks.setDraft((d) => ({ ...d, instagram: value }));
+                      }}
+                      styles={fieldInputStyles}
+                    />
+                    <TextInput
+                      label="TikTok URL"
+                      placeholder="https://tiktok.com/@yourhandle"
+                      value={socialLinks.draft.tiktok}
+                      onChange={(e) => {
+                        const value = e.currentTarget.value;
+                        socialLinks.setDraft((d) => ({ ...d, tiktok: value }));
+                      }}
+                      styles={fieldInputStyles}
+                    />
+                    <TextInput
+                      label="LinkedIn URL"
+                      placeholder="https://linkedin.com/in/yourhandle"
+                      value={socialLinks.draft.linkedin}
+                      onChange={(e) => {
+                        const value = e.currentTarget.value;
+                        socialLinks.setDraft((d) => ({ ...d, linkedin: value }));
+                      }}
+                      styles={fieldInputStyles}
+                    />
+                    <Group justify="flex-end" gap={8}>
+                      <Button size="xs" variant="default" onClick={socialLinks.cancel} disabled={socialLinks.saving}>
+                        Cancel
+                      </Button>
+                      <Button
+                        size="xs"
+                        loading={socialLinks.saving}
+                        onClick={() => handleSectionSave(socialLinks)}
+                        style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
+                      >
+                        Save
+                      </Button>
+                    </Group>
                   </Stack>
                 ) : (
                   <Stack gap="sm">
@@ -496,24 +944,21 @@ export default function ProfilePage() {
                       iconColor="#E1306C"
                       iconBg="#FFF0F5"
                       label="Instagram"
-                      handle={profile?.instagram ?? null}
-                      baseUrl="https://instagram.com/"
+                      url={profile?.instagram ?? null}
                     />
                     <SocialLink
                       icon={IconBrandTiktok}
                       iconColor="#010101"
                       iconBg="#F1F5F9"
                       label="TikTok"
-                      handle={profile?.tiktok ?? null}
-                      baseUrl="https://tiktok.com/@"
+                      url={profile?.tiktok ?? null}
                     />
                     <SocialLink
                       icon={IconBrandLinkedin}
                       iconColor="#0A66C2"
                       iconBg="#EFF6FF"
                       label="LinkedIn"
-                      handle={profile?.linkedin ?? null}
-                      baseUrl="https://linkedin.com/in/"
+                      url={profile?.linkedin ?? null}
                     />
                   </Stack>
                 )}
@@ -554,6 +999,19 @@ export default function ProfilePage() {
           </Box>
         </Group>
       </Box>
+
+      {cropTarget && (
+        <ImageCropModal
+          opened
+          imageSrc={cropTarget.imageSrc}
+          aspect={cropTarget.kind === "avatar" ? 1 : 4}
+          cropShape={cropTarget.kind === "avatar" ? "round" : "rect"}
+          title={cropTarget.kind === "avatar" ? "Crop profile picture" : "Crop banner"}
+          saving={cropTarget.kind === "avatar" ? avatarUploading : bannerUploading}
+          onCancel={closeCropModal}
+          onSave={handleCroppedUpload}
+        />
+      )}
     </Box>
   );
 }
