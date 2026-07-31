@@ -8,7 +8,7 @@ function ThinkNaoLogo() {
     <img
       src="/images/logo/thinknao_full_light.svg"
       alt="ThinkNao"
-      style={{ height: rem(36), objectFit: "contain" }}
+      style={{ height: rem(50), objectFit: "contain" }}
     />
   );
 }

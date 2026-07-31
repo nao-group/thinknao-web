@@ -607,4 +607,47 @@ Summary: $A = 2$ cm, $T = 4$ s, $f = 0.25$ Hz. Velocity is maximum at $x = 0$ ($
     },
     dateAdded: "2026-07-10",
   },
+  {
+    id: "14",
+    subject: "Mathematics",
+    difficulty: "Medium",
+    topic: "Simple Harmonic Motion",
+    setName: "Mathematics 3",
+    setSlug: "mathematics-3",
+    question: "Given the sequence $1, 4, 9, 16, \\cdots$, a possible formula for its general term is:",
+    image: "",
+    options: [
+      { key: "A", text: "$a_n = \\ln \\frac{1}{n}$" },
+      { key: "B", text: "$a_n = 2^{-n}$" },
+      { key: "C", text: "$a_n = n^2$" },
+      { key: "D", text: "$a_n = 3 - n$" },
+    ],
+    correctAnswer: "A",
+    explanation: {
+      correctStatement: "A — Amplitude is 2 cm",
+      intro: "",
+      steps: [],
+      conclusion: "",
+      markdown: `Given:
+**First term (首项)** = 1
+**Second term (第二项)** = 4
+**Third term (第三项)** = 9
+**Fourth term (第四项)** = 16
+
+We observe that each term is the square (平方) of its position number (项数): 1 = 1<sup>2</sup>, 4 = 2<sup>2</sup>, 9 = 3<sup>2</sup>, 16 = 4<sup>2</sup>.
+
+Using **pattern recognition (模式识别)** for sequences (数列),
+
+The general term formula (通项公式) is a_n = n<sup>2</sup>.
+Substituting n = 1, 2, 3, 4 yields 1, 4, 9, 16.
+Thus, the formula matches all given terms (项).
+
+Therefore, a possible formula for the general term of the sequence is **a_n = n<sup>2</sup>**.
+
+> The answer is (C).
+
+Choice (A) gives a_n = ln(1/n), which produces 0 and negative numbers (负数); (B) gives a_n = 2<sup>-n</sup>, producing fractions (分数) like 1/2, 1/4, etc.; (D) gives a_n = 3 - n, producing 2, 1, 0, -1, none of which match the sequence of squares (平方数).`,
+    },
+    dateAdded: "2026-07-10",
+  },
 ];

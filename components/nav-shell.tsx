@@ -74,7 +74,7 @@ function LogoMark({ collapsed }: { collapsed?: boolean }) {
     <img
       src="/images/logo/thinknao_full.svg"
       alt="ThinkNao"
-      style={{ height: rem(32), objectFit: "contain", flexShrink: 0 }}
+      style={{ height: rem(60), objectFit: "contain", flexShrink: 0 }}
     />
   );
 }
