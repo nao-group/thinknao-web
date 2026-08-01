@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   AppShell,
+  Avatar,
   Box,
   Burger,
   Group,
@@ -214,6 +215,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
   const firstName = useAuthStore((s) => s.user?.full_name?.split(" ")[0] ?? "");
   const fullName = useAuthStore((s) => s.user?.full_name ?? "");
   const email = useAuthStore((s) => s.user?.email ?? "");
+  const avatarUrl = useAuthStore((s) => s.user?.avatar_url ?? undefined);
   const initials = fullName ? fullName.slice(0, 1).toUpperCase() : "?";
 
   const navbarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
@@ -377,22 +379,11 @@ export function NavShell({ children }: { children: React.ReactNode }) {
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(245, 158, 11, 0.08)")}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
           >
-            <Box
-              style={{
-                width: rem(28),
-                height: rem(28),
-                borderRadius: "50%",
-                backgroundColor: INK,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
+            <Avatar src={avatarUrl} size={28} radius="xl" style={{ backgroundColor: INK, flexShrink: 0 }}>
               <Text size="xs" fw={700} c="white" style={{ lineHeight: 1 }}>
                 {initials}
               </Text>
-            </Box>
+            </Avatar>
             {!collapsed && (
               <Box style={{ minWidth: 0 }}>
                 <Text size="sm" fw={600} c={INK} style={{ lineHeight: 1.2 }} truncate>

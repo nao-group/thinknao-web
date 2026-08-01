@@ -30,7 +30,7 @@ import {
   IconSearch,
   IconX,
 } from "@tabler/icons-react";
-import { WORDS, FORMULAS, type Subject, type WordEntry, type FormulaEntry } from "./data";
+import { fetchWords, fetchFormulas, type Subject, type WordEntry, type FormulaEntry } from "./data";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -38,6 +38,11 @@ import { INK, SURFACE, PRIMARY, CREAM, MUTED, INDIGO, PANDA, VIOLET, EMERALD } f
 
 const SUBJECTS = ["All", "Mathematics", "Physics", "Chemistry", "Liberal Arts Chinese", "Science Chinese"] as const;
 type SubjectFilter = (typeof SUBJECTS)[number];
+
+// Strips diacritics (e.g. pinyin tone marks) and lowercases, so "daoshu" matches "dǎoshù".
+function normalizeForSearch(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
 
 const SUBJECT_META: Record<Subject, { icon: React.ElementType; iconBg: string; iconColor: string }> = {
   "Liberal Arts Chinese": { icon: IconBook,        iconBg: "#F5F3FF", iconColor: VIOLET  },
@@ -294,7 +299,7 @@ function FormulaCard({ entry, onClick }: { entry: FormulaEntry; onClick: () => v
         }}
       >
         <Text size="sm" fw={700} c={meta.iconColor} style={{ fontFamily: "monospace", letterSpacing: "0.02em" }}>
-          {entry.formula}
+          <LatexText>{entry.formula}</LatexText>
         </Text>
       </Box>
       <Text size="xs" c={MUTED} lh={1.5}>
@@ -383,7 +388,7 @@ function FormulaRow({ entry, onClick }: { entry: FormulaEntry; onClick: () => vo
       </Box>
       <Box px="xs" py={3} style={{ backgroundColor: meta.iconBg, borderRadius: rem(6), flexShrink: 0, maxWidth: rem(240) }}>
         <Text size="xs" fw={700} c={meta.iconColor} style={{ fontFamily: "monospace" }} lineClamp={1}>
-          {entry.formula}
+          <LatexText>{entry.formula}</LatexText>
         </Text>
       </Box>
       <Text size="sm" c={MUTED} style={{ flex: 1 }} lineClamp={1}>
@@ -546,6 +551,23 @@ function EmptyState() {
       style={{ textAlign: "center", backgroundColor: "white", borderRadius: rem(14) }}
     >
       <Text size="sm" c="dimmed">No results found. Try a different search or filter.</Text>
+    </Box>
+  );
+}
+
+function LoadingState() {
+  return (
+    <Box py={60} style={{ textAlign: "center", backgroundColor: "white", borderRadius: rem(14) }}>
+      <Text size="sm" c="dimmed">Loading references…</Text>
+    </Box>
+  );
+}
+
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <Box py={60} style={{ textAlign: "center", backgroundColor: "white", borderRadius: rem(14) }}>
+      <Text size="sm" c="dimmed" mb="sm">Failed to load references. Please try again.</Text>
+      <Button variant="light" radius="md" size="xs" onClick={onRetry}>Retry</Button>
     </Box>
   );
 }
@@ -837,7 +859,21 @@ function FlashcardStudy({
 
 // ─── Pagination ──────────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 10;
+
+// Collapses long page lists to first, last, and a window around the current page, e.g. 1 … 4 5 6 … 17.
+function paginationRange(page: number, totalPages: number): (number | "ellipsis")[] {
+  const left = Math.max(2, page - 1);
+  const right = Math.min(totalPages - 1, page + 1);
+
+  const range: (number | "ellipsis")[] = [1];
+  if (left > 2) range.push("ellipsis");
+  for (let p = left; p <= right; p++) range.push(p);
+  if (right < totalPages - 1) range.push("ellipsis");
+  if (totalPages > 1) range.push(totalPages);
+
+  return range;
+}
 
 function Pagination({
   page,
@@ -851,9 +887,9 @@ function Pagination({
   if (totalPages <= 1) return null;
 
   const btnBase: React.CSSProperties = {
-    width: rem(32),
-    height: rem(32),
-    borderRadius: rem(8),
+    width: rem(26),
+    height: rem(26),
+    borderRadius: rem(6),
     border: "1.5px solid #D1D5DB",
     backgroundColor: "white",
     color: "#6B7280",
@@ -864,33 +900,39 @@ function Pagination({
   };
 
   return (
-    <Group justify="center" gap={6} mt="lg">
+    <Group justify="center" gap={4} mt="lg">
       <UnstyledButton
         onClick={() => onChange(page - 1)}
         disabled={page === 1}
         aria-label="Previous"
         style={{ ...btnBase, cursor: page === 1 ? "default" : "pointer", opacity: page === 1 ? 0.4 : 1 }}
       >
-        <IconChevronLeft size={14} stroke={2} />
+        <IconChevronLeft size={12} stroke={2} />
       </UnstyledButton>
 
-      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-        <UnstyledButton
-          key={p}
-          onClick={() => onChange(p)}
-          style={{
-            ...btnBase,
-            border: `1.5px solid ${p === page ? INK : "#D1D5DB"}`,
-            backgroundColor: p === page ? INK : "white",
-            color: p === page ? "white" : "#6B7280",
-            fontWeight: 600,
-            fontSize: rem(13),
-            transition: "all 150ms ease",
-          }}
-        >
-          {p}
-        </UnstyledButton>
-      ))}
+      {paginationRange(page, totalPages).map((p, i) =>
+        p === "ellipsis" ? (
+          <Text key={`ellipsis-${i}`} size="xs" c="dimmed" style={{ width: rem(18), textAlign: "center" }}>
+            …
+          </Text>
+        ) : (
+          <UnstyledButton
+            key={p}
+            onClick={() => onChange(p)}
+            style={{
+              ...btnBase,
+              border: `1.5px solid ${p === page ? INK : "#D1D5DB"}`,
+              backgroundColor: p === page ? INK : "white",
+              color: p === page ? "white" : "#6B7280",
+              fontWeight: 600,
+              fontSize: rem(12),
+              transition: "all 150ms ease",
+            }}
+          >
+            {p}
+          </UnstyledButton>
+        )
+      )}
 
       <UnstyledButton
         onClick={() => onChange(page + 1)}
@@ -898,7 +940,7 @@ function Pagination({
         aria-label="Next"
         style={{ ...btnBase, cursor: page === totalPages ? "default" : "pointer", opacity: page === totalPages ? 0.4 : 1 }}
       >
-        <IconChevronRight size={14} stroke={2} />
+        <IconChevronRight size={12} stroke={2} />
       </UnstyledButton>
     </Group>
   );
@@ -916,20 +958,51 @@ export default function ReferencesPage() {
   const [selectedWord, setSelectedWord] = useState<WordEntry | null>(null);
   const [selectedFormula, setSelectedFormula] = useState<FormulaEntry | null>(null);
 
+  const [words, setWords] = useState<WordEntry[]>([]);
+  const [formulas, setFormulas] = useState<FormulaEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(false);
+    Promise.all([fetchWords(), fetchFormulas()])
+      .then(([w, f]) => {
+        if (cancelled) return;
+        setWords(w);
+        setFormulas(f);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
+
+  const normalizedSearch = normalizeForSearch(search);
+
   const filteredWords = useMemo(() =>
-    WORDS.filter((w) =>
+    words.filter((w) =>
       (subject === "All" || w.subject === subject) &&
-      (!search || w.term.toLowerCase().includes(search.toLowerCase()) || w.definition.toLowerCase().includes(search.toLowerCase()))
+      (!normalizedSearch ||
+        [w.term, w.definition, w.zh, w.pinyin].some((field) => field && normalizeForSearch(field).includes(normalizedSearch)))
     ),
-    [subject, search]
+    [words, subject, normalizedSearch]
   );
 
   const filteredFormulas = useMemo(() =>
-    FORMULAS.filter((f) =>
+    formulas.filter((f) =>
       (subject === "All" || f.subject === subject) &&
-      (!search || f.name.toLowerCase().includes(search.toLowerCase()) || f.formula.toLowerCase().includes(search.toLowerCase()) || f.description.toLowerCase().includes(search.toLowerCase()))
+      (!normalizedSearch ||
+        [f.name, f.formula, f.description, f.zhName, f.pinyin].some((field) => field && normalizeForSearch(field).includes(normalizedSearch)))
     ),
-    [subject, search]
+    [formulas, subject, normalizedSearch]
   );
 
   // Reset to page 1 whenever filters or tab change
@@ -1050,7 +1123,11 @@ export default function ReferencesPage() {
 
           {/* Content */}
           <Box px="lg" pb="lg">
-            {activeTab === "words" ? (
+            {loading ? (
+              <LoadingState />
+            ) : loadError ? (
+              <ErrorState onRetry={() => setReloadKey((k) => k + 1)} />
+            ) : activeTab === "words" ? (
               filteredWords.length === 0 ? (
                 <EmptyState />
               ) : view === "grid" ? (
