@@ -99,7 +99,7 @@ export default function LoginPage() {
     setForgotError("");
   }
 
-  function storeSession(accessToken: string, refreshToken: string, user: { id: string; user_id: string; full_name: string; email: string }) {
+  function storeSession(accessToken: string, refreshToken: string, user: { id: string; user_id: string; full_name: string; email: string; avatar_url?: string | null }) {
     setAccessToken(accessToken);
     setUser(user);
     localStorage.setItem("refresh_token", refreshToken);

@@ -49,7 +49,7 @@ export function ProfileMenu() {
       <Menu.Target>
         <UnstyledButton style={{ borderRadius: rem(10), cursor: "pointer" }}>
           <Group gap="xs" align="center">
-            <Avatar color="dark" radius="xl" size={38}>
+            <Avatar src={user?.avatar_url ?? undefined} color="dark" radius="xl" size={38}>
               {initials}
             </Avatar>
             <Box visibleFrom="sm">
