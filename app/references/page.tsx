@@ -405,6 +405,9 @@ function GalleryShell({
   opened, onClose, count, idx,
   hasPrev, hasNext, onPrev, onNext,
   renderSlot,
+  headerExtra,
+  progress,
+  activeScale = 1.06,
 }: {
   opened: boolean;
   onClose: () => void;
@@ -415,6 +418,12 @@ function GalleryShell({
   onPrev: () => void;
   onNext: () => void;
   renderSlot: (slot: "prev" | "current" | "next") => React.ReactNode;
+  headerExtra?: React.ReactNode;
+  progress?: number;
+  // Scale applied to the active slot. Keep at 1 for content with its own 3D transform
+  // (e.g. a flip card) — scaling an already-GPU-composited 3D layer stretches its
+  // rasterized bitmap instead of repainting crisply, which looks blurry.
+  activeScale?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [cw, setCw] = useState(680);
@@ -511,7 +520,7 @@ function GalleryShell({
     const becomingActive = slotIsBecomingActive(slot);
     const becomingInactive = slotIsBecomingInactive(slot);
     const isActive = slot === "current" && !becomingInactive || becomingActive;
-    const scale = isActive ? "scale(1.06)" : "scale(0.88) translateY(8px)";
+    const scale = isActive ? `scale(${activeScale})` : "scale(0.88) translateY(8px)";
     const blur = isActive ? "none" : (hasSide ? "blur(3px) brightness(0.68)" : "none");
     const zIdx = isActive ? 3 : (slot === "current" && becomingInactive) ? 2 : 1;
     const trans = noTrans ? "none" : `opacity ${DUR}ms ${EASE}, filter ${DUR}ms ${EASE}, transform ${DUR}ms ${EASE}, box-shadow ${DUR}ms ${EASE}`;
@@ -551,16 +560,45 @@ function GalleryShell({
       <Group
         justify="space-between"
         align="center"
-        style={{ position: "relative", zIndex: 1, width: "min(720px, 95vw)", marginBottom: rem(16) }}
+        style={{ position: "relative", zIndex: 1, width: "min(720px, 95vw)", marginBottom: progress !== undefined ? rem(12) : rem(16) }}
       >
         <Text size="sm" c="rgba(255,255,255,0.5)" fw={600}>{idx + 1} / {count}</Text>
-        <UnstyledButton
-          onClick={onClose}
-          style={{ width: rem(32), height: rem(32), borderRadius: rem(8), backgroundColor: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}
-        >
-          <IconX size={16} stroke={2} color="rgba(255,255,255,0.8)" />
-        </UnstyledButton>
+        <Group gap={8}>
+          {headerExtra}
+          <UnstyledButton
+            onClick={onClose}
+            style={{ width: rem(32), height: rem(32), borderRadius: rem(8), backgroundColor: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            <IconX size={16} stroke={2} color="rgba(255,255,255,0.8)" />
+          </UnstyledButton>
+        </Group>
       </Group>
+
+      {/* Progress bar (optional — used by flashcard study) */}
+      {progress !== undefined && (
+        <Box
+          style={{
+            position: "relative",
+            zIndex: 1,
+            width: "min(720px, 95vw)",
+            height: rem(4),
+            borderRadius: rem(999),
+            backgroundColor: "rgba(255,255,255,0.15)",
+            marginBottom: rem(20),
+            overflow: "hidden",
+          }}
+        >
+          <Box
+            style={{
+              height: "100%",
+              width: `${progress}%`,
+              backgroundColor: PRIMARY,
+              borderRadius: rem(999),
+              transition: "width 300ms ease",
+            }}
+          />
+        </Box>
+      )}
 
       {/* Gallery viewport — clips the strip to show peek */}
       <Box
@@ -762,8 +800,165 @@ interface FlashcardItem {
   subject: Subject;
   front: string;
   back: string;
+  hanzi?: string;
+  pinyin?: string;
   detail?: string;
   extra?: string[];
+}
+
+function FlashcardFace({
+  card,
+  meta,
+  Icon,
+  side,
+}: {
+  card: FlashcardItem;
+  meta: (typeof SUBJECT_META)[Subject];
+  Icon: React.ElementType;
+  side: "front" | "back";
+}) {
+  if (side === "front") {
+    return (
+      <Box
+        style={{
+          position: "absolute",
+          inset: 0,
+          backfaceVisibility: "hidden",
+          WebkitBackfaceVisibility: "hidden",
+          backgroundColor: "white",
+          borderRadius: rem(18),
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: rem(32),
+          gap: rem(12),
+          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+        }}
+      >
+        <Group gap={6}>
+          <Box
+            style={{
+              width: rem(24),
+              height: rem(24),
+              borderRadius: rem(6),
+              backgroundColor: meta.iconBg,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon size={13} stroke={1.5} color={meta.iconColor} />
+          </Box>
+          <Text size="xs" fw={600} c={meta.iconColor}>{card.subject}</Text>
+        </Group>
+
+        {card.hanzi && (
+          <Text fw={800} style={{ fontSize: rem(40), lineHeight: 1.1, letterSpacing: "-0.02em" }} c={INK} ta="center">
+            {card.hanzi}
+          </Text>
+        )}
+
+        <Text fw={800} size="xl" c={INK} ta="center" lh={1.3}>
+          {card.front}
+        </Text>
+
+        <Text size="xs" c="dimmed" mt={8}>Click to reveal →</Text>
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      style={{
+        position: "absolute",
+        inset: 0,
+        backfaceVisibility: "hidden",
+        WebkitBackfaceVisibility: "hidden",
+        transform: "rotateY(180deg)",
+        backgroundColor: INK,
+        borderRadius: rem(18),
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: rem(32),
+        gap: rem(10),
+        boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+        overflowY: "auto",
+      }}
+    >
+      {card.pinyin && (
+        <Text fw={800} size="lg" c={PRIMARY} ta="center" mb={2} style={{ letterSpacing: "0.03em" }}>
+          {card.pinyin}
+        </Text>
+      )}
+
+      <Text fw={600} size="sm" c={PRIMARY} ta="center" lh={1.55}>
+        <LatexText>{card.back}</LatexText>
+      </Text>
+
+      {card.detail && (
+        <Box
+          px="md"
+          py="xs"
+          mt={4}
+          style={{
+            backgroundColor: "rgba(255,255,255,0.08)",
+            borderRadius: rem(10),
+            width: "100%",
+          }}
+        >
+          <Text size="xs" c="rgba(255,255,255,0.6)" ta="center" style={{ fontStyle: "italic" }}>
+            {card.detail}
+          </Text>
+        </Box>
+      )}
+
+      {card.extra && card.extra.length > 0 && (
+        <Stack gap={3} mt={4} style={{ width: "100%" }}>
+          {card.extra.map((v, i) => (
+            <Text key={i} size="xs" c="rgba(255,255,255,0.45)" ta="center">{v}</Text>
+          ))}
+        </Stack>
+      )}
+    </Box>
+  );
+}
+
+function FlipCard({
+  card,
+  interactive,
+  flipped,
+  onFlip,
+}: {
+  card: FlashcardItem;
+  interactive: boolean;
+  flipped: boolean;
+  onFlip: () => void;
+}) {
+  const meta = SUBJECT_META[card.subject];
+  const Icon = meta.icon;
+  return (
+    <Box
+      onClick={interactive ? onFlip : undefined}
+      style={{ perspective: "1200px", width: "100%", height: rem(300), cursor: interactive ? "pointer" : "default" }}
+    >
+      <Box
+        style={{
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          transformStyle: "preserve-3d",
+          transition: "transform 0.45s ease",
+          transform: interactive && flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+        }}
+      >
+        <FlashcardFace card={card} meta={meta} Icon={Icon} side="front" />
+        <FlashcardFace card={card} meta={meta} Icon={Icon} side="back" />
+      </Box>
+    </Box>
+  );
 }
 
 function FlashcardStudy({
@@ -777,22 +972,9 @@ function FlashcardStudy({
   const [flipped, setFlipped] = useState(false);
   const [deck, setDeck] = useState(items);
 
-  const card = deck[index];
-  const meta = SUBJECT_META[card.subject];
-  const Icon = meta.icon;
-
-  function handleFlip() {
-    setFlipped((v) => !v);
-  }
-
-  function handlePrev() {
+  function goTo(i: number) {
     setFlipped(false);
-    setTimeout(() => setIndex((i) => Math.max(0, i - 1)), 150);
-  }
-
-  function handleNext() {
-    setFlipped(false);
-    setTimeout(() => setIndex((i) => Math.min(deck.length - 1, i + 1)), 150);
+    setIndex(i);
   }
 
   function handleShuffle() {
@@ -802,241 +984,45 @@ function FlashcardStudy({
     setFlipped(false);
   }
 
-  const progress = ((index + 1) / deck.length) * 100;
+  function renderSlot(slot: "prev" | "current" | "next") {
+    const i = slot === "prev" ? index - 1 : slot === "next" ? index + 1 : index;
+    const card = deck[i];
+    if (!card) return null;
+    return <FlipCard card={card} interactive={slot === "current"} flipped={flipped} onFlip={() => setFlipped((v) => !v)} />;
+  }
 
   return (
-    <Box
-      style={{
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(15,23,42,0.75)",
-        zIndex: 9990,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: rem(24),
-      }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      {/* Header bar */}
-      <Box
-        style={{
-          width: "100%",
-          maxWidth: rem(600),
-          marginBottom: rem(20),
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <Text fw={600} size="sm" c="rgba(255,255,255,0.7)">
-          {index + 1} / {deck.length}
-        </Text>
-
-        <Group gap={8}>
-          <Tooltip label="Shuffle deck" withArrow>
-            <UnstyledButton
-              onClick={handleShuffle}
-              style={{
-                width: rem(34),
-                height: rem(34),
-                borderRadius: rem(8),
-                backgroundColor: "rgba(255,255,255,0.1)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <IconArrowsShuffle size={16} stroke={1.5} color="rgba(255,255,255,0.7)" />
-            </UnstyledButton>
-          </Tooltip>
-          <Tooltip label="Close" withArrow>
-            <UnstyledButton
-              onClick={onClose}
-              style={{
-                width: rem(34),
-                height: rem(34),
-                borderRadius: rem(8),
-                backgroundColor: "rgba(255,255,255,0.1)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <IconX size={16} stroke={2} color="rgba(255,255,255,0.7)" />
-            </UnstyledButton>
-          </Tooltip>
-        </Group>
-      </Box>
-
-      {/* Progress bar */}
-      <Box
-        style={{
-          width: "100%",
-          maxWidth: rem(600),
-          height: rem(4),
-          borderRadius: rem(999),
-          backgroundColor: "rgba(255,255,255,0.15)",
-          marginBottom: rem(24),
-          overflow: "hidden",
-        }}
-      >
-        <Box
-          style={{
-            height: "100%",
-            width: `${progress}%`,
-            backgroundColor: PRIMARY,
-            borderRadius: rem(999),
-            transition: "width 300ms ease",
-          }}
-        />
-      </Box>
-
-      {/* 3-D Flip Card */}
-      <Box
-        onClick={handleFlip}
-        style={{
-          perspective: "1200px",
-          width: "100%",
-          maxWidth: rem(560),
-          height: rem(300),
-          cursor: "pointer",
-          marginBottom: rem(20),
-        }}
-      >
-        <Box
-          style={{
-            position: "relative",
-            width: "100%",
-            height: "100%",
-            transformStyle: "preserve-3d",
-            transition: "transform 0.45s ease",
-            transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
-          }}
-        >
-          {/* Front */}
-          <Box
+    <GalleryShell
+      opened
+      onClose={onClose}
+      count={deck.length}
+      idx={index}
+      hasPrev={index > 0}
+      hasNext={index < deck.length - 1}
+      onPrev={() => goTo(index - 1)}
+      onNext={() => goTo(index + 1)}
+      renderSlot={renderSlot}
+      progress={((index + 1) / deck.length) * 100}
+      activeScale={1}
+      headerExtra={
+        <Tooltip label="Shuffle deck" withArrow>
+          <UnstyledButton
+            onClick={handleShuffle}
             style={{
-              position: "absolute",
-              inset: 0,
-              backfaceVisibility: "hidden",
-              WebkitBackfaceVisibility: "hidden",
-              backgroundColor: "white",
-              borderRadius: rem(18),
+              width: rem(32),
+              height: rem(32),
+              borderRadius: rem(8),
+              backgroundColor: "rgba(255,255,255,0.1)",
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              padding: rem(32),
-              gap: rem(12),
-              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
             }}
           >
-            <Group gap={6}>
-              <Box
-                style={{
-                  width: rem(24),
-                  height: rem(24),
-                  borderRadius: rem(6),
-                  backgroundColor: meta.iconBg,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Icon size={13} stroke={1.5} color={meta.iconColor} />
-              </Box>
-              <Text size="xs" fw={600} c={meta.iconColor}>{card.subject}</Text>
-            </Group>
-
-            <Text fw={800} size="xl" c={INK} ta="center" lh={1.3}>
-              {card.front}
-            </Text>
-
-            <Text size="xs" c="dimmed" mt={8}>Click to reveal →</Text>
-          </Box>
-
-          {/* Back */}
-          <Box
-            style={{
-              position: "absolute",
-              inset: 0,
-              backfaceVisibility: "hidden",
-              WebkitBackfaceVisibility: "hidden",
-              transform: "rotateY(180deg)",
-              backgroundColor: INK,
-              borderRadius: rem(18),
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: rem(32),
-              gap: rem(10),
-              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-              overflowY: "auto",
-            }}
-          >
-            <Text fw={600} size="sm" c={PRIMARY} ta="center" lh={1.55}>
-              {card.back}
-            </Text>
-
-            {card.detail && (
-              <Box
-                px="md"
-                py="xs"
-                mt={4}
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.08)",
-                  borderRadius: rem(10),
-                  width: "100%",
-                }}
-              >
-                <Text size="xs" c="rgba(255,255,255,0.6)" ta="center" style={{ fontStyle: "italic" }}>
-                  {card.detail}
-                </Text>
-              </Box>
-            )}
-
-            {card.extra && card.extra.length > 0 && (
-              <Stack gap={3} mt={4} style={{ width: "100%" }}>
-                {card.extra.map((v, i) => (
-                  <Text key={i} size="xs" c="rgba(255,255,255,0.45)" ta="center">{v}</Text>
-                ))}
-              </Stack>
-            )}
-          </Box>
-        </Box>
-      </Box>
-
-      {/* Navigation */}
-      <Group gap="md" align="center">
-        <Button
-          variant="white"
-          radius="xl"
-          size="sm"
-          disabled={index === 0}
-          onClick={handlePrev}
-          style={{ color: INK, fontWeight: 600 }}
-        >
-          ← Previous
-        </Button>
-
-        <Text size="sm" c="rgba(255,255,255,0.5)" fw={500}>
-          {flipped ? "Revealed" : "Tap card to reveal"}
-        </Text>
-
-        <Button
-          radius="xl"
-          size="sm"
-          disabled={index === deck.length - 1}
-          onClick={handleNext}
-          style={{ backgroundColor: PRIMARY, color: "white", fontWeight: 600 }}
-        >
-          Next →
-        </Button>
-      </Group>
-    </Box>
+            <IconArrowsShuffle size={16} stroke={1.5} color="rgba(255,255,255,0.8)" />
+          </UnstyledButton>
+        </Tooltip>
+      }
+    />
   );
 }
 
@@ -1205,6 +1191,8 @@ export default function ReferencesPage() {
         subject: w.subject,
         front: w.term,
         back: w.definition,
+        hanzi: w.zh,
+        pinyin: w.pinyin,
         detail: w.example,
       }));
     }
@@ -1213,6 +1201,8 @@ export default function ReferencesPage() {
       subject: f.subject,
       front: f.name,
       back: f.formula,
+      hanzi: f.zhName,
+      pinyin: f.pinyin,
       detail: f.description,
       extra: f.variables,
     }));
