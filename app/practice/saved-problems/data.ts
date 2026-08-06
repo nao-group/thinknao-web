@@ -650,4 +650,83 @@ Choice (A) gives a_n = ln(1/n), which produces 0 and negative numbers (负数); 
     },
     dateAdded: "2026-07-10",
   },
+  {
+    id: "15",
+    subject: "Science Chinese",
+    difficulty: "Medium",
+    topic: "Simple Harmonic Motion",
+    setName: "Science Chinese 3",
+    setSlug: "science-chinese-3",
+    question: "21. 这个化学反应会发光发热，反应____。",
+    image: "",
+    options: [
+      { key: "A", text: "活泼" },
+      { key: "B", text: "量度" },
+      { key: "C", text: "均匀" },
+      { key: "D", text: "剧烈" },
+      { key: "E", text: "稀薄" },
+      { key: "F", text: "自动" },
+    ],
+    correctAnswer: "D",
+    explanation: {
+      correctStatement: "A — Amplitude is 2 cm",
+      intro: "",
+      steps: [],
+      conclusion: "",
+      markdown: `Translated question: This chemical reaction will emit light and heat, the reaction is ____.
+
+A. **活泼** (Incorrect) — 活泼 means lively or active, typically used for people or behavior; it does not suitably describe a chemical reaction that emits light and heat.
+
+B. **量度** (Incorrect) — 量度 is a noun or verb meaning measurement or to measure; it does not function as an adjective to describe the reaction.
+
+C. **均匀** (Incorrect) — 均匀 means even or uniform; a reaction emitting light and heat is usually intense, not necessarily uniform, making this inappropriate.
+
+D. **剧烈** (Correct) — 剧烈 means intense, violent, or drastic; "反应剧烈" is a standard phrase for a vigorous chemical reaction, fitting the description of emitting light and heat.
+
+E. **稀薄** (Incorrect) — 稀薄 means thin or rarefied, often used for air; it does not match the context of a reaction that produces light and heat.
+
+F. **自动** (Incorrect) — 自动 means automatic; while some reactions are spontaneous, "反应自动" is not idiomatic for describing the intensity or nature of the reaction here.
+
+> The answer is (D).`,
+    },
+    dateAdded: "2026-07-10",
+  },
+  {
+    id: "16",
+    subject: "Science Chinese",
+    difficulty: "Medium",
+    topic: "Simple Harmonic Motion",
+    setName: "Science Chinese 3",
+    setSlug: "science-chinese-3",
+    question: "44能源是一次能源，它是在古代动、植物经过长期的生物、化学变化形成的45物的基础上产生的。石油、天然气等46都属于一次能源，它们的加工和燃烧会造成47，所以寻找更环保的能源已经成为各国当前的重要48。\n\n（本题针对第44空）",
+    image: "",
+    options: [
+      { key: "A", text: "燃料" },
+      { key: "B", text: "化石" },
+      { key: "C", text: "课题" },
+      { key: "D", text: "污染" },
+      { key: "E", text: "沉积" },
+    ],
+    correctAnswer: "B",
+    explanation: {
+      correctStatement: "A — Amplitude is 2 cm",
+      intro: "",
+      steps: [],
+      conclusion: "",
+      markdown: `Translated question: 44 energy is primary energy, it is produced on the basis of 45 things formed by ancient animals and plants through long-term biological and chemical changes. Petroleum, natural gas, etc. 46 are all primary energy, their processing and combustion will cause 47, so seeking more environmentally friendly energy has become an important 48 for countries.
+
+A. **燃料** (Incorrect) — means 'fuel'. '燃料能源' is not a standard collocation; the correct term is '化石能源' (fossil energy).
+
+B. **化石** (Correct) — means 'fossil'. '化石能源' fits the description of energy derived from ancient organic matter.
+
+C. **课题** (Incorrect) — means 'topic' or 'subject'. '课题能源' is nonsensical.
+
+D. **污染** (Incorrect) — means 'pollution'. '污染能源' does not match the context of being formed from ancient organisms; it would imply polluting energy.
+
+E. **沉积** (Incorrect) — means 'sediment' or 'deposit'. '沉积能源' is not a standard term; the correct term is '化石能源'.
+
+> The answer is (B).`,
+    },
+    dateAdded: "2026-07-10",
+  },
 ];
