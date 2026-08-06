@@ -36,6 +36,7 @@ import {
 import { notifications } from "@mantine/notifications";
 import api from "@/lib/api";
 import { ImageCropModal } from "@/components/image-crop-modal";
+import { useAuthStore } from "@/store/auth";
 
 import { INK, SURFACE, PRIMARY, CREAM, INDIGO } from "@/constants/colors";
 
@@ -102,6 +103,13 @@ function getErrorMessage(err: unknown, fallback: string): string {
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail) && detail[0] && typeof detail[0].msg === "string") return detail[0].msg;
   return fallback;
+}
+
+function syncAvatarInStore(avatarUrl: string | null) {
+  const current = useAuthStore.getState().user;
+  if (current) {
+    useAuthStore.getState().setUser({ ...current, avatar_url: avatarUrl });
+  }
 }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
@@ -282,7 +290,10 @@ export default function ProfilePage() {
 
   useEffect(() => {
     api.get<UserProfile>("/api/user/profile")
-      .then((res) => setProfile(res.data))
+      .then((res) => {
+        setProfile(res.data);
+        syncAvatarInStore(res.data.avatar_url);
+      })
       .finally(() => setLoading(false));
 
     api.get<{ data: { code: string; name: string }[] }>("/api/onboarding/provinces")
@@ -356,6 +367,9 @@ export default function ProfilePage() {
         if (kind === "avatar") return { ...p, avatar_url: res.data.avatar_url ?? p.avatar_url };
         return { ...p, banner_url: res.data.banner_url ?? p.banner_url };
       });
+      if (kind === "avatar" && res.data.avatar_url) {
+        syncAvatarInStore(res.data.avatar_url);
+      }
       notifications.show({
         title: "Updated",
         message: `Your ${kind === "avatar" ? "profile picture" : "banner"} has been updated.`,
@@ -475,7 +489,8 @@ export default function ProfilePage() {
             width: rem(32),
             height: rem(32),
             borderRadius: rem(8),
-            backgroundColor: "rgba(255,255,255,0.15)",
+            backgroundColor: "rgba(15, 23, 42, 0.55)",
+            boxShadow: "0 1px 4px rgba(0, 0, 0, 0.25)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -485,7 +500,7 @@ export default function ProfilePage() {
           {bannerUploading ? (
             <Loader size={14} color="white" />
           ) : (
-            <IconPencil size={14} stroke={1.5} color="rgba(255,255,255,0.85)" />
+            <IconPencil size={14} stroke={1.5} color="white" />
           )}
         </Box>
       </Box>
