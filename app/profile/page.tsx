@@ -36,6 +36,7 @@ import {
 import { notifications } from "@mantine/notifications";
 import api from "@/lib/api";
 import { ImageCropModal } from "@/components/image-crop-modal";
+import { CampusPickerModal, type Campus } from "@/components/campus-picker-modal";
 import { useAuthStore } from "@/store/auth";
 
 import { INK, SURFACE, PRIMARY, CREAM, INDIGO } from "@/constants/colors";
@@ -278,9 +279,11 @@ export default function ProfilePage() {
   const [provinces, setProvinces] = useState<{ value: string; label: string }[]>([]);
 
   const personal = useEditableSection<{ full_name: string; current_school: string; province: string; bio: string }>();
-  const dreamUni = useEditableSection<{ dream_university: string }>();
   const targetMajor = useEditableSection<{ target_major: string }>();
   const socialLinks = useEditableSection<{ instagram: string; tiktok: string; linkedin: string }>();
+
+  const [campusPickerOpen, setCampusPickerOpen] = useState(false);
+  const [dreamUniSaving, setDreamUniSaving] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -334,6 +337,18 @@ export default function ProfilePage() {
       // Error already surfaced via notification — keep the section open so the user can retry.
     } finally {
       section.setSaving(false);
+    }
+  }
+
+  async function handleSelectCampus(campus: Campus) {
+    setDreamUniSaving(true);
+    try {
+      await saveProfileFields({ dream_university: campus.name_en });
+      setCampusPickerOpen(false);
+    } catch {
+      // Error already surfaced via notification — keep the picker open so they can retry.
+    } finally {
+      setDreamUniSaving(false);
     }
   }
 
@@ -786,41 +801,23 @@ export default function ProfilePage() {
                     <IconSchool size={16} stroke={1.5} color={PRIMARY} />
                     <Text fw={700} size="sm" c={INK}>Dream University</Text>
                   </Group>
-                  {!dreamUni.editing && (
-                    <Box
-                      style={{ cursor: loading ? "default" : "pointer" }}
-                      onClick={() => !loading && dreamUni.start({ dream_university: profile?.dream_university ?? "" })}
-                    >
-                      <IconPencil size={14} stroke={1.5} color="#667080" />
-                    </Box>
-                  )}
+                  <Box
+                    style={{ cursor: loading ? "default" : "pointer" }}
+                    onClick={() => !loading && setCampusPickerOpen(true)}
+                  >
+                    <IconPencil size={14} stroke={1.5} color="#667080" />
+                  </Box>
                 </Group>
                 {loading ? (
                   <Skeleton height={36} radius="sm" mb="sm" />
-                ) : dreamUni.editing ? (
-                  <Stack gap="sm" mb="sm">
-                    <TextInput
-                      placeholder="e.g. University of the Philippines"
-                      value={dreamUni.draft.dream_university}
-                      onChange={(e) => dreamUni.setDraft({ dream_university: e.currentTarget.value })}
-                      styles={fieldInputStyles}
-                    />
-                    <Group justify="flex-end" gap={8}>
-                      <Button size="xs" variant="default" onClick={dreamUni.cancel} disabled={dreamUni.saving}>
-                        Cancel
-                      </Button>
-                      <Button
-                        size="xs"
-                        loading={dreamUni.saving}
-                        onClick={() => handleSectionSave(dreamUni)}
-                        style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
-                      >
-                        Save
-                      </Button>
-                    </Group>
-                  </Stack>
                 ) : (
-                  <Box px="sm" py="xs" mb="sm" style={{ backgroundColor: SURFACE, borderRadius: rem(8) }}>
+                  <Box
+                    onClick={() => setCampusPickerOpen(true)}
+                    px="sm"
+                    py="xs"
+                    mb="sm"
+                    style={{ backgroundColor: SURFACE, borderRadius: rem(8), cursor: "pointer" }}
+                  >
                     <Text size="sm" c={profile?.dream_university ? INK : "dimmed"} fw={profile?.dream_university ? 500 : 400}>
                       {profile?.dream_university ?? "Not set"}
                     </Text>
@@ -1025,6 +1022,15 @@ export default function ProfilePage() {
           saving={cropTarget.kind === "avatar" ? avatarUploading : bannerUploading}
           onCancel={closeCropModal}
           onSave={handleCroppedUpload}
+        />
+      )}
+
+      {campusPickerOpen && (
+        <CampusPickerModal
+          onClose={() => !dreamUniSaving && setCampusPickerOpen(false)}
+          onSelect={handleSelectCampus}
+          currentValue={profile?.dream_university ?? undefined}
+          saving={dreamUniSaving}
         />
       )}
     </Box>
