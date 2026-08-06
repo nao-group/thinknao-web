@@ -30,6 +30,7 @@ import {
 } from "@tabler/icons-react";
 import { FloatingChatbot } from "@/components/floating-chatbot";
 import { LatexText } from "@/components/latex-text";
+import { MarkdownLatexText } from "@/components/markdown-latex-text";
 import { ReportModal } from "@/components/report-modal";
 import { LanguageToggle, type Lang } from "@/components/language-toggle";
 
@@ -39,6 +40,190 @@ import {
   WRONG_BG, WRONG_BORDER, WRONG_RED, WRONG_DARK,
   NAV_CORRECT, NAV_WRONG,
 } from "@/constants/colors";
+import { DragDropParagraph } from "./DragDropParagraph";
+import { WordBankSet } from "./WordBankSet";
+import { PassageQuestionGroup } from "./PassageQuestionGroup";
+import type { ApiQuestion, QuestionGroup, FillAnswerMap, SubmitResult, BlankResult } from "./types";
+
+// ─── Mock question groups (one of each type) ──────────────────────────────────
+
+const MOCK_GROUPS: QuestionGroup[] = [
+  // ── 1. DT — drag single passage blanks ──────────────────────────────────────
+  {
+    type: "DT",
+    group_id: "mock-dt-1",
+    questions: [
+      {
+        id: "mock-dt-q1",
+        code: "SC-DT-001",
+        difficulty: "medium",
+        question_type: "DT",
+        group_id: "mock-dt-1",
+        passage: null,
+        image_url: null,
+        content_zh: {
+          question:
+            "化石能源是{1}能源，它是在古代动、植物经过长期的生物、化学{2}形成的{3}物的基础上产生的。石油、天然气等都属于一次能源，它们的加工和燃烧会造成环境{4}，所以寻找更环保的能源已经成为各国当前的重要{5}。",
+          correct_answers: { "1": "A", "2": "B", "3": "C", "4": "D", "5": "E" },
+          explanation: `{1}\`一次 (primary)\` — 化石能源属于**一次能源**，直接从自然界获取，无需二次转化。选项F"二次"（secondary）是干扰项。
+
+{2}\`变化 (change)\` — 古代动植物经过长期的**生物、化学变化**（biological and chemical changes）逐渐转化为化石燃料。
+
+{3}\`沉积 (sediment)\` — 有机物经过漫长地质年代的压缩与沉积，形成**沉积物**（sedimentary matter），最终成为石油、天然气等。
+
+{4}\`污染 (pollution)\` — 化石能源的加工和燃烧会产生CO₂、SO₂等有害气体，造成**环境污染**（environmental pollution）。
+
+{5}\`课题 (issue/topic)\` — 寻找更清洁能源已成为全球重要的研究**课题**（research topic）。
+
+> 正确答案 / Correct answers: {1} A · {2} B · {3} C · {4} D · {5} E`,
+        },
+        content_en: {
+          question:
+            "Fossil energy is {1} energy, produced from {3} matter formed by ancient plants and animals through long-term biological and chemical {2}. Petroleum and natural gas all belong to primary energy. Their processing and combustion cause environmental {4}, so finding cleaner energy sources has become an important {5} for all countries.",
+        },
+        choices: [
+          { key: "A", text: "一次 (primary)" },
+          { key: "B", text: "变化 (change)" },
+          { key: "C", text: "沉积 (sediment)" },
+          { key: "D", text: "污染 (pollution)" },
+          { key: "E", text: "课题 (issue)" },
+          { key: "F", text: "二次 (secondary)" },
+        ],
+      },
+    ],
+  },
+
+  // ── 2. XT — word bank shared across multiple sentences ───────────────────────
+  {
+    type: "XT",
+    group_id: "mock-xt-1",
+    questions: [
+      {
+        id: "mock-xt-q1",
+        code: "SC-XT-001",
+        difficulty: "medium",
+        question_type: "XT",
+        group_id: "mock-xt-1",
+        passage: null,
+        image_url: null,
+        content_zh: { question: "月亮绕地球{1}，产生了月相变化现象。", correct_answers: { "1": "A" } },
+        content_en: { question: "The moon {1} around Earth, producing the phases of the moon." },
+        choices: [
+          { key: "A", text: "公转 (orbit)" },
+          { key: "B", text: "发光 (emit light)" },
+          { key: "C", text: "相对 (relatively)" },
+          { key: "D", text: "静止 (stationary)" },
+        ],
+      },
+      {
+        id: "mock-xt-q2",
+        code: "SC-XT-002",
+        difficulty: "medium",
+        question_type: "XT",
+        group_id: "mock-xt-1",
+        passage: null,
+        image_url: null,
+        content_zh: { question: "月球本身不{1}，我们看到的是太阳照射后反射的光。", correct_answers: { "1": "B" } },
+        content_en: { question: "The moon does not {1} light itself; what we see is sunlight reflected off its surface." },
+        choices: null,
+      },
+      {
+        id: "mock-xt-q3",
+        code: "SC-XT-003",
+        difficulty: "medium",
+        question_type: "XT",
+        group_id: "mock-xt-1",
+        passage: null,
+        image_url: null,
+        content_zh: { question: "由于月球与地球的位置是{1}变化的，所以我们看到的月亮形状也在改变。", correct_answers: { "1": "C" } },
+        content_en: { question: "Because the position of the moon relative to Earth is {1} changing, the shape we see also changes." },
+        choices: null,
+      },
+    ],
+  },
+
+  // ── 3a. Passage Q1 ───────────────────────────────────────────────────────────
+  {
+    type: "passage",
+    group_id: "mock-passage-1",
+    passage:
+      `光合作用（Photosynthesis）是绿色植物利用叶绿素，将阳光、水（H₂O）和二氧化碳（CO₂）转化为葡萄糖（C₆H₁₂O₆）并释放氧气（O₂）的过程。这一过程发生在叶绿体中，分为需要光的"光反应"和不需要光的"暗反应"两个阶段。`,
+    questions: [
+      {
+        id: "mock-passage-q1",
+        code: "SC-PA-001",
+        difficulty: "easy",
+        question_type: "passage",
+        group_id: "mock-passage-1",
+        passage: null,
+        image_url: null,
+        choices: null,
+        content_zh: {
+          question: "光合作用的产物是什么？",
+          choices: { A: "水和二氧化碳", B: "葡萄糖和氧气", C: "阳光和叶绿素", D: "氢气和二氧化碳" },
+          correct_answer: "B",
+          explanation: `光合作用的化学方程式为：
+6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂
+
+**反应物（Reactants）**是CO₂和H₂O，**产物（Products）**是葡萄糖（C₆H₁₂O₆）和氧气（O₂）。
+
+A、C、D均不是光合作用的产物。
+
+> 正确答案 / Correct answer: B — 葡萄糖和氧气 (Glucose and oxygen)`,
+        },
+        content_en: {
+          question: "What are the products of photosynthesis?",
+          choices: { A: "Water and carbon dioxide", B: "Glucose and oxygen", C: "Sunlight and chlorophyll", D: "Hydrogen and carbon dioxide" },
+          correct_answer: "B",
+        },
+      },
+    ],
+  },
+
+  // ── 3b. Passage Q2 ───────────────────────────────────────────────────────────
+  {
+    type: "passage",
+    group_id: "mock-passage-2",
+    passage:
+      `光合作用（Photosynthesis）是绿色植物利用叶绿素，将阳光、水（H₂O）和二氧化碳（CO₂）转化为葡萄糖（C₆H₁₂O₆）并释放氧气（O₂）的过程。这一过程发生在叶绿体中，分为需要光的"光反应"和不需要光的"暗反应"两个阶段。`,
+    questions: [
+      {
+        id: "mock-passage-q2",
+        code: "SC-PA-002",
+        difficulty: "easy",
+        question_type: "passage",
+        group_id: "mock-passage-2",
+        passage: null,
+        image_url: null,
+        choices: null,
+        content_zh: {
+          question: "光合作用发生在哪个细胞器中？",
+          choices: { A: "线粒体", B: "核糖体", C: "细胞核", D: "叶绿体" },
+          correct_answer: "D",
+          explanation: `光合作用发生在**叶绿体（Chloroplast）**中，叶绿体含有叶绿素，能吸收光能。
+
+- A. **线粒体（Mitochondria）**：进行细胞呼吸，释放能量
+- B. **核糖体（Ribosome）**：合成蛋白质
+- C. **细胞核（Nucleus）**：储存遗传信息（DNA）
+
+> 正确答案 / Correct answer: D — 叶绿体 (Chloroplast)`,
+        },
+        content_en: {
+          question: "In which organelle does photosynthesis occur?",
+          choices: { A: "Mitochondria", B: "Ribosome", C: "Nucleus", D: "Chloroplast" },
+          correct_answer: "D",
+        },
+      },
+    ],
+  },
+
+  // ── 4. Standard MC ───────────────────────────────────────────────────────────
+  {
+    type: "standard",
+    group_id: null,
+    questions: [],   // falls through to QUESTIONS[3] in the render
+  },
+];
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
 
@@ -452,6 +637,37 @@ const QUESTIONS = [
     },
   },
 ];
+
+// ─── Question grouping ─────────────────────────────────────────────────────────
+
+function groupQuestions(questions: ApiQuestion[]): QuestionGroup[] {
+  const groups: QuestionGroup[] = [];
+  const grouped = new Set<string>();
+
+  for (const q of questions) {
+    if (grouped.has(q.id)) continue;
+
+    if (q.question_type === "standard" || !q.group_id) {
+      grouped.add(q.id);
+      groups.push({ type: q.question_type, group_id: null, questions: [q] });
+    } else if (q.question_type === "passage") {
+      const siblings = questions.filter((s) => s.group_id === q.group_id);
+      siblings.forEach((s) => grouped.add(s.id));
+      groups.push({
+        type: "passage",
+        group_id: q.group_id,
+        questions: siblings,
+        passage: siblings[0].passage ?? undefined,
+      });
+    } else {
+      // DT or XT
+      const siblings = questions.filter((s) => s.group_id === q.group_id);
+      siblings.forEach((s) => grouped.add(s.id));
+      groups.push({ type: q.question_type, group_id: q.group_id, questions: siblings });
+    }
+  }
+  return groups;
+}
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1068,10 +1284,10 @@ function SummaryView({
 
 export default function PracticeDetailPage() {
   const router = useRouter();
-  const [currentQ, setCurrentQ] = useState(2);
-  const [answers, setAnswers] = useState<Record<number, string>>({ 0: "A", 1: "A", 2: "B" });
-  const [submittedSet, setSubmittedSet] = useState<Set<number>>(new Set([0, 1, 2]));
-  const [flaggedSet, setFlaggedSet] = useState<Set<number>>(new Set([6]));
+  const [currentQ, setCurrentQ] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [submittedSet, setSubmittedSet] = useState<Set<number>>(new Set());
+  const [flaggedSet, setFlaggedSet] = useState<Set<number>>(new Set());
   const [bookmarked, setBookmarked] = useState<Set<number>>(new Set());
   const [elapsedSeconds, setElapsedSeconds] = useState(1122); // 18:42
   const [finished, setFinished] = useState(false);
@@ -1080,6 +1296,110 @@ export default function PracticeDetailPage() {
   const [pendingAnswer, setPendingAnswer] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>("en");
   const [reportOpen, setReportOpen] = useState(false);
+
+  // ── New question types (DT / XT / passage) ──────────────────────────────────
+  /** API-sourced question groups; falls back to wrapping mock QUESTIONS when empty */
+  const [questionGroups, setQuestionGroups] = useState<QuestionGroup[]>(MOCK_GROUPS);
+  /** questionId → { blankIndex → choiceKey } — for DT/XT drag-drop */
+  const [fillAnswers, setFillAnswers] = useState<FillAnswerMap>({});
+  /** Group indices that have been set-submitted (DT/XT) */
+  const [submittedGroups, setSubmittedGroups] = useState<Set<number>>(new Set());
+  /** questionId → submit result (correct/wrong + blank_results) */
+  const [submitResults, setSubmitResults] = useState<Record<string, SubmitResult>>({});
+  /** questionIds submitted individually (passage sub-questions) */
+  const [submittedIds, setSubmittedIds] = useState<Set<string>>(new Set());
+
+  /** Active group (null = fall back to QUESTIONS mock) */
+  const activeGroup: QuestionGroup | null = questionGroups[currentQ] ?? null;
+  const activeType = activeGroup?.type ?? "standard";
+
+  function updateFillAnswer(questionId: string, blankIdx: string, choiceKey: string) {
+    setFillAnswers((prev) => ({
+      ...prev,
+      [questionId]: { ...(prev[questionId] ?? {}), [blankIdx]: choiceKey },
+    }));
+  }
+
+  function handleSubmitGroup(groupIdx: number) {
+    if (submittedGroups.has(groupIdx) || !activeGroup) return;
+    // Generate blankResults for each question from correct_answers stored in content
+    const newResults: Record<string, SubmitResult> = {};
+    for (const q of activeGroup.questions) {
+      const correctAnswers = (q.content_zh.correct_answers ?? {}) as Record<string, string>;
+      const userBlanks = fillAnswers[q.id] ?? {};
+      const blankResults: BlankResult[] = Object.entries(correctAnswers).map(([blankIdx, correctKey]) => ({
+        blank_index: blankIdx,
+        correct: userBlanks[blankIdx] === correctKey,
+        correct_answer: correctKey,
+        user_answer: userBlanks[blankIdx] ?? "",
+      }));
+      newResults[q.id] = {
+        question_id: q.id,
+        correct: blankResults.every((r) => r.correct),
+        correct_answer: "",
+        difficulty: q.difficulty,
+        xp_awarded: blankResults.every((r) => r.correct) ? 5 : 0,
+        blank_results: blankResults,
+      };
+    }
+    setSubmitResults((prev) => ({ ...prev, ...newResults }));
+    setSubmittedGroups((prev) => { const next = new Set(prev); next.add(groupIdx); return next; });
+    setSubmittedSet((prev) => { const next = new Set(prev); next.add(groupIdx); return next; });
+  }
+
+  function handleSubmitDT(groupIdx: number) {
+    if (submittedGroups.has(groupIdx) || !activeGroup) return;
+    const q = activeGroup.questions[0];
+    const correctAnswers = (q.content_zh.correct_answers ?? {}) as Record<string, string>;
+    const userBlanks = fillAnswers[q.id] ?? {};
+    const blankResults: BlankResult[] = Object.entries(correctAnswers).map(([blankIdx, correctKey]) => ({
+      blank_index: blankIdx,
+      correct: userBlanks[blankIdx] === correctKey,
+      correct_answer: correctKey,
+      user_answer: userBlanks[blankIdx] ?? "",
+    }));
+    const allCorrect = blankResults.every((r) => r.correct);
+    setSubmitResults((prev) => ({
+      ...prev,
+      [q.id]: {
+        question_id: q.id,
+        correct: allCorrect,
+        correct_answer: "",
+        difficulty: q.difficulty,
+        xp_awarded: allCorrect ? 10 : 0,
+        blank_results: blankResults,
+      },
+    }));
+    setSubmittedGroups((prev) => { const next = new Set(prev); next.add(groupIdx); return next; });
+    setSubmittedSet((prev) => { const next = new Set(prev); next.add(groupIdx); return next; });
+  }
+
+  function handlePassageAnswer(questionId: string, key: string) {
+    setAnswers((prev) => ({ ...prev, [questionId as unknown as number]: key }));
+  }
+
+  function handlePassageSubmit(questionId: string) {
+    if (submittedIds.has(questionId)) return;
+    setSubmittedIds((prev) => { const next = new Set(prev); next.add(questionId); return next; });
+    // Generate result from correct_answer stored in content
+    const q = questionGroups.flatMap((g) => g.questions).find((q) => q.id === questionId);
+    if (q) {
+      const correctAnswer = (q.content_zh.correct_answer ?? q.content_en.correct_answer) as string | undefined;
+      if (correctAnswer) {
+        const userAns = (answers as Record<string, string>)[questionId] ?? "";
+        setSubmitResults((prev) => ({
+          ...prev,
+          [questionId]: {
+            question_id: questionId,
+            correct: userAns === correctAnswer,
+            correct_answer: correctAnswer,
+            difficulty: q.difficulty,
+            xp_awarded: userAns === correctAnswer ? 5 : 0,
+          },
+        }));
+      }
+    }
+  }
 
   // Timer — stops when finished
   useEffect(() => {
@@ -1116,7 +1436,8 @@ export default function PracticeDetailPage() {
   }
 
   function handleNext() {
-    if (currentQ === QUESTIONS.length - 1) return;
+    const total = questionGroups.length > 0 ? questionGroups.length : QUESTIONS.length;
+    if (currentQ === total - 1) return;
     setPendingAnswer(null);
     setCurrentQ((q) => q + 1);
   }
@@ -1264,45 +1585,137 @@ export default function PracticeDetailPage() {
                 </Group>
               </Group>
 
-              {/* Question text */}
-              <Box
-                mb="md"
-                p="md"
-                style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}
-              >
-                <Text size="md" c={INK} lh={1.7}>
-                  <LatexText>{lang === "zh" ? (q.zh?.text ?? q.text) : q.text}</LatexText>
-                </Text>
-              </Box>
-
-              {/* Options */}
-              <Stack gap={rem(8)}>
-                {q.options.map((opt) => {
-                  const isCorrect = isSubmitted && opt.key === q.correctAnswer;
-                  const isUserAns = isSubmitted && opt.key === answers[currentQ];
-                  return (
-                    <UnstyledButton
-                      key={opt.key}
-                      onClick={() => handleOptionSelect(opt.key)}
-                      disabled={isSubmitted}
-                      style={{ width: "100%", cursor: isSubmitted ? "default" : "pointer" }}
+              {/* ── Question body — branches on type ── */}
+              {activeType === "DT" && activeGroup ? (
+                <>
+                  <DragDropParagraph
+                    questionText={
+                      (lang === "zh"
+                        ? (activeGroup.questions[0].content_zh?.question as string)
+                        : (activeGroup.questions[0].content_en?.question as string)) ?? ""
+                    }
+                    wordChoices={activeGroup.questions[0].choices ?? []}
+                    userAnswers={fillAnswers[activeGroup.questions[0].id] ?? {}}
+                    submitted={submittedGroups.has(currentQ)}
+                    blankResults={submitResults[activeGroup.questions[0].id]?.blank_results}
+                    onChange={(blankIdx, choiceKey) =>
+                      updateFillAnswer(activeGroup.questions[0].id, blankIdx, choiceKey)
+                    }
+                  />
+                  {submittedGroups.has(currentQ) && (
+                    <Box
+                      mt="md"
+                      style={{
+                        backgroundColor: "#FFF9EC",
+                        borderLeft: `4px solid ${PRIMARY}`,
+                        borderRadius: rem(10),
+                        padding: rem(20),
+                      }}
                     >
-                      <OptionButton
-                        optKey={opt.key}
-                        text={lang === "zh" ? ((opt as { text_zh?: string }).text_zh ?? opt.text) : opt.text}
-                        selected={userAnswer === opt.key}
-                        submitted={isSubmitted}
-                        isCorrect={isCorrect}
-                        isUserAnswer={isUserAns}
-                      />
-                    </UnstyledButton>
-                  );
-                })}
-              </Stack>
+                      <Group gap={8} mb={rem(10)}>
+                        <IconNotes size={18} stroke={1.5} color={PRIMARY} />
+                        <Text size="sm" fw={700} c={PRIMARY}>
+                          Answer Key &amp; Explanation
+                        </Text>
+                      </Group>
+                      {/* Blank result chips */}
+                      {submitResults[activeGroup.questions[0].id]?.blank_results && (
+                        <Box style={{ display: "flex", flexWrap: "wrap", gap: rem(8), marginBottom: rem(14) }}>
+                          {submitResults[activeGroup.questions[0].id].blank_results!.map((r) => (
+                            <span
+                              key={r.blank_index}
+                              style={{
+                                padding: `${rem(4)} ${rem(12)}`,
+                                borderRadius: rem(8),
+                                border: `1px solid ${r.correct ? CORRECT_BORDER : WRONG_BORDER}`,
+                                backgroundColor: r.correct ? CORRECT_BG : WRONG_BG,
+                                color: r.correct ? CORRECT_GREEN : WRONG_RED,
+                                fontSize: rem(13),
+                                fontWeight: 500,
+                              }}
+                            >
+                              {`{${r.blank_index}}`} → {(activeGroup.questions[0].choices ?? []).find((c) => c.key === r.correct_answer)?.text ?? r.correct_answer}
+                              {!r.correct && (
+                                <span style={{ color: MUTED, fontWeight: 400 }}>
+                                  {" "}(you: {((activeGroup.questions[0].choices ?? []).find((c) => c.key === r.user_answer)?.text ?? r.user_answer) || "—"})
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </Box>
+                      )}
+                      {/* Markdown explanation */}
+                      {(activeGroup.questions[0].content_zh.explanation as string | undefined) && (
+                        <MarkdownLatexText>
+                          {activeGroup.questions[0].content_zh.explanation as string}
+                        </MarkdownLatexText>
+                      )}
+                    </Box>
+                  )}
+                </>
+              ) : activeType === "XT" && activeGroup ? (
+                <WordBankSet
+                  questions={activeGroup.questions}
+                  wordChoices={activeGroup.questions[0].choices ?? []}
+                  userAnswers={fillAnswers}
+                  submitted={submittedGroups.has(currentQ)}
+                  results={submitResults}
+                  lang={lang}
+                  onChange={updateFillAnswer}
+                  onSubmitSet={() => handleSubmitGroup(currentQ)}
+                />
+              ) : activeType === "passage" && activeGroup ? (
+                <PassageQuestionGroup
+                  passage={activeGroup.passage ?? ""}
+                  questions={activeGroup.questions}
+                  userAnswers={answers as unknown as Record<string, string>}
+                  submittedIds={submittedIds}
+                  results={submitResults}
+                  lang={lang}
+                  onAnswer={handlePassageAnswer}
+                  onSubmit={handlePassageSubmit}
+                />
+              ) : (
+                <>
+                  {/* Standard MC — existing render */}
+                  <Box
+                    mb="md"
+                    p="md"
+                    style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}
+                  >
+                    <Text size="md" c={INK} lh={1.7}>
+                      <LatexText>{lang === "zh" ? (q.zh?.text ?? q.text) : q.text}</LatexText>
+                    </Text>
+                  </Box>
 
-              {/* Explanation (shown after submission) */}
-              {isSubmitted && (
-                <ExplanationBox explanation={lang === "zh" ? (q.zh?.explanation ?? q.explanation) : q.explanation} />
+                  <Stack gap={rem(8)}>
+                    {q.options.map((opt) => {
+                      const isCorrect = isSubmitted && opt.key === q.correctAnswer;
+                      const isUserAns = isSubmitted && opt.key === answers[currentQ];
+                      return (
+                        <UnstyledButton
+                          key={opt.key}
+                          onClick={() => handleOptionSelect(opt.key)}
+                          disabled={isSubmitted}
+                          style={{ width: "100%", cursor: isSubmitted ? "default" : "pointer" }}
+                        >
+                          <OptionButton
+                            optKey={opt.key}
+                            text={lang === "zh" ? ((opt as { text_zh?: string }).text_zh ?? opt.text) : opt.text}
+                            selected={userAnswer === opt.key}
+                            submitted={isSubmitted}
+                            isCorrect={isCorrect}
+                            isUserAnswer={isUserAns}
+                          />
+                        </UnstyledButton>
+                      );
+                    })}
+                  </Stack>
+
+                  {isSubmitted && (
+                    <ExplanationBox explanation={lang === "zh" ? (q.zh?.explanation ?? q.explanation) : q.explanation} />
+                  )}
+                </>
               )}
             </Box>
 
@@ -1319,31 +1732,44 @@ export default function PracticeDetailPage() {
                 Previous
               </Button>
 
-              {isSubmitted ? (
-                <Button
-                  disabled
-                  radius="md"
-                  leftSection={<IconCheck size={15} stroke={2.5} />}
-                  style={{ backgroundColor: SURFACE, color: MUTED, cursor: "default" }}
-                >
-                  Submitted
-                </Button>
-              ) : (
-                <Button
-                  radius="md"
-                  onClick={handleSubmit}
-                  disabled={!pendingAnswer}
-                  style={{
-                    backgroundColor: pendingAnswer ? PRIMARY : SURFACE,
-                    color: pendingAnswer ? "white" : MUTED,
-                    fontWeight: 600,
-                  }}
-                >
-                  Submit
-                </Button>
-              )}
+              {/* Submit button — all types */}
+              {(() => {
+                const submittedBtn = (
+                  <Button disabled radius="md" leftSection={<IconCheck size={15} stroke={2.5} />}
+                    style={{ backgroundColor: SURFACE, color: MUTED, cursor: "default" }}>
+                    Submitted
+                  </Button>
+                );
+                const submitBtn = (enabled: boolean, onClick: () => void) => (
+                  <Button radius="md" onClick={onClick} disabled={!enabled}
+                    style={{ backgroundColor: enabled ? PRIMARY : SURFACE, color: enabled ? "white" : MUTED, fontWeight: 600 }}>
+                    Submit
+                  </Button>
+                );
 
-              {currentQ === QUESTIONS.length - 1 ? (
+                if (activeType === "DT") {
+                  const dtId = activeGroup?.questions[0].id ?? "";
+                  const dtEnabled = Object.keys(fillAnswers[dtId] ?? {}).length > 0;
+                  return submittedGroups.has(currentQ) ? submittedBtn : submitBtn(dtEnabled, () => handleSubmitDT(currentQ));
+                }
+                if (activeType === "XT") {
+                  const xtEnabled = activeGroup?.questions.every((q) => {
+                    const text = (q.content_zh?.question as string) ?? "";
+                    return [...text.matchAll(/\{(\d+)\}/g)].every((m) => Boolean(fillAnswers[q.id]?.[m[1]]));
+                  }) ?? false;
+                  return submittedGroups.has(currentQ) ? submittedBtn : submitBtn(xtEnabled, () => handleSubmitGroup(currentQ));
+                }
+                if (activeType === "passage") {
+                  const pqId = activeGroup?.questions[0].id ?? "";
+                  const pEnabled = Boolean((answers as Record<string, string>)[pqId]);
+                  return submittedIds.has(pqId) ? submittedBtn : submitBtn(pEnabled, () => handlePassageSubmit(pqId));
+                }
+                // Standard MC
+                return isSubmitted ? submittedBtn : submitBtn(Boolean(pendingAnswer), handleSubmit);
+              })()}
+
+
+              {currentQ === (questionGroups.length > 0 ? questionGroups.length : QUESTIONS.length) - 1 ? (
                 <Button
                   radius="xl"
                   leftSection={<IconCheck size={15} stroke={2.5} />}
@@ -1372,13 +1798,13 @@ export default function PracticeDetailPage() {
           >
             <Stack gap="md">
               <ProgressCard
-                total={QUESTIONS.length}
+                total={questionGroups.length > 0 ? questionGroups.length : QUESTIONS.length}
                 submittedSet={submittedSet}
                 answers={answers}
                 flaggedSet={flaggedSet}
               />
               <QuestionNavigator
-                total={QUESTIONS.length}
+                total={questionGroups.length > 0 ? questionGroups.length : QUESTIONS.length}
                 currentQ={currentQ}
                 submittedSet={submittedSet}
                 answers={answers}

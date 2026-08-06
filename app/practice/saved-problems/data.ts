@@ -729,4 +729,47 @@ E. **沉积** (Incorrect) — means 'sediment' or 'deposit'. '沉积能源' is n
     },
     dateAdded: "2026-07-10",
   },
+  {
+    id: "17",
+    subject: "Science Chinese",
+    difficulty: "Medium",
+    topic: "Simple Harmonic Motion",
+    setName: "Science Chinese 3",
+    setSlug: "science-chinese-3",
+    question: "月亮和地球一样都是球形，但我们看到月亮的{1}总在变化。这是因为月亮不是{2}的，它绕地球运动时跟地球的{3}位置也在不断变化。我们看到的月亮没变，只是因为我们在相同{4}上{5}，看到了不同位置上的月亮。",
+    image: "",
+    options: [
+      { key: "A", text: "平面" },
+      { key: "B", text: "形状" },
+      { key: "C", text: "观察" },
+      { key: "D", text: "静止" },
+      { key: "E", text: "相对" },
+    ],
+    correctAnswer: "B",
+    explanation: {
+      correctStatement: "A — Amplitude is 2 cm",
+      intro: "",
+      steps: [],
+      conclusion: "",
+      markdown: `月亮和地球一样都是球形，但我们看到月亮的{1}\`形状 (shape)\`总在变化。这是因为月亮不是{2}\`静止 (stationary)\`的，它绕地球运动时跟地球的{3}\`相对 (relative)\`位置也在不断变化。我们看到的月亮没变，只是因为我们在相同{4}\`平面 (plane)\`上{5}\`观察 (observe)\`，看到了不同位置上的月亮。
+
+The moon is spherical just like the Earth, but the {1} \`形状 (shape)\` we see is always changing. This is because the moon is not {2} \`静止 (stationary)\`, and as it orbits Earth, its {3} \`相对 (relative)\` position relative to Earth is also constantly changing. The moon we see hasn't changed; it's just because we are on the same {4} \`平面 (plane)\` and {5} \`观察 (observe)\`, seeing the moon at different positions.
+
+{1}形状 (shape)
+The moon's phases cause the visible illuminated portion to change shape, so what we observe is a changing shape.
+
+> {2}静止 (stationary)
+> The moon is in constant orbital motion around Earth, meaning it is never stationary.
+
+> {3}相对 (relative)
+> As the moon orbits, its position relative to Earth changes continuously, hence 'relative position'.
+
+> {4}平面 (plane)
+> Observers on Earth are situated on the same terrestrial plane (the surface), providing a consistent viewing plane.
+
+> {5}观察 (observe)
+> From that same plane, we observe the moon, leading to the perception of its different positions in the sky.`,
+    },
+    dateAdded: "2026-07-10",
+  },
 ];

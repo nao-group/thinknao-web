@@ -6,6 +6,7 @@ import { rem } from "@mantine/core";
 
 const MATH_RE = /(\$\$[\s\S]+?\$\$|\$[^\$\n]+?\$)/g;
 const BOLD_RE = /(\*\*(?:[^*]|\*(?!\*))+\*\*)/g;
+const CODE_RE = /(`[^`]+`)/g;
 
 function renderMath(latex: string, display: boolean): string {
   return katex.renderToString(latex, { throwOnError: false, displayMode: display });
@@ -35,19 +36,46 @@ function parseMath(text: string, keyPrefix: string): React.ReactElement[] {
   });
 }
 
+function parseCode(text: string, keyPrefix: string): React.ReactElement[] {
+  return text.split(CODE_RE).map((part, i) => {
+    const key = `${keyPrefix}-c${i}`;
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <span
+          key={key}
+          style={{
+            display: "inline-block",
+            backgroundColor: "#F5E6CC",
+            color: CORRECT_DARK,
+            borderRadius: rem(4),
+            padding: `0 ${rem(6)}`,
+            fontWeight: 600,
+            fontSize: "0.9em",
+            lineHeight: 1.5,
+          }}
+        >
+          {part.slice(1, -1)}
+        </span>
+      );
+    }
+    return <span key={key}>{part}</span>;
+  });
+}
+
 function parseInline(text: string, keyPrefix: string): React.ReactElement[] {
   return text.split(BOLD_RE).flatMap((part, i): React.ReactElement[] => {
     const key = `${keyPrefix}-b${i}`;
     if (part.startsWith("**") && part.endsWith("**")) {
-      return [<strong key={key}>{parseMath(part.slice(2, -2), key)}</strong>];
+      return [<strong key={key}>{parseCode(part.slice(2, -2), key)}</strong>];
     }
-    return parseMath(part, key);
+    return parseCode(part, key);
   });
 }
 
 /**
  * Renders a markdown-style string with support for:
  * - **bold** text
+ * - `inline code` (rendered as amber highlight chip)
  * - $inline$ and $$display$$ LaTeX math
  * - > blockquote lines (rendered as highlighted answer box)
  * - Paragraphs separated by blank lines
