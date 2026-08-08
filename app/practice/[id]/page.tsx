@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import {
   Box,
   Badge,
@@ -29,7 +29,6 @@ import {
   IconNotes,
 } from "@tabler/icons-react";
 import { FloatingChatbot } from "@/components/floating-chatbot";
-import { LatexText } from "@/components/latex-text";
 import { MarkdownLatexText } from "@/components/markdown-latex-text";
 import { ReportModal } from "@/components/report-modal";
 import { LanguageToggle, type Lang } from "@/components/language-toggle";
@@ -43,915 +42,86 @@ import {
 import { DragDropParagraph } from "./DragDropParagraph";
 import { WordBankSet } from "./WordBankSet";
 import { PassageQuestionGroup } from "./PassageQuestionGroup";
-import type { ApiQuestion, QuestionGroup, FillAnswerMap, SubmitResult, BlankResult } from "./types";
-
-// ─── Mock question groups (one of each type) ──────────────────────────────────
-
-const MOCK_GROUPS: QuestionGroup[] = [
-  // ── 1. DT — drag single passage blanks ──────────────────────────────────────
-  {
-    type: "DT",
-    group_id: "mock-dt-1",
-    questions: [
-      {
-        id: "mock-dt-q1",
-        code: "SC-DT-001",
-        difficulty: "medium",
-        question_type: "DT",
-        group_id: "mock-dt-1",
-        passage: null,
-        image_url: null,
-        content_zh: {
-          question:
-            "化石能源是{1}能源，它是在古代动、植物经过长期的生物、化学{2}形成的{3}物的基础上产生的。石油、天然气等都属于一次能源，它们的加工和燃烧会造成环境{4}，所以寻找更环保的能源已经成为各国当前的重要{5}。",
-          correct_answers: { "1": "A", "2": "B", "3": "C", "4": "D", "5": "E" },
-          explanation: `{1}\`一次 (primary)\` — 化石能源属于**一次能源**，直接从自然界获取，无需二次转化。选项F"二次"（secondary）是干扰项。
-
-{2}\`变化 (change)\` — 古代动植物经过长期的**生物、化学变化**（biological and chemical changes）逐渐转化为化石燃料。
-
-{3}\`沉积 (sediment)\` — 有机物经过漫长地质年代的压缩与沉积，形成**沉积物**（sedimentary matter），最终成为石油、天然气等。
-
-{4}\`污染 (pollution)\` — 化石能源的加工和燃烧会产生CO₂、SO₂等有害气体，造成**环境污染**（environmental pollution）。
-
-{5}\`课题 (issue/topic)\` — 寻找更清洁能源已成为全球重要的研究**课题**（research topic）。
-
-> 正确答案 / Correct answers: {1} A · {2} B · {3} C · {4} D · {5} E`,
-        },
-        content_en: {
-          question:
-            "Fossil energy is {1} energy, produced from {3} matter formed by ancient plants and animals through long-term biological and chemical {2}. Petroleum and natural gas all belong to primary energy. Their processing and combustion cause environmental {4}, so finding cleaner energy sources has become an important {5} for all countries.",
-        },
-        choices: [
-          { key: "A", text: "一次 (primary)" },
-          { key: "B", text: "变化 (change)" },
-          { key: "C", text: "沉积 (sediment)" },
-          { key: "D", text: "污染 (pollution)" },
-          { key: "E", text: "课题 (issue)" },
-          { key: "F", text: "二次 (secondary)" },
-        ],
-      },
-    ],
-  },
-
-  // ── 2. XT — word bank shared across multiple sentences ───────────────────────
-  {
-    type: "XT",
-    group_id: "mock-xt-1",
-    questions: [
-      {
-        id: "mock-xt-q1",
-        code: "SC-XT-001",
-        difficulty: "medium",
-        question_type: "XT",
-        group_id: "mock-xt-1",
-        passage: null,
-        image_url: null,
-        content_zh: { question: "月亮绕地球{1}，产生了月相变化现象。", correct_answers: { "1": "A" } },
-        content_en: { question: "The moon {1} around Earth, producing the phases of the moon." },
-        choices: [
-          { key: "A", text: "公转 (orbit)" },
-          { key: "B", text: "发光 (emit light)" },
-          { key: "C", text: "相对 (relatively)" },
-          { key: "D", text: "静止 (stationary)" },
-        ],
-      },
-      {
-        id: "mock-xt-q2",
-        code: "SC-XT-002",
-        difficulty: "medium",
-        question_type: "XT",
-        group_id: "mock-xt-1",
-        passage: null,
-        image_url: null,
-        content_zh: { question: "月球本身不{1}，我们看到的是太阳照射后反射的光。", correct_answers: { "1": "B" } },
-        content_en: { question: "The moon does not {1} light itself; what we see is sunlight reflected off its surface." },
-        choices: null,
-      },
-      {
-        id: "mock-xt-q3",
-        code: "SC-XT-003",
-        difficulty: "medium",
-        question_type: "XT",
-        group_id: "mock-xt-1",
-        passage: null,
-        image_url: null,
-        content_zh: { question: "由于月球与地球的位置是{1}变化的，所以我们看到的月亮形状也在改变。", correct_answers: { "1": "C" } },
-        content_en: { question: "Because the position of the moon relative to Earth is {1} changing, the shape we see also changes." },
-        choices: null,
-      },
-    ],
-  },
-
-  // ── 3a. Passage Q1 ───────────────────────────────────────────────────────────
-  {
-    type: "passage",
-    group_id: "mock-passage-1",
-    passage:
-      `光合作用（Photosynthesis）是绿色植物利用叶绿素，将阳光、水（H₂O）和二氧化碳（CO₂）转化为葡萄糖（C₆H₁₂O₆）并释放氧气（O₂）的过程。这一过程发生在叶绿体中，分为需要光的"光反应"和不需要光的"暗反应"两个阶段。`,
-    questions: [
-      {
-        id: "mock-passage-q1",
-        code: "SC-PA-001",
-        difficulty: "easy",
-        question_type: "passage",
-        group_id: "mock-passage-1",
-        passage: null,
-        image_url: null,
-        choices: null,
-        content_zh: {
-          question: "光合作用的产物是什么？",
-          choices: { A: "水和二氧化碳", B: "葡萄糖和氧气", C: "阳光和叶绿素", D: "氢气和二氧化碳" },
-          correct_answer: "B",
-          explanation: `光合作用的化学方程式为：
-6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂
-
-**反应物（Reactants）**是CO₂和H₂O，**产物（Products）**是葡萄糖（C₆H₁₂O₆）和氧气（O₂）。
-
-A、C、D均不是光合作用的产物。
-
-> 正确答案 / Correct answer: B — 葡萄糖和氧气 (Glucose and oxygen)`,
-        },
-        content_en: {
-          question: "What are the products of photosynthesis?",
-          choices: { A: "Water and carbon dioxide", B: "Glucose and oxygen", C: "Sunlight and chlorophyll", D: "Hydrogen and carbon dioxide" },
-          correct_answer: "B",
-        },
-      },
-    ],
-  },
-
-  // ── 3b. Passage Q2 ───────────────────────────────────────────────────────────
-  {
-    type: "passage",
-    group_id: "mock-passage-2",
-    passage:
-      `光合作用（Photosynthesis）是绿色植物利用叶绿素，将阳光、水（H₂O）和二氧化碳（CO₂）转化为葡萄糖（C₆H₁₂O₆）并释放氧气（O₂）的过程。这一过程发生在叶绿体中，分为需要光的"光反应"和不需要光的"暗反应"两个阶段。`,
-    questions: [
-      {
-        id: "mock-passage-q2",
-        code: "SC-PA-002",
-        difficulty: "easy",
-        question_type: "passage",
-        group_id: "mock-passage-2",
-        passage: null,
-        image_url: null,
-        choices: null,
-        content_zh: {
-          question: "光合作用发生在哪个细胞器中？",
-          choices: { A: "线粒体", B: "核糖体", C: "细胞核", D: "叶绿体" },
-          correct_answer: "D",
-          explanation: `光合作用发生在**叶绿体（Chloroplast）**中，叶绿体含有叶绿素，能吸收光能。
-
-- A. **线粒体（Mitochondria）**：进行细胞呼吸，释放能量
-- B. **核糖体（Ribosome）**：合成蛋白质
-- C. **细胞核（Nucleus）**：储存遗传信息（DNA）
-
-> 正确答案 / Correct answer: D — 叶绿体 (Chloroplast)`,
-        },
-        content_en: {
-          question: "In which organelle does photosynthesis occur?",
-          choices: { A: "Mitochondria", B: "Ribosome", C: "Nucleus", D: "Chloroplast" },
-          correct_answer: "D",
-        },
-      },
-    ],
-  },
-
-  // ── 4. Standard MC ───────────────────────────────────────────────────────────
-  {
-    type: "standard",
-    group_id: null,
-    questions: [],   // falls through to QUESTIONS[3] in the render
-  },
-];
-
-// ─── Data ──────────────────────────────────────────────────────────────────────
-
-const QUESTIONS = [
-  {
-    id: 1,
-    topic: "Calculus",
-    text: "What is the derivative of f(x) = x³ − 6x² + 9x + 1?",
-    options: [
-      { key: "A", text: "f′(x) = 3x² − 12x + 9" },
-      { key: "B", text: "f′(x) = 3x² − 6x + 9" },
-      { key: "C", text: "f′(x) = x² − 12x + 9" },
-      { key: "D", text: "f′(x) = 3x² + 12x − 9" },
-    ],
-    correctAnswer: "A",
-    explanation: {
-      correctStatement: "A — f′(x) = 3x² − 12x + 9",
-      intro: "Apply the Power Rule (d/dx[xⁿ] = n·xⁿ⁻¹) to each term:",
-      steps: [
-        "d/dx(x³) = 3x²",
-        "d/dx(−6x²) = −12x",
-        "d/dx(9x) = 9",
-        "d/dx(1) = 0 — derivative of a constant is always 0",
-      ],
-      conclusion: "∴ f′(x) = 3x² − 12x + 9",
-    },
-    zh: {
-      topic: "微积分",
-      text: "f(x) = x³ − 6x² + 9x + 1 的导数是什么？",
-      explanation: {
-        correctStatement: "A — f′(x) = 3x² − 12x + 9",
-        intro: "对每项应用幂次法则 (d/dx[xⁿ] = n·xⁿ⁻¹)：",
-        steps: [
-          "d/dx(x³) = 3x²",
-          "d/dx(−6x²) = −12x",
-          "d/dx(9x) = 9",
-          "d/dx(1) = 0 — 常数的导数恒为零",
-        ],
-        conclusion: "∴ f′(x) = 3x² − 12x + 9",
-      },
-    },
-  },
-  {
-    id: 2,
-    topic: "Integration",
-    text: "Evaluate the indefinite integral ∫(4x³ − 3x² + 2x − 1)dx.",
-    options: [
-      { key: "A", text: "x⁴ − x³ + x² − x + C" },
-      { key: "B", text: "12x² − 6x + 2 + C" },
-      { key: "C", text: "4x⁴ − 3x³ + 2x² − x + C" },
-      { key: "D", text: "x⁴ − x³ + x² + C" },
-    ],
-    correctAnswer: "A",
-    explanation: {
-      correctStatement: "A — x⁴ − x³ + x² − x + C",
-      intro: "Apply ∫xⁿ dx = xⁿ⁺¹/(n+1) + C to each term:",
-      steps: [
-        "∫4x³ dx = x⁴",
-        "∫−3x² dx = −x³",
-        "∫2x dx = x²",
-        "∫−1 dx = −x",
-      ],
-      conclusion: "∴ x⁴ − x³ + x² − x + C",
-    },
-    zh: {
-      topic: "积分",
-      text: "计算不定积分 ∫(4x³ − 3x² + 2x − 1)dx。",
-      explanation: {
-        correctStatement: "A — x⁴ − x³ + x² − x + C",
-        intro: "对每项应用 ∫xⁿ dx = xⁿ⁺¹/(n+1) + C：",
-        steps: [
-          "∫4x³ dx = x⁴",
-          "∫−3x² dx = −x³",
-          "∫2x dx = x²",
-          "∫−1 dx = −x",
-        ],
-        conclusion: "∴ x⁴ − x³ + x² − x + C",
-      },
-    },
-  },
-  {
-    id: 3,
-    topic: "Calculus",
-    text: "Find the derivative of the function f(x) = 3x³ − 2x² + 5x − 1. Which of the following correctly represents f′(x)?",
-    options: [
-      { key: "A", text: "f′(x) = 9x² − 4x + 5" },
-      { key: "B", text: "f′(x) = 9x² − 4x − 1" },
-      { key: "C", text: "f′(x) = 3x² − 4x + 5" },
-      { key: "D", text: "f′(x) = 9x³ − 4x² + 5" },
-    ],
-    correctAnswer: "A",
-    explanation: {
-      correctStatement: "A — f′(x) = 9x² − 4x + 5",
-      intro: "Apply the Power Rule (d/dx[xⁿ] = n·xⁿ⁻¹) to each term:",
-      steps: [
-        "d/dx(3x³) = 9x² — multiply coefficient 3 by exponent 3, reduce exponent by 1",
-        "d/dx(−2x²) = −4x",
-        "d/dx(5x) = 5 — derivative of a linear term is its coefficient",
-        "d/dx(−1) = 0 — derivative of a constant is always 0",
-      ],
-      conclusion: "∴ f′(x) = 9x² − 4x + 5",
-    },
-    zh: {
-      topic: "微积分",
-      text: "求函数 f(x) = 3x³ − 2x² + 5x − 1 的导数。以下哪项正确表示 f′(x)？",
-      explanation: {
-        correctStatement: "A — f′(x) = 9x² − 4x + 5",
-        intro: "对每项应用幂次法则 (d/dx[xⁿ] = n·xⁿ⁻¹)：",
-        steps: [
-          "d/dx(3x³) = 9x² — 系数3乘以指数3，指数减1",
-          "d/dx(−2x²) = −4x",
-          "d/dx(5x) = 5 — 线性项的导数为其系数",
-          "d/dx(−1) = 0 — 常数的导数恒为零",
-        ],
-        conclusion: "∴ f′(x) = 9x² − 4x + 5",
-      },
-    },
-  },
-  {
-    id: 4,
-    topic: "Limits",
-    text: "Find the limit: lim(x→2) of (x² − 4)/(x − 2).",
-    options: [
-      { key: "A", text: "0" },
-      { key: "B", text: "4" },
-      { key: "C", text: "2" },
-      { key: "D", text: "Undefined", text_zh: "无定义" },
-    ],
-    correctAnswer: "B",
-    explanation: {
-      correctStatement: "B — 4",
-      intro: "Factor the numerator and simplify:",
-      steps: [
-        "x² − 4 = (x−2)(x+2)",
-        "(x−2)(x+2)/(x−2) = x+2 for x ≠ 2",
-        "lim(x→2) (x+2) = 2 + 2 = 4",
-      ],
-      conclusion: "∴ The limit is 4",
-    },
-    zh: {
-      topic: "极限",
-      text: "求极限：lim(x→2) (x² − 4)/(x − 2)。",
-      explanation: {
-        correctStatement: "B — 4",
-        intro: "对分子因式分解并化简：",
-        steps: [
-          "x² − 4 = (x−2)(x+2)",
-          "(x−2)(x+2)/(x−2) = x+2（x ≠ 2）",
-          "lim(x→2) (x+2) = 2 + 2 = 4",
-        ],
-        conclusion: "∴ 极限为 4",
-      },
-    },
-  },
-  {
-    id: 5,
-    topic: "Calculus",
-    text: "What is the second derivative of f(x) = x⁴ − 3x² + 2?",
-    options: [
-      { key: "A", text: "12x² − 6" },
-      { key: "B", text: "4x³ − 6x" },
-      { key: "C", text: "12x² − 3" },
-      { key: "D", text: "4x³ − 3" },
-    ],
-    correctAnswer: "A",
-    explanation: {
-      correctStatement: "A — 12x² − 6",
-      intro: "Differentiate twice using the Power Rule:",
-      steps: ["f′(x) = 4x³ − 6x", "f″(x) = 12x² − 6"],
-      conclusion: "∴ f″(x) = 12x² − 6",
-    },
-    zh: {
-      topic: "微积分",
-      text: "f(x) = x⁴ − 3x² + 2 的二阶导数是什么？",
-      explanation: {
-        correctStatement: "A — 12x² − 6",
-        intro: "两次运用幂次法则求导：",
-        steps: ["f′(x) = 4x³ − 6x", "f″(x) = 12x² − 6"],
-        conclusion: "∴ f″(x) = 12x² − 6",
-      },
-    },
-  },
-  {
-    id: 6,
-    topic: "Integration",
-    text: "What is ∫₀¹ (3x² + 2x) dx?",
-    options: [
-      { key: "A", text: "2" },
-      { key: "B", text: "3" },
-      { key: "C", text: "4" },
-      { key: "D", text: "1" },
-    ],
-    correctAnswer: "A",
-    explanation: {
-      correctStatement: "A — 2",
-      intro: "Evaluate the definite integral:",
-      steps: [
-        "∫(3x² + 2x)dx = x³ + x²",
-        "At x=1: 1 + 1 = 2",
-        "At x=0: 0 + 0 = 0",
-        "Result: 2 − 0 = 2",
-      ],
-      conclusion: "∴ The integral equals 2",
-    },
-    zh: {
-      topic: "积分",
-      text: "∫₀¹ (3x² + 2x) dx 等于多少？",
-      explanation: {
-        correctStatement: "A — 2",
-        intro: "计算定积分：",
-        steps: [
-          "∫(3x² + 2x)dx = x³ + x²",
-          "x=1 时：1 + 1 = 2",
-          "x=0 时：0 + 0 = 0",
-          "结果：2 − 0 = 2",
-        ],
-        conclusion: "∴ 积分值为 2",
-      },
-    },
-  },
-  {
-    id: 7,
-    topic: "Limits",
-    text: "Using L'Hôpital's Rule, find lim(x→0) of sin(x)/x.",
-    options: [
-      { key: "A", text: "0" },
-      { key: "B", text: "∞" },
-      { key: "C", text: "1" },
-      { key: "D", text: "Undefined", text_zh: "无定义" },
-    ],
-    correctAnswer: "C",
-    explanation: {
-      correctStatement: "C — 1",
-      intro: "Apply L'Hôpital's Rule (0/0 indeterminate form):",
-      steps: [
-        "d/dx(sin x) = cos x",
-        "d/dx(x) = 1",
-        "lim(x→0) cos(x)/1 = cos(0) = 1",
-      ],
-      conclusion: "∴ lim(x→0) sin(x)/x = 1",
-    },
-    zh: {
-      topic: "极限",
-      text: "运用洛必达法则，求 lim(x→0) sin(x)/x。",
-      explanation: {
-        correctStatement: "C — 1",
-        intro: "应用洛必达法则（0/0 不定式）：",
-        steps: [
-          "d/dx(sin x) = cos x",
-          "d/dx(x) = 1",
-          "lim(x→0) cos(x)/1 = cos(0) = 1",
-        ],
-        conclusion: "∴ lim(x→0) sin(x)/x = 1",
-      },
-    },
-  },
-  {
-    id: 8,
-    topic: "Calculus",
-    text: "Find the critical points of f(x) = x³ − 3x + 2.",
-    options: [
-      { key: "A", text: "x = 1 and x = −1", text_zh: "x = 1 和 x = −1" },
-      { key: "B", text: "x = 0 only", text_zh: "仅 x = 0" },
-      { key: "C", text: "x = 3 and x = −3", text_zh: "x = 3 和 x = −3" },
-      { key: "D", text: "x = 1 only", text_zh: "仅 x = 1" },
-    ],
-    correctAnswer: "A",
-    explanation: {
-      correctStatement: "A — x = 1 and x = −1",
-      intro: "Set f′(x) = 0 and solve:",
-      steps: ["f′(x) = 3x² − 3", "3x² − 3 = 0", "x² = 1", "x = ±1"],
-      conclusion: "∴ Critical points at x = 1 and x = −1",
-    },
-    zh: {
-      topic: "微积分",
-      text: "求 f(x) = x³ − 3x + 2 的临界点。",
-      explanation: {
-        correctStatement: "A — x = 1 和 x = −1",
-        intro: "令 f′(x) = 0 并求解：",
-        steps: ["f′(x) = 3x² − 3", "3x² − 3 = 0", "x² = 1", "x = ±1"],
-        conclusion: "∴ 临界点在 x = 1 和 x = −1",
-      },
-    },
-  },
-  {
-    id: 9,
-    topic: "Integration",
-    text: "Evaluate ∫ e^(2x) dx.",
-    options: [
-      { key: "A", text: "e^(2x) + C" },
-      { key: "B", text: "2e^(2x) + C" },
-      { key: "C", text: "(1/2)e^(2x) + C" },
-      { key: "D", text: "e^x + C" },
-    ],
-    correctAnswer: "C",
-    explanation: {
-      correctStatement: "C — (1/2)e^(2x) + C",
-      intro: "Use substitution u = 2x:",
-      steps: [
-        "du = 2 dx, so dx = du/2",
-        "∫ eᵘ (du/2) = (1/2)eᵘ + C",
-        "Substitute back: (1/2)e^(2x) + C",
-      ],
-      conclusion: "∴ ∫ e^(2x) dx = (1/2)e^(2x) + C",
-    },
-    zh: {
-      topic: "积分",
-      text: "计算 ∫ e^(2x) dx。",
-      explanation: {
-        correctStatement: "C — (1/2)e^(2x) + C",
-        intro: "令 u = 2x 进行换元：",
-        steps: [
-          "du = 2 dx，故 dx = du/2",
-          "∫ eᵘ (du/2) = (1/2)eᵘ + C",
-          "代入还原：(1/2)e^(2x) + C",
-        ],
-        conclusion: "∴ ∫ e^(2x) dx = (1/2)e^(2x) + C",
-      },
-    },
-  },
-  {
-    id: 10,
-    topic: "Calculus",
-    text: "What is the slope of the tangent line to y = x² + 3x at x = 2?",
-    options: [
-      { key: "A", text: "7" },
-      { key: "B", text: "10" },
-      { key: "C", text: "4" },
-      { key: "D", text: "3" },
-    ],
-    correctAnswer: "A",
-    explanation: {
-      correctStatement: "A — 7",
-      intro: "Find f′(x) and evaluate at x = 2:",
-      steps: ["f′(x) = 2x + 3", "f′(2) = 2(2) + 3 = 4 + 3 = 7"],
-      conclusion: "∴ Slope of tangent at x = 2 is 7",
-    },
-    zh: {
-      topic: "微积分",
-      text: "y = x² + 3x 在 x = 2 处切线的斜率是多少？",
-      explanation: {
-        correctStatement: "A — 7",
-        intro: "求 f′(x) 并代入 x = 2：",
-        steps: ["f′(x) = 2x + 3", "f′(2) = 2(2) + 3 = 4 + 3 = 7"],
-        conclusion: "∴ x = 2 处切线斜率为 7",
-      },
-    },
-  },
-  {
-    id: 11,
-    topic: "Limits",
-    text: "What is lim(x→∞) of (3x² + 2x)/(x² − 1)?",
-    options: [
-      { key: "A", text: "0" },
-      { key: "B", text: "∞" },
-      { key: "C", text: "2" },
-      { key: "D", text: "3" },
-    ],
-    correctAnswer: "D",
-    explanation: {
-      correctStatement: "D — 3",
-      intro: "Divide numerator and denominator by x²:",
-      steps: [
-        "(3 + 2/x) / (1 − 1/x²)",
-        "As x→∞, 2/x → 0 and 1/x² → 0",
-        "Result: 3/1 = 3",
-      ],
-      conclusion: "∴ The limit is 3",
-    },
-    zh: {
-      topic: "极限",
-      text: "lim(x→∞) (3x² + 2x)/(x² − 1) 等于多少？",
-      explanation: {
-        correctStatement: "D — 3",
-        intro: "分子分母同除以 x²：",
-        steps: [
-          "(3 + 2/x) / (1 − 1/x²)",
-          "当 x→∞，2/x → 0，1/x² → 0",
-          "结果：3/1 = 3",
-        ],
-        conclusion: "∴ 极限为 3",
-      },
-    },
-  },
-  {
-    id: 12,
-    topic: "Integration",
-    text: "Find the area under the curve y = 2x from x = 0 to x = 3.",
-    options: [
-      { key: "A", text: "6" },
-      { key: "B", text: "9" },
-      { key: "C", text: "12" },
-      { key: "D", text: "18" },
-    ],
-    correctAnswer: "B",
-    explanation: {
-      correctStatement: "B — 9",
-      intro: "Evaluate the definite integral:",
-      steps: ["∫₀³ 2x dx = [x²]₀³", "= 3² − 0² = 9 − 0 = 9"],
-      conclusion: "∴ Area = 9 square units",
-    },
-    zh: {
-      topic: "积分",
-      text: "求曲线 y = 2x 在 x = 0 到 x = 3 之间的面积。",
-      explanation: {
-        correctStatement: "B — 9",
-        intro: "计算定积分：",
-        steps: ["∫₀³ 2x dx = [x²]₀³", "= 3² − 0² = 9 − 0 = 9"],
-        conclusion: "∴ 面积 = 9 平方单位",
-      },
-    },
-  },
-];
-
-// ─── Question grouping ─────────────────────────────────────────────────────────
-
-function groupQuestions(questions: ApiQuestion[]): QuestionGroup[] {
-  const groups: QuestionGroup[] = [];
-  const grouped = new Set<string>();
-
-  for (const q of questions) {
-    if (grouped.has(q.id)) continue;
-
-    if (q.question_type === "standard" || !q.group_id) {
-      grouped.add(q.id);
-      groups.push({ type: q.question_type, group_id: null, questions: [q] });
-    } else if (q.question_type === "passage") {
-      const siblings = questions.filter((s) => s.group_id === q.group_id);
-      siblings.forEach((s) => grouped.add(s.id));
-      groups.push({
-        type: "passage",
-        group_id: q.group_id,
-        questions: siblings,
-        passage: siblings[0].passage ?? undefined,
-      });
-    } else {
-      // DT or XT
-      const siblings = questions.filter((s) => s.group_id === q.group_id);
-      siblings.forEach((s) => grouped.add(s.id));
-      groups.push({ type: q.question_type, group_id: q.group_id, questions: siblings });
-    }
-  }
-  return groups;
-}
+import type { ApiQuestion, QuestionGroup, FillAnswerMap, SubmitResult } from "./types";
+import {
+  fetchSessionQuestions,
+  fetchSessionReview,
+  submitSingleQuestion,
+  submitQuestionGroup,
+  completeSession,
+} from "./practice-api";
+import { useNavStore } from "@/store/nav";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatTime(seconds: number) {
-  const m = Math.floor(seconds / 60)
-    .toString()
-    .padStart(2, "0");
+  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
   const s = (seconds % 60).toString().padStart(2, "0");
   return `${m}:${s}`;
 }
 
+function isGroupCorrect(group: QuestionGroup, submitResults: Record<string, SubmitResult>): boolean {
+  return group.questions.every((q) => submitResults[q.id]?.correct === true);
+}
+
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
-function OptionButton({
-  optKey,
-  text,
-  selected,
-  submitted,
-  isCorrect,
-  isUserAnswer,
-}: {
-  optKey: string;
-  text: string;
-  selected: boolean;
-  submitted: boolean;
-  isCorrect: boolean;
-  isUserAnswer: boolean;
-}) {
-  let containerStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: rem(12),
-    padding: `${rem(14)} ${rem(16)}`,
-    borderRadius: rem(10),
-    border: "1.5px solid #E2E8F0",
-    backgroundColor: "white",
-    cursor: submitted ? "default" : "pointer",
-    width: "100%",
-    transition: "all 150ms ease",
-  };
-
-  let circleStyle: React.CSSProperties = {
-    width: rem(32),
-    height: rem(32),
-    borderRadius: "50%",
-    backgroundColor: SURFACE,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    fontSize: rem(13),
-    fontWeight: 700,
-    color: MUTED,
-  };
-
-  let textColor = INK;
-  let rightBadge: React.ReactNode = null;
-
-  if (!submitted) {
-    if (selected) {
-      containerStyle = {
-        ...containerStyle,
-        backgroundColor: CREAM,
-        border: `2px solid ${PRIMARY}`,
-      };
-      circleStyle = {
-        ...circleStyle,
-        backgroundColor: PRIMARY,
-        color: INK,
-      };
-    }
-  } else {
-    if (isCorrect) {
-      containerStyle = {
-        ...containerStyle,
-        backgroundColor: CORRECT_BG,
-        border: `1.5px solid ${CORRECT_BORDER}`,
-      };
-      circleStyle = {
-        ...circleStyle,
-        backgroundColor: CORRECT_GREEN,
-        color: "white",
-      };
-      textColor = CORRECT_DARK;
-      rightBadge = (
-        <Box
-          style={{
-            marginLeft: "auto",
-            padding: `${rem(2)} ${rem(8)}`,
-            borderRadius: rem(999),
-            backgroundColor: "#DCFCE7",
-            flexShrink: 0,
-          }}
-        >
-          <Text size="xs" fw={700} c={CORRECT_DARK}>
-            CORRECT
-          </Text>
-        </Box>
-      );
-    } else if (isUserAnswer) {
-      containerStyle = {
-        ...containerStyle,
-        backgroundColor: WRONG_BG,
-        border: `1.5px solid ${WRONG_BORDER}`,
-      };
-      circleStyle = {
-        ...circleStyle,
-        backgroundColor: WRONG_RED,
-        color: "white",
-      };
-      textColor = WRONG_DARK;
-      rightBadge = (
-        <Box
-          style={{
-            marginLeft: "auto",
-            padding: `${rem(2)} ${rem(8)}`,
-            borderRadius: rem(999),
-            backgroundColor: "#FEE2E2",
-            flexShrink: 0,
-          }}
-        >
-          <Text size="xs" fw={700} c={WRONG_DARK}>
-            YOUR ANSWER
-          </Text>
-        </Box>
-      );
-    } else {
-      containerStyle = {
-        ...containerStyle,
-        backgroundColor: "white",
-        border: "1.5px solid #F1F5F9",
-      };
-      circleStyle = {
-        ...circleStyle,
-        color: "#CBD5E1",
-      };
-      textColor = "#94A3B8";
-    }
-  }
-
-  return (
-    <Box style={containerStyle}>
-      <Box style={circleStyle}>
-        {submitted && isCorrect ? (
-          <IconCircleCheck size={18} stroke={2.5} color="white" style={{ display: "block" }} />
-        ) : submitted && isUserAnswer && !isCorrect ? (
-          <IconCircleX size={18} stroke={2.5} color="white" style={{ display: "block" }} />
-        ) : (
-          <Text size="xs" fw={700} style={{ color: "inherit" }}>
-            {optKey}
-          </Text>
-        )}
-      </Box>
-      <Text size="md" fw={500} c={textColor} style={{ flex: 1 }}>
-        <LatexText>{text}</LatexText>
-      </Text>
-      {rightBadge}
-    </Box>
-  );
-}
-
-function ExplanationBox({
-  explanation,
-}: {
-  explanation: (typeof QUESTIONS)[number]["explanation"];
-}) {
-  return (
-    <Box
-      mt="md"
-      style={{
-        backgroundColor: "#FFF9EC",
-        borderLeft: `4px solid ${PRIMARY}`,
-        borderRadius: rem(10),
-        padding: rem(20),
-      }}
-    >
-      <Group gap={8} mb={rem(10)}>
-        <IconNotes size={18} stroke={1.5} color={PRIMARY} />
-        <Text size="sm" fw={700} c={PRIMARY}>
-          Answer Key &amp; Explanation
-        </Text>
-      </Group>
-      <Text size="md" fw={700} c={CORRECT_DARK} mb={rem(8)}>
-        Correct Answer: {explanation.correctStatement}
-      </Text>
-      <Text size="md" c={INK} mb={rem(8)}>
-        <LatexText>{explanation.intro}</LatexText>
-      </Text>
-      <Stack gap={rem(4)} mb={rem(12)}>
-        {explanation.steps.map((step, i) => (
-          <Group key={i} gap={rem(8)} align="flex-start">
-            <Box
-              style={{
-                width: rem(6),
-                height: rem(6),
-                borderRadius: "50%",
-                backgroundColor: PRIMARY,
-                marginTop: rem(9),
-                flexShrink: 0,
-              }}
-            />
-            <Text size="md" c={INK}>
-              <LatexText>{step}</LatexText>
-            </Text>
-          </Group>
-        ))}
-      </Stack>
-      <Box
-        style={{
-          backgroundColor: "#F5E6CC",
-          borderRadius: rem(8),
-          padding: `${rem(8)} ${rem(12)}`,
-        }}
-      >
-        <Text size="md" fw={700} c={CORRECT_DARK}>
-          <LatexText>{explanation.conclusion}</LatexText>
-        </Text>
-      </Box>
-    </Box>
-  );
-}
-
 function ProgressCard({
-  total,
   submittedSet,
-  answers,
+  submitResults,
+  questionGroups,
   flaggedSet,
+  fillAnswers,
+  answers,
 }: {
-  total: number;
   submittedSet: Set<number>;
-  answers: Record<number, string>;
-  flaggedSet: Set<number>;
+  submitResults: Record<string, SubmitResult>;
+  questionGroups: QuestionGroup[];
+  flaggedSet: Set<string>;
+  fillAnswers: FillAnswerMap;
+  answers: Record<string, string>;
 }) {
-  const correct = [...submittedSet].filter(
-    (i) => answers[i] === QUESTIONS[i].correctAnswer
+  const allQ = questionGroups.flatMap((g) => g.questions);
+  const total = allQ.length;
+  const correct = allQ.filter((q) => submitResults[q.id]?.correct === true).length;
+  const wrong = allQ.filter((q) => submitResults[q.id] != null && submitResults[q.id].correct === false).length;
+  const filledNotSubmitted = questionGroups.reduce((acc, g, gi) => {
+    if (submittedSet.has(gi)) return acc;
+    return acc + g.questions.filter((q) => {
+      if (submitResults[q.id] != null) return false;
+      // DT/XT: check fill blanks; JF/YL: check selected answer
+      return Object.values(fillAnswers[q.id] ?? {}).some(Boolean) || Boolean(answers[q.id]);
+    }).length;
+  }, 0);
+  const flaggedNotSubmitted = allQ.filter(
+    (q) => flaggedSet.has(q.id) && submitResults[q.id] == null && !Object.values(fillAnswers[q.id] ?? {}).some(Boolean)
   ).length;
-  const wrong = submittedSet.size - correct;
-  const flaggedNotSubmitted = [...flaggedSet].filter(
-    (i) => !submittedSet.has(i)
-  ).length;
-  const remaining = total - submittedSet.size - flaggedNotSubmitted;
+  const submittedQ = correct + wrong;
+  const answered = submittedQ + filledNotSubmitted;
+  const remaining = Math.max(0, total - answered - flaggedNotSubmitted);
 
-  const correctPct = (correct / total) * 100;
-  const wrongPct = (wrong / total) * 100;
-  const flaggedPct = (flaggedNotSubmitted / total) * 100;
-  const remainingPct = (remaining / total) * 100;
+  const correctPct = total > 0 ? (correct / total) * 100 : 0;
+  const wrongPct = total > 0 ? (wrong / total) * 100 : 0;
+  const flaggedPct = total > 0 ? (flaggedNotSubmitted / total) * 100 : 0;
+  const filledPct = total > 0 ? (filledNotSubmitted / total) * 100 : 0;
+  const remainingPct = total > 0 ? (remaining / total) * 100 : 100;
 
   return (
-    <Box
-      p="lg"
-      style={{ backgroundColor: "white", borderRadius: rem(14) }}
-    >
+    <Box p="lg" style={{ backgroundColor: "white", borderRadius: rem(14) }}>
       <Group justify="space-between" mb={rem(10)}>
-        <Text size="sm" fw={700} c={INK}>
-          Progress
-        </Text>
-        <Text size="sm" fw={700} c={PRIMARY}>
-          {submittedSet.size} / {total}
-        </Text>
+        <Text size="sm" fw={700} c={INK}>Progress</Text>
+        <Text size="sm" fw={700} c={PRIMARY}>{answered} / {total}</Text>
       </Group>
 
-      {/* Segmented bar */}
-      <Box
-        style={{
-          display: "flex",
-          height: rem(8),
-          borderRadius: rem(999),
-          overflow: "hidden",
-          backgroundColor: SURFACE,
-          marginBottom: rem(10),
-        }}
-      >
-        {correctPct > 0 && (
-          <Box style={{ width: `${correctPct}%`, backgroundColor: CORRECT_GREEN }} />
-        )}
-        {wrongPct > 0 && (
-          <Box style={{ width: `${wrongPct}%`, backgroundColor: WRONG_RED }} />
-        )}
-        {flaggedPct > 0 && (
-          <Box style={{ width: `${flaggedPct}%`, backgroundColor: PRIMARY }} />
-        )}
-        {remainingPct > 0 && (
-          <Box style={{ width: `${remainingPct}%`, backgroundColor: "#CBD5E1" }} />
-        )}
+      <Box style={{
+        display: "flex", height: rem(8), borderRadius: rem(999),
+        overflow: "hidden", backgroundColor: SURFACE, marginBottom: rem(10),
+      }}>
+        {correctPct > 0 && <Box style={{ width: `${correctPct}%`, backgroundColor: CORRECT_GREEN }} />}
+        {wrongPct > 0 && <Box style={{ width: `${wrongPct}%`, backgroundColor: WRONG_RED }} />}
+        {flaggedPct > 0 && <Box style={{ width: `${flaggedPct}%`, backgroundColor: PRIMARY }} />}
+        {filledPct > 0 && <Box style={{ width: `${filledPct}%`, backgroundColor: "#93C5FD" }} />}
+        {remainingPct > 0 && <Box style={{ width: `${remainingPct}%`, backgroundColor: "#CBD5E1" }} />}
       </Box>
 
       <Group gap="md">
@@ -963,6 +133,12 @@ function ProgressCard({
           <Box style={{ width: rem(10), height: rem(10), borderRadius: rem(2), backgroundColor: WRONG_RED, flexShrink: 0 }} />
           <Text size="xs" c={MUTED}>{wrong} wrong</Text>
         </Group>
+        {filledNotSubmitted > 0 && (
+          <Group gap={rem(5)}>
+            <Box style={{ width: rem(10), height: rem(10), borderRadius: rem(2), backgroundColor: "#93C5FD", flexShrink: 0 }} />
+            <Text size="xs" c={MUTED}>{filledNotSubmitted} filled</Text>
+          </Group>
+        )}
         <Group gap={rem(5)}>
           <Box style={{ width: rem(10), height: rem(10), borderRadius: rem(2), backgroundColor: "#CBD5E1", flexShrink: 0 }} />
           <Text size="xs" c={MUTED}>{remaining} left</Text>
@@ -973,81 +149,70 @@ function ProgressCard({
 }
 
 function QuestionNavigator({
-  total,
   currentQ,
-  submittedSet,
-  answers,
+  currentSubQ,
+  submitResults,
+  questionGroups,
   flaggedSet,
+  fillAnswers,
+  answers,
   onJump,
 }: {
-  total: number;
   currentQ: number;
-  submittedSet: Set<number>;
-  answers: Record<number, string>;
-  flaggedSet: Set<number>;
-  onJump: (idx: number) => void;
+  currentSubQ: number;
+  submitResults: Record<string, SubmitResult>;
+  questionGroups: QuestionGroup[];
+  flaggedSet: Set<string>;
+  fillAnswers: FillAnswerMap;
+  answers: Record<string, string>;
+  onJump: (groupIdx: number, subQIdx: number) => void;
 }) {
-  function getQStatus(idx: number): "correct" | "wrong" | "flagged" | "unanswered" {
-    if (submittedSet.has(idx)) {
-      return answers[idx] === QUESTIONS[idx].correctAnswer ? "correct" : "wrong";
-    }
-    if (flaggedSet.has(idx)) return "flagged";
+  const flatQ = questionGroups.flatMap((g, gi) =>
+    g.questions.map((q, qi) => ({ groupIdx: gi, subQIdx: qi, questionId: q.id }))
+  );
+
+  function getQStatus(questionId: string): "correct" | "wrong" | "flagged" | "filled" | "unanswered" {
+    const result = submitResults[questionId];
+    if (result != null) return result.correct ? "correct" : "wrong";
+    if (flaggedSet.has(questionId)) return "flagged";
+    // Selected-but-not-submitted answer (JF/YL) or filled blank (DT/XT)
+    if (answers[questionId] || Object.values(fillAnswers[questionId] ?? {}).some(Boolean)) return "filled";
     return "unanswered";
   }
 
-  function getNavStyle(idx: number): React.CSSProperties {
-    const status = getQStatus(idx);
-    const isCurrent = idx === currentQ;
+  function getNavStyle(groupIdx: number, subQIdx: number, questionId: string): React.CSSProperties {
+    const status = getQStatus(questionId);
+    const isCurrent = groupIdx === currentQ && subQIdx === currentSubQ;
 
     const base: React.CSSProperties = {
-      width: rem(48),
-      height: rem(48),
-      borderRadius: rem(10),
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: rem(14),
-      fontWeight: 500,
-      cursor: "pointer",
-      border: "none",
+      width: rem(48), height: rem(48), borderRadius: rem(10),
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: rem(14), fontWeight: 500, cursor: "pointer", border: "none",
       transition: "box-shadow 150ms ease",
       boxShadow: isCurrent ? `0 0 0 3px ${INK}` : "none",
     };
-
-    const flaggedBorder = flaggedSet.has(idx) ? { border: `2px solid ${PRIMARY}` } : {};
+    const flaggedBorder = flaggedSet.has(questionId) ? { border: `2px solid ${PRIMARY}` } : {};
 
     switch (status) {
-      case "correct":
-        return { ...base, backgroundColor: NAV_CORRECT, color: "white", fontWeight: 700, ...flaggedBorder };
-      case "wrong":
-        return { ...base, backgroundColor: NAV_WRONG, color: "white", fontWeight: 700, ...flaggedBorder };
-      case "flagged":
-        return {
-          ...base,
-          backgroundColor: CREAM,
-          color: PRIMARY,
-          fontWeight: 700,
-          border: `2px solid ${PRIMARY}`,
-        };
-      default:
-        return { ...base, backgroundColor: SURFACE, color: "#94A3B8", fontWeight: 500 };
+      case "correct": return { ...base, backgroundColor: NAV_CORRECT, color: "white", fontWeight: 700, ...flaggedBorder };
+      case "wrong": return { ...base, backgroundColor: NAV_WRONG, color: "white", fontWeight: 700, ...flaggedBorder };
+      case "flagged": return { ...base, backgroundColor: CREAM, color: PRIMARY, fontWeight: 700, border: `2px solid ${PRIMARY}` };
+      case "filled": return { ...base, backgroundColor: "#BFDBFE", color: INK, fontWeight: 600 };
+      default: return { ...base, backgroundColor: SURFACE, color: "#94A3B8", fontWeight: 500 };
     }
   }
 
   return (
     <Box p="lg" style={{ backgroundColor: "white", borderRadius: rem(14) }}>
-      <Text size="sm" fw={700} c={INK} mb="md">
-        Questions
-      </Text>
+      <Text size="sm" fw={700} c={INK} mb="md">Questions</Text>
       <SimpleGrid cols={4} spacing={rem(8)}>
-        {Array.from({ length: total }, (_, i) => (
-          <UnstyledButton key={i} onClick={() => onJump(i)} style={getNavStyle(i)}>
+        {flatQ.map((fq, i) => (
+          <UnstyledButton key={fq.questionId} onClick={() => onJump(fq.groupIdx, fq.subQIdx)} style={getNavStyle(fq.groupIdx, fq.subQIdx, fq.questionId)}>
             {i + 1}
           </UnstyledButton>
         ))}
       </SimpleGrid>
 
-      {/* Legend */}
       <SimpleGrid cols={2} spacing={rem(6)} mt="md">
         <Group gap={rem(6)}>
           <Box style={{ width: rem(10), height: rem(10), borderRadius: rem(2), backgroundColor: NAV_CORRECT, flexShrink: 0 }} />
@@ -1062,6 +227,10 @@ function QuestionNavigator({
           <Text size="xs" c={MUTED}>Flagged</Text>
         </Group>
         <Group gap={rem(6)}>
+          <Box style={{ width: rem(10), height: rem(10), borderRadius: rem(2), backgroundColor: "#BFDBFE", flexShrink: 0 }} />
+          <Text size="xs" c={MUTED}>Filled</Text>
+        </Group>
+        <Group gap={rem(6)}>
           <Box style={{ width: rem(10), height: rem(10), borderRadius: rem(2), backgroundColor: "#CBD5E1", flexShrink: 0 }} />
           <Text size="xs" c={MUTED}>Not answered</Text>
         </Group>
@@ -1073,31 +242,81 @@ function QuestionNavigator({
 // ─── Summary ───────────────────────────────────────────────────────────────────
 
 function SummaryView({
-  questions,
-  answers,
+  questionGroups,
+  submitResults,
   submittedSet,
+  answers,
   totalSeconds,
   lang,
+  xpEarned,
+  topicName,
   onBack,
 }: {
-  questions: typeof QUESTIONS;
-  answers: Record<number, string>;
+  questionGroups: QuestionGroup[];
+  submitResults: Record<string, SubmitResult>;
   submittedSet: Set<number>;
+  answers: Record<string, string>;
   totalSeconds: number;
   lang: Lang;
+  xpEarned: number;
+  topicName: string;
   onBack: () => void;
 }) {
-  const correct = questions.filter(
-    (q, i) => submittedSet.has(i) && answers[i] === q.correctAnswer
-  ).length;
-  const wrong = submittedSet.size - correct;
-  const skipped = questions.length - submittedSet.size;
-  const scorePct = Math.round((correct / questions.length) * 100);
+  const [currentReviewQ, setCurrentReviewQ] = useState(0);
+  const [currentReviewSubQ, setCurrentReviewSubQ] = useState(0);
 
-  const scoreColor =
-    scorePct >= 70 ? CORRECT_GREEN : scorePct >= 40 ? PRIMARY : WRONG_RED;
-  const scoreBg =
-    scorePct >= 70 ? CORRECT_BG : scorePct >= 40 ? "#FFF9EC" : WRONG_BG;
+  const allQuestions = questionGroups.flatMap((g) => g.questions);
+  const totalQ = allQuestions.length;
+  const correct = allQuestions.filter((q) => submitResults[q.id]?.correct === true).length;
+  const wrong = allQuestions.filter((q) => submitResults[q.id] != null && submitResults[q.id].correct === false).length;
+  const skipped = totalQ - correct - wrong;
+  const scorePct = totalQ > 0 ? Math.round((correct / totalQ) * 100) : 0;
+
+  const scoreColor = scorePct >= 70 ? CORRECT_GREEN : scorePct >= 40 ? PRIMARY : WRONG_RED;
+  const scoreBg = scorePct >= 70 ? CORRECT_BG : scorePct >= 40 ? "#FFF9EC" : WRONG_BG;
+
+  function handleReviewPrev() {
+    const cg = questionGroups[currentReviewQ];
+    const isP = cg?.type === "YL" || cg?.type === "JF";
+    if (isP && currentReviewSubQ > 0) { setCurrentReviewSubQ((q) => q - 1); return; }
+    const prevIdx = currentReviewQ - 1;
+    const prevG = questionGroups[prevIdx];
+    const prevIsP = prevG?.type === "YL" || prevG?.type === "JF";
+    setCurrentReviewSubQ(prevIsP ? prevG.questions.length - 1 : 0);
+    setCurrentReviewQ(prevIdx);
+  }
+
+  function handleReviewNext() {
+    const cg = questionGroups[currentReviewQ];
+    const isP = cg?.type === "YL" || cg?.type === "JF";
+    if (isP && currentReviewSubQ < cg.questions.length - 1) { setCurrentReviewSubQ((q) => q + 1); return; }
+    setCurrentReviewSubQ(0);
+    setCurrentReviewQ((q) => q + 1);
+  }
+
+  const isCurrentGroupPassage = questionGroups[currentReviewQ]?.type === "YL" || questionGroups[currentReviewQ]?.type === "JF";
+  const prevDisabledReview = currentReviewQ === 0 && currentReviewSubQ === 0;
+  const nextDisabledReview = currentReviewQ === questionGroups.length - 1 &&
+    (!isCurrentGroupPassage || currentReviewSubQ >= (questionGroups[currentReviewQ]?.questions.length ?? 1) - 1);
+
+  function getQuestionText(q: ApiQuestion): string {
+    function extract(content: ApiQuestion["content_zh"] | ApiQuestion["content_en"]): string {
+      const qField = content?.question;
+      if (!qField) return "";
+      if (typeof qField === "string") return qField;
+      return Object.values(qField as Record<string, string>)[0] ?? "";
+    }
+    return extract(lang === "zh" ? q.content_zh : q.content_en) || extract(q.content_zh);
+  }
+
+  function getOptions(q: ApiQuestion): Array<{ key: string; text: string }> {
+    function extractOptions(content: ApiQuestion["content_zh"] | ApiQuestion["content_en"]): Array<{ key: string; text: string }> | null {
+      const answer = content?.answer as Record<string, string> | undefined;
+      if (answer && Object.keys(answer).length > 0) return Object.entries(answer).map(([key, text]) => ({ key, text }));
+      return null;
+    }
+    return extractOptions(lang === "zh" ? q.content_zh : q.content_en) ?? extractOptions(q.content_zh) ?? [];
+  }
 
   return (
     <Stack gap="md">
@@ -1110,56 +329,40 @@ function SummaryView({
             </Text>
             <Text fw={800} size="xl" c={INK}>Your Results</Text>
           </Box>
-          <Group gap={6} style={{ flexShrink: 0 }}>
-            <IconClock size={14} stroke={1.5} color={MUTED} />
-            <Text size="sm" fw={600} c={MUTED}>{formatTime(totalSeconds)}</Text>
+          <Group gap={12} style={{ flexShrink: 0 }}>
+            {xpEarned > 0 && (
+              <Box px="sm" py={4} style={{ backgroundColor: "#FFF9EC", border: `1.5px solid ${PRIMARY}`, borderRadius: rem(999) }}>
+                <Text size="sm" fw={700} c={PRIMARY}>+{xpEarned} XP</Text>
+              </Box>
+            )}
+            <Group gap={6}>
+              <IconClock size={14} stroke={1.5} color={MUTED} />
+              <Text size="sm" fw={600} c={MUTED}>{formatTime(totalSeconds)}</Text>
+            </Group>
           </Group>
         </Group>
 
-        {/* Score display */}
         <Group align="center" gap="xl" mb="lg" wrap="nowrap">
-          <Box
-            style={{
-              width: rem(96),
-              height: rem(96),
-              borderRadius: "50%",
-              backgroundColor: scoreBg,
-              border: `3px solid ${scoreColor}`,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
+          <Box style={{
+            width: rem(96), height: rem(96), borderRadius: "50%",
+            backgroundColor: scoreBg, border: `3px solid ${scoreColor}`,
+            display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", flexShrink: 0,
+          }}>
             <Text fw={800} size="xl" c={scoreColor} lh={1}>{scorePct}%</Text>
-            <Text size="xs" c={scoreColor} fw={600}>{correct}/{questions.length}</Text>
+            <Text size="xs" c={scoreColor} fw={600}>{correct}/{totalQ}</Text>
           </Box>
 
           <Box style={{ flex: 1 }}>
-            {/* Progress bar */}
-            <Box
-              mb="md"
-              style={{
-                height: rem(10),
-                borderRadius: rem(999),
-                backgroundColor: SURFACE,
-                overflow: "hidden",
-                display: "flex",
-              }}
-            >
-              {correct > 0 && (
-                <Box style={{ width: `${(correct / questions.length) * 100}%`, backgroundColor: CORRECT_GREEN, transition: "width 600ms ease" }} />
-              )}
-              {wrong > 0 && (
-                <Box style={{ width: `${(wrong / questions.length) * 100}%`, backgroundColor: WRONG_RED }} />
-              )}
-              {skipped > 0 && (
-                <Box style={{ width: `${(skipped / questions.length) * 100}%`, backgroundColor: "#CBD5E1" }} />
-              )}
+            <Box mb="md" style={{
+              height: rem(10), borderRadius: rem(999), backgroundColor: SURFACE,
+              overflow: "hidden", display: "flex",
+            }}>
+              {correct > 0 && <Box style={{ width: `${(correct / totalQ) * 100}%`, backgroundColor: CORRECT_GREEN, transition: "width 600ms ease" }} />}
+              {wrong > 0 && <Box style={{ width: `${(wrong / totalQ) * 100}%`, backgroundColor: WRONG_RED }} />}
+              {skipped > 0 && <Box style={{ width: `${(skipped / totalQ) * 100}%`, backgroundColor: "#CBD5E1" }} />}
             </Box>
 
-            {/* Stat pills */}
             <SimpleGrid cols={3} spacing="xs">
               <Box p="sm" style={{ backgroundColor: CORRECT_BG, borderRadius: rem(10), textAlign: "center" }}>
                 <Group gap={4} justify="center" mb={2}>
@@ -1186,96 +389,312 @@ function SummaryView({
           </Box>
         </Group>
 
-        <Button
-          variant="outline"
-          color="dark"
-          radius="md"
+        <Button variant="outline" color="dark" radius="md"
           leftSection={<IconChevronLeft size={14} stroke={2} />}
-          onClick={onBack}
-        >
+          onClick={onBack}>
           Back to Practice Sets
         </Button>
       </Box>
 
-      {/* ── Question review list ── */}
-      <Text fw={700} size="sm" c={INK} px={2}>Answer Key &amp; Review</Text>
+      {/* ── Question review — one at a time ── */}
+      <Group justify="space-between" align="center" px={2}>
+        <Text fw={700} size="sm" c={INK}>Answer Key &amp; Review</Text>
+        <Text size="sm" c={MUTED} fw={500}>{currentReviewQ + 1} / {questionGroups.length}</Text>
+      </Group>
 
-      {questions.map((q, i) => {
-        const submitted = submittedSet.has(i);
-        const userAns = answers[i];
-        const isCorrectQ = submitted && userAns === q.correctAnswer;
-        const displayText = lang === "zh" ? (q.zh?.text ?? q.text) : q.text;
-        const displayTopic = lang === "zh" ? (q.zh?.topic ?? q.topic) : q.topic;
-        const explanation = lang === "zh" ? (q.zh?.explanation ?? q.explanation) : q.explanation;
+      {questionGroups.slice(currentReviewQ, currentReviewQ + 1).map((group, _) => {
+        const gi = currentReviewQ;
+        const submitted = submittedSet.has(gi);
+        const groupTotal = group.questions.length;
+        const groupCorrect = group.questions.filter((q) => submitResults[q.id]?.correct === true).length;
+        const groupIsCorrect = submitted && groupCorrect === groupTotal;
+        const scoreLabel = !submitted ? "Skipped" : `${groupCorrect}/${groupTotal}`;
+        const resultBg = !submitted ? SURFACE : groupIsCorrect ? "#DCFCE7" : "#FEE2E2";
+        const resultColor = !submitted ? MUTED : groupIsCorrect ? CORRECT_GREEN : WRONG_RED;
 
-        const resultLabel = !submitted ? "Skipped" : isCorrectQ ? "Correct" : "Wrong";
-        const resultBg = !submitted ? SURFACE : isCorrectQ ? "#DCFCE7" : "#FEE2E2";
-        const resultColor = !submitted ? MUTED : isCorrectQ ? CORRECT_GREEN : WRONG_RED;
+        const isPassage = group.type === "YL" || group.type === "JF";
+        const isFill = group.type === "DT" || group.type === "XT";
 
         return (
-          <Box
-            key={i}
-            p="lg"
-            className="no-select"
-            style={{ backgroundColor: "white", borderRadius: rem(14) }}
-          >
-            {/* Header */}
+          <Box key={group.group_id ?? gi} p="lg" className="no-select"
+            style={{ backgroundColor: "white", borderRadius: rem(14) }}>
+
             <Group justify="space-between" align="center" mb="md">
               <Group gap={8}>
-                <Badge
-                  size="sm"
-                  style={{ backgroundColor: INK, color: "white", fontWeight: 700, borderRadius: rem(999) }}
-                >
-                  Q{i + 1}
+                <Badge size="sm" style={{ backgroundColor: INK, color: "white", fontWeight: 700, borderRadius: rem(999) }}>
+                  Problem {gi + 1}
                 </Badge>
-                <Badge
-                  size="sm"
-                  style={{ backgroundColor: CREAM, color: PRIMARY, fontWeight: 600, borderRadius: rem(999) }}
-                >
-                  {displayTopic}
+                {isPassage && group.questions.length > 1 && (
+                  <Badge size="sm" style={{ backgroundColor: SURFACE, color: MUTED, fontWeight: 600, borderRadius: rem(999) }}>
+                    {currentReviewSubQ + 1}/{group.questions.length}
+                  </Badge>
+                )}
+                <Badge size="sm" style={{ backgroundColor: CREAM, color: PRIMARY, fontWeight: 600, borderRadius: rem(999) }}>
+                  {topicName || group.type}
                 </Badge>
               </Group>
-              <Box
-                px="sm"
-                py={3}
-                style={{ backgroundColor: resultBg, borderRadius: rem(999) }}
-              >
-                <Text size="xs" fw={700} c={resultColor}>{resultLabel}</Text>
+              <Box px="sm" py={3} style={{ backgroundColor: resultBg, borderRadius: rem(999) }}>
+                <Text size="xs" fw={700} c={resultColor}>{scoreLabel}</Text>
               </Box>
             </Group>
 
-            {/* Question text */}
-            <Box mb="md" p="md" style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}>
-              <Text size="sm" c={INK} lh={1.7}>{displayText}</Text>
-            </Box>
+            {/* YL / JF: show one question at a time */}
+            {isPassage && (() => {
+              const q = group.questions[currentReviewSubQ];
+              const qi = currentReviewSubQ;
+              if (!q) return null;
+              const qResult = submitResults[q.id];
+              const userKey = answers[q.id] ?? "";
+              const correctKey = qResult?.correct_answer ?? "";
+              const options = getOptions(q);
+              const explanation = (q.content_zh?.explanation ?? q.content_en?.explanation) as string | undefined;
+              const passage = group.passage;
 
-            {/* Options */}
-            <Stack gap={rem(8)} mb="md">
-              {q.options.map((opt) => {
-                const optIsCorrect = opt.key === q.correctAnswer;
-                const optIsUserWrong = submitted && opt.key === userAns && !optIsCorrect;
-                const optText = lang === "zh"
-                  ? ((opt as { text_zh?: string }).text_zh ?? opt.text)
-                  : opt.text;
-                return (
-                  <OptionButton
-                    key={opt.key}
-                    optKey={opt.key}
-                    text={optText}
-                    selected={false}
-                    submitted={true}
-                    isCorrect={optIsCorrect}
-                    isUserAnswer={optIsUserWrong}
-                  />
-                );
-              })}
-            </Stack>
+              return (
+                <Stack key={q.id} gap={rem(8)} mb={rem(16)}>
+                  {/* Passage box */}
+                  {passage && (
+                    <Box p="md" style={{
+                      backgroundColor: SURFACE, borderRadius: rem(10),
+                      border: "1.5px solid #E2E8F0", lineHeight: 1.9,
+                      fontSize: rem(15), color: INK,
+                    }}>
+                      <Text size="xs" fw={700} c={MUTED} mb={rem(6)}
+                        style={{ letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                        Passage / 阅读材料
+                      </Text>
+                      <div style={{ whiteSpace: "pre-wrap" }} dangerouslySetInnerHTML={{ __html: passage }} />
+                    </Box>
+                  )}
 
-            {/* Explanation */}
-            <ExplanationBox explanation={explanation} />
+                  {/* Question text with number circle */}
+                  <Box p="md" style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}>
+                    <Group gap={rem(10)} align="flex-start">
+                      <Box style={{
+                        minWidth: rem(28), height: rem(28), borderRadius: "50%",
+                        backgroundColor: "#F0F4FF", display: "flex", alignItems: "center",
+                        justifyContent: "center", fontSize: rem(13), fontWeight: 700,
+                        color: "#6670B0", flexShrink: 0,
+                      }}>
+                        {qi + 1}
+                      </Box>
+                      <div style={{ flex: 1, lineHeight: 1.7 }}>
+                        <MarkdownLatexText>{getQuestionText(q)}</MarkdownLatexText>
+                      </div>
+                    </Group>
+                  </Box>
+                  <Stack gap={rem(6)}>
+                    {options.map((opt) => {
+                      const isCorrectOpt = submitted && opt.key === correctKey;
+                      const isUserWrong = submitted && opt.key === userKey && !isCorrectOpt;
+                      const bg = isCorrectOpt ? CORRECT_BG : isUserWrong ? WRONG_BG : "white";
+                      const border = isCorrectOpt
+                        ? `1.5px solid ${CORRECT_BORDER}`
+                        : isUserWrong ? `1.5px solid ${WRONG_BORDER}`
+                        : submitted ? "1.5px solid #F1F5F9" : "1.5px solid #E2E8F0";
+                      const textColor = isCorrectOpt ? CORRECT_DARK : isUserWrong ? WRONG_DARK : submitted ? "#94A3B8" : INK;
+
+                      return (
+                        <Box key={opt.key} style={{
+                          display: "flex", alignItems: "center", gap: rem(10),
+                          padding: `${rem(10)} ${rem(14)}`, borderRadius: rem(10),
+                          border, backgroundColor: bg,
+                        }}>
+                          <Box style={{
+                            width: rem(28), height: rem(28), borderRadius: "50%", flexShrink: 0,
+                            backgroundColor: isCorrectOpt ? CORRECT_GREEN : isUserWrong ? WRONG_RED : SURFACE,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: rem(12), fontWeight: 700,
+                            color: (isCorrectOpt || isUserWrong) ? "white" : MUTED,
+                          }}>
+                            {isCorrectOpt
+                              ? <IconCircleCheck size={16} color="white" style={{ display: "block" }} />
+                              : isUserWrong
+                              ? <IconCircleX size={16} color="white" style={{ display: "block" }} />
+                              : <Text size="xs" fw={700} style={{ color: "inherit" }}>{opt.key}</Text>}
+                          </Box>
+                          <div style={{ flex: 1, color: textColor, fontWeight: 500, fontSize: rem(14) }}>
+                            <MarkdownLatexText>{opt.text}</MarkdownLatexText>
+                          </div>
+                          {isCorrectOpt && (
+                            <Box style={{ padding: `${rem(2)} ${rem(8)}`, borderRadius: rem(999), backgroundColor: "#DCFCE7", flexShrink: 0 }}>
+                              <Text size="xs" fw={700} c={CORRECT_DARK}>CORRECT</Text>
+                            </Box>
+                          )}
+                          {isUserWrong && (
+                            <Box style={{ padding: `${rem(2)} ${rem(8)}`, borderRadius: rem(999), backgroundColor: "#FEE2E2", flexShrink: 0 }}>
+                              <Text size="xs" fw={700} c={WRONG_DARK}>YOUR ANSWER</Text>
+                            </Box>
+                          )}
+                        </Box>
+                      );
+                    })}
+                  </Stack>
+                  {submitted && explanation && (
+                    <Box style={{ backgroundColor: "#FFF9EC", borderLeft: `4px solid ${PRIMARY}`, borderRadius: rem(10), padding: rem(16) }}>
+                      <Group gap={8} mb={rem(8)}>
+                        <IconNotes size={18} stroke={1.5} color={PRIMARY} />
+                        <Text size="sm" fw={700} c={PRIMARY}>Explanation</Text>
+                      </Group>
+                      <MarkdownLatexText>{explanation}</MarkdownLatexText>
+                    </Box>
+                  )}
+                </Stack>
+              );
+            })()}
+
+            {/* DT / XT: show summary + sentence rows (XT) + explanation */}
+            {isFill && (
+              <>
+                <Box p="md" style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}>
+                  <Text size="sm" c={MUTED}>
+                    {group.type === "DT" ? "Paragraph fill-in-the-blank" : "Sentence word bank"} —{" "}
+                    {!submitted
+                      ? "Not attempted"
+                      : groupIsCorrect
+                      ? "All blanks correct"
+                      : "Some blanks incorrect"}
+                  </Text>
+                </Box>
+
+                {/* XT: sentence rows with filled blanks coloured by correctness */}
+                {group.type === "XT" && submitted && (() => {
+                  const wordChoices = group.questions[0].choices ?? [];
+                  const getChoiceText = (key: string) =>
+                    wordChoices.find((c) => c.key === key)?.text ?? key;
+                  const getSentenceText = (q: ApiQuestion, qi: number): string => {
+                    const qField = q.content_zh?.question;
+                    if (!qField) return "";
+                    if (typeof qField === "string") return qField;
+                    const obj = qField as Record<string, string>;
+                    return obj[String(q.question_number ?? qi + 1)] ?? Object.values(obj)[qi] ?? "";
+                  };
+                  return (
+                    <Stack gap={rem(6)}>
+                      {group.questions.map((q, qi) => {
+                        const blankResult = submitResults[q.id]?.blank_results?.[0];
+                        const userKey = blankResult?.user_answer ?? "";
+                        const correctKey = blankResult?.correct_answer ?? "";
+                        const isCorrect = blankResult?.correct ?? false;
+                        const sentence = getSentenceText(q, qi);
+                        const parts = sentence.split("____");
+                        return (
+                          <Box key={q.id} style={{
+                            display: "flex", alignItems: "center", gap: rem(8),
+                            padding: `${rem(10)} ${rem(14)}`, borderRadius: rem(10),
+                            border: "1px solid #E2E8F0", backgroundColor: "white",
+                          }}>
+                            <span style={{
+                              minWidth: rem(24), height: rem(24), borderRadius: "50%",
+                              backgroundColor: SURFACE, display: "inline-flex", alignItems: "center",
+                              justifyContent: "center", fontSize: rem(12), fontWeight: 700,
+                              color: MUTED, flexShrink: 0,
+                            }}>
+                              {qi + 1}
+                            </span>
+                            <span style={{ fontSize: rem(15), color: INK, flex: 1, lineHeight: 1.8 }}>
+                              {parts.length > 1 ? (
+                                <>
+                                  {parts[0]}
+                                  <span style={{
+                                    display: "inline-flex", alignItems: "center",
+                                    padding: `${rem(2)} ${rem(10)}`, borderRadius: rem(8),
+                                    margin: `0 ${rem(4)}`,
+                                    border: `1.5px solid ${isCorrect ? CORRECT_BORDER : WRONG_BORDER}`,
+                                    backgroundColor: isCorrect ? CORRECT_BG : WRONG_BG,
+                                    color: isCorrect ? CORRECT_GREEN : WRONG_RED,
+                                    fontWeight: 600, fontSize: rem(13),
+                                  }}>
+                                    {userKey ? getChoiceText(userKey) : "—"}
+                                  </span>
+                                  {!isCorrect && correctKey && (
+                                    <span style={{ fontSize: rem(12), color: CORRECT_GREEN, fontWeight: 500, marginRight: rem(4) }}>
+                                      → {getChoiceText(correctKey)}
+                                    </span>
+                                  )}
+                                  {parts[1]}
+                                </>
+                              ) : sentence}
+                            </span>
+                          </Box>
+                        );
+                      })}
+                    </Stack>
+                  );
+                })()}
+
+                {/* Explanation — shown once (all questions share the same text) */}
+                {submitted && (() => {
+                  const explanation = group.questions
+                    .map((q) => (q.content_zh?.explanation ?? q.content_en?.explanation) as string | undefined)
+                    .find(Boolean);
+                  if (!explanation) return null;
+                  return (
+                    <Box style={{ backgroundColor: "#FFF9EC", borderLeft: `4px solid ${PRIMARY}`, borderRadius: rem(10), padding: rem(16) }}>
+                      <Group gap={8} mb={rem(8)}>
+                        <IconNotes size={18} stroke={1.5} color={PRIMARY} />
+                        <Text size="sm" fw={700} c={PRIMARY}>Explanation</Text>
+                      </Group>
+                      <MarkdownLatexText circleNums>{explanation}</MarkdownLatexText>
+                    </Box>
+                  );
+                })()}
+              </>
+            )}
           </Box>
         );
       })}
+
+      {/* ── Prev / Next navigation ── */}
+      <Group justify="space-between" align="center">
+        <Button
+          variant="outline"
+          radius="xl"
+          leftSection={<IconChevronLeft size={15} stroke={2} />}
+          disabled={prevDisabledReview}
+          onClick={handleReviewPrev}
+          style={{ borderColor: "#E2E8F0", color: INK }}
+        >
+          Previous
+        </Button>
+
+        {/* Mini dot navigator */}
+        <Group gap={rem(6)}>
+          {questionGroups.map((g, i) => {
+            const gCorrect = g.questions.every((q) => submitResults[q.id]?.correct === true);
+            const gSubmitted = submittedSet.has(i);
+            const dotColor = !gSubmitted ? "#CBD5E1" : gCorrect ? NAV_CORRECT : NAV_WRONG;
+            return (
+              <UnstyledButton
+                key={i}
+                onClick={() => { setCurrentReviewSubQ(0); setCurrentReviewQ(i); }}
+                style={{
+                  width: rem(i === currentReviewQ ? 22 : 8),
+                  height: rem(8),
+                  borderRadius: rem(999),
+                  backgroundColor: i === currentReviewQ ? INK : dotColor,
+                  transition: "all 200ms ease",
+                  flexShrink: 0,
+                }}
+              />
+            );
+          })}
+        </Group>
+
+        <Button
+          radius="xl"
+          rightSection={<IconChevronRight size={15} stroke={2} />}
+          disabled={nextDisabledReview}
+          onClick={handleReviewNext}
+          style={{
+            backgroundColor: nextDisabledReview ? SURFACE : INK,
+            color: nextDisabledReview ? MUTED : "white",
+            fontWeight: 600,
+          }}
+        >
+          Next
+        </Button>
+      </Group>
     </Stack>
   );
 }
@@ -1284,174 +703,257 @@ function SummaryView({
 
 export default function PracticeDetailPage() {
   const router = useRouter();
-  const [currentQ, setCurrentQ] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [submittedSet, setSubmittedSet] = useState<Set<number>>(new Set());
-  const [flaggedSet, setFlaggedSet] = useState<Set<number>>(new Set());
-  const [bookmarked, setBookmarked] = useState<Set<number>>(new Set());
-  const [elapsedSeconds, setElapsedSeconds] = useState(1122); // 18:42
-  const [finished, setFinished] = useState(false);
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const sessionId = params.id as string;
+  const isReview = searchParams.get("review") === "true";
+  const topicName = searchParams.get("topic") ?? "";
+  const sessionNameParam = searchParams.get("name") ?? "";
 
-  // Selected option for current question (before submission)
-  const [pendingAnswer, setPendingAnswer] = useState<string | null>(null);
+  const setSessionName = useNavStore((s) => s.setSessionName);
+
+  // Push session name into the global nav store so the breadcrumb can display it.
+  // URL param takes priority; falls back to the name returned by the session API.
+  useEffect(() => {
+    if (sessionNameParam) setSessionName(sessionNameParam);
+    return () => setSessionName("");
+  }, [sessionNameParam, setSessionName]);
+
+  const [currentQ, setCurrentQ] = useState(0);
+  const [currentSubQ, setCurrentSubQ] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [submittedSet, setSubmittedSet] = useState<Set<number>>(new Set());
+  const [flaggedSet, setFlaggedSet] = useState<Set<string>>(new Set()); // question IDs
+  const [bookmarked, setBookmarked] = useState<Set<number>>(new Set());
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+  const [xpEarned, setXpEarned] = useState(0);
   const [lang, setLang] = useState<Lang>("en");
   const [reportOpen, setReportOpen] = useState(false);
 
-  // ── New question types (DT / XT / passage) ──────────────────────────────────
-  /** API-sourced question groups; falls back to wrapping mock QUESTIONS when empty */
-  const [questionGroups, setQuestionGroups] = useState<QuestionGroup[]>(MOCK_GROUPS);
-  /** questionId → { blankIndex → choiceKey } — for DT/XT drag-drop */
+  const [questionGroups, setQuestionGroups] = useState<QuestionGroup[]>([]);
   const [fillAnswers, setFillAnswers] = useState<FillAnswerMap>({});
-  /** Group indices that have been set-submitted (DT/XT) */
   const [submittedGroups, setSubmittedGroups] = useState<Set<number>>(new Set());
-  /** questionId → submit result (correct/wrong + blank_results) */
   const [submitResults, setSubmitResults] = useState<Record<string, SubmitResult>>({});
-  /** questionIds submitted individually (passage sub-questions) */
   const [submittedIds, setSubmittedIds] = useState<Set<string>>(new Set());
 
-  /** Active group (null = fall back to QUESTIONS mock) */
+  // ── Load session on mount ──────────────────────────────────────────────────
+  useEffect(() => {
+    setLoading(true);
+    const fetch = isReview ? fetchSessionReview(sessionId) : fetchSessionQuestions(sessionId);
+    fetch
+      .then((result) => {
+        const { groups, restored, fillAnswers: restoredFill } = result;
+        if ("xpEarned" in result) setXpEarned((result as { xpEarned: number }).xpEarned);
+        // Set session name from API response when not provided via URL param
+        if (!sessionNameParam && result.sessionName) setSessionName(result.sessionName);
+        setQuestionGroups(groups);
+        setAnswers(restored.answers as Record<string, string>);
+        setSubmittedIds(restored.submittedIds);
+        setSubmittedGroups(restored.submittedGroupIndices);
+        setSubmitResults(restored.submitResults);
+        setFillAnswers(restoredFill);
+        const submittedSetInit = new Set<number>();
+        restored.submittedGroupIndices.forEach((i) => submittedSetInit.add(i));
+        restored.submittedIds.forEach((qid) => {
+          groups.forEach((g, gi) => {
+            if (g.questions.some((q) => q.id === qid)) submittedSetInit.add(gi);
+          });
+        });
+        setSubmittedSet(submittedSetInit);
+        // Review mode: skip straight to the summary view
+        if (isReview) {
+          setFinished(true);
+        } else {
+          // Jump to the first unanswered group so the user doesn't have to scroll past done questions
+          const firstUnanswered = groups.findIndex((_, gi) => !submittedSetInit.has(gi));
+          if (firstUnanswered > 0) setCurrentQ(firstUnanswered);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load session:", err);
+        setLoadError("Failed to load session. Please try again.");
+      })
+      .finally(() => setLoading(false));
+  }, [sessionId, isReview]);
+
   const activeGroup: QuestionGroup | null = questionGroups[currentQ] ?? null;
-  const activeType = activeGroup?.type ?? "standard";
+  const activeType = activeGroup?.type ?? "JF";
 
   function updateFillAnswer(questionId: string, blankIdx: string, choiceKey: string) {
     setFillAnswers((prev) => ({
       ...prev,
       [questionId]: { ...(prev[questionId] ?? {}), [blankIdx]: choiceKey },
     }));
+    // Auto-advance to the next unfilled question in an XT group
+    if (choiceKey && activeGroup?.type === "XT") {
+      const groupQs = activeGroup.questions;
+      const qIdx = groupQs.findIndex((q) => q.id === questionId);
+      for (let i = qIdx + 1; i < groupQs.length; i++) {
+        if (!Object.values(fillAnswers[groupQs[i].id] ?? {}).some(Boolean)) {
+          setCurrentSubQ(i);
+          break;
+        }
+      }
+    }
   }
 
-  function handleSubmitGroup(groupIdx: number) {
-    if (submittedGroups.has(groupIdx) || !activeGroup) return;
-    // Generate blankResults for each question from correct_answers stored in content
-    const newResults: Record<string, SubmitResult> = {};
+  async function handleSubmitGroup(groupIdx: number) {
+    if (submittedGroups.has(groupIdx) || !activeGroup || submitting) return;
+    const groupId = activeGroup.group_id;
+    if (!groupId) return;
+
+    const answersMap: Record<string, Record<string, string>> = {};
     for (const q of activeGroup.questions) {
-      const correctAnswers = (q.content_zh.correct_answers ?? {}) as Record<string, string>;
-      const userBlanks = fillAnswers[q.id] ?? {};
-      const blankResults: BlankResult[] = Object.entries(correctAnswers).map(([blankIdx, correctKey]) => ({
-        blank_index: blankIdx,
-        correct: userBlanks[blankIdx] === correctKey,
-        correct_answer: correctKey,
-        user_answer: userBlanks[blankIdx] ?? "",
-      }));
-      newResults[q.id] = {
-        question_id: q.id,
-        correct: blankResults.every((r) => r.correct),
-        correct_answer: "",
-        difficulty: q.difficulty,
-        xp_awarded: blankResults.every((r) => r.correct) ? 5 : 0,
-        blank_results: blankResults,
-      };
+      answersMap[q.id] = fillAnswers[q.id] ?? {};
     }
-    setSubmitResults((prev) => ({ ...prev, ...newResults }));
+
+    setSubmitting(true);
+    try {
+      const { results, explanation } = await submitQuestionGroup(sessionId, groupId, answersMap);
+      if (explanation) {
+        setQuestionGroups((prev) => prev.map((g, gi) => {
+          if (gi !== groupIdx) return g;
+          return {
+            ...g,
+            questions: g.questions.map((q, qi) =>
+              qi === 0 ? { ...q, content_zh: { ...q.content_zh, explanation } } : q
+            ),
+          };
+        }));
+      }
+      setSubmitResults((prev) => ({ ...prev, ...results }));
+    } catch (err) {
+      console.error("Group submit failed:", err);
+    } finally {
+      setSubmitting(false);
+    }
+
     setSubmittedGroups((prev) => { const next = new Set(prev); next.add(groupIdx); return next; });
     setSubmittedSet((prev) => { const next = new Set(prev); next.add(groupIdx); return next; });
   }
 
-  function handleSubmitDT(groupIdx: number) {
-    if (submittedGroups.has(groupIdx) || !activeGroup) return;
-    const q = activeGroup.questions[0];
-    const correctAnswers = (q.content_zh.correct_answers ?? {}) as Record<string, string>;
-    const userBlanks = fillAnswers[q.id] ?? {};
-    const blankResults: BlankResult[] = Object.entries(correctAnswers).map(([blankIdx, correctKey]) => ({
-      blank_index: blankIdx,
-      correct: userBlanks[blankIdx] === correctKey,
-      correct_answer: correctKey,
-      user_answer: userBlanks[blankIdx] ?? "",
-    }));
-    const allCorrect = blankResults.every((r) => r.correct);
-    setSubmitResults((prev) => ({
-      ...prev,
-      [q.id]: {
-        question_id: q.id,
-        correct: allCorrect,
-        correct_answer: "",
-        difficulty: q.difficulty,
-        xp_awarded: allCorrect ? 10 : 0,
-        blank_results: blankResults,
-      },
-    }));
+  async function handleSubmitDT(groupIdx: number) {
+    if (submittedGroups.has(groupIdx) || !activeGroup || submitting) return;
+    const groupId = activeGroup.group_id;
+    if (!groupId) return;
+
+    const answersMap: Record<string, Record<string, string>> = {};
+    for (const aq of activeGroup.questions) {
+      answersMap[aq.id] = fillAnswers[aq.id] ?? {};
+    }
+
+    setSubmitting(true);
+    try {
+      const { results, explanation } = await submitQuestionGroup(sessionId, groupId, answersMap);
+      if (explanation) {
+        setQuestionGroups((prev) => prev.map((g, gi) => {
+          if (gi !== groupIdx) return g;
+          return {
+            ...g,
+            questions: g.questions.map((aq, qi) =>
+              qi === 0 ? { ...aq, content_zh: { ...aq.content_zh, explanation } } : aq
+            ),
+          };
+        }));
+      }
+      setSubmitResults((prev) => ({ ...prev, ...results }));
+    } catch (err) {
+      console.error("DT submit failed:", err);
+    } finally {
+      setSubmitting(false);
+    }
+
     setSubmittedGroups((prev) => { const next = new Set(prev); next.add(groupIdx); return next; });
     setSubmittedSet((prev) => { const next = new Set(prev); next.add(groupIdx); return next; });
   }
 
   function handlePassageAnswer(questionId: string, key: string) {
-    setAnswers((prev) => ({ ...prev, [questionId as unknown as number]: key }));
+    setAnswers((prev) => ({ ...prev, [questionId]: key }));
   }
 
-  function handlePassageSubmit(questionId: string) {
-    if (submittedIds.has(questionId)) return;
+  async function handlePassageSubmit(questionId: string) {
+    if (submittedIds.has(questionId) || submitting) return;
+    setSubmitting(true);
     setSubmittedIds((prev) => { const next = new Set(prev); next.add(questionId); return next; });
-    // Generate result from correct_answer stored in content
-    const q = questionGroups.flatMap((g) => g.questions).find((q) => q.id === questionId);
-    if (q) {
-      const correctAnswer = (q.content_zh.correct_answer ?? q.content_en.correct_answer) as string | undefined;
-      if (correctAnswer) {
-        const userAns = (answers as Record<string, string>)[questionId] ?? "";
-        setSubmitResults((prev) => ({
-          ...prev,
-          [questionId]: {
-            question_id: questionId,
-            correct: userAns === correctAnswer,
-            correct_answer: correctAnswer,
-            difficulty: q.difficulty,
-            xp_awarded: userAns === correctAnswer ? 5 : 0,
-          },
-        }));
+
+    const selectedKey = answers[questionId] ?? "";
+
+    try {
+      const result = await submitSingleQuestion(sessionId, questionId, selectedKey);
+      if (result.explanation) {
+        setQuestionGroups((prev) => prev.map((g) => ({
+          ...g,
+          questions: g.questions.map((q) =>
+            q.id === questionId
+              ? { ...q, content_zh: { ...q.content_zh, explanation: result.explanation } }
+              : q
+          ),
+        })));
       }
+      setSubmitResults((prev) => ({ ...prev, [questionId]: result }));
+      // Mark the group as submitted when all its questions are answered
+      const groupIdx = questionGroups.findIndex((g) => g.questions.some((q) => q.id === questionId));
+      if (groupIdx >= 0) {
+        const group = questionGroups[groupIdx];
+        const allDone = group.questions.every((q) => q.id === questionId || submittedIds.has(q.id));
+        if (allDone) setSubmittedSet((prev) => { const next = new Set(prev); next.add(groupIdx); return next; });
+      }
+    } catch (err) {
+      console.error("Single submit failed:", err);
+    } finally {
+      setSubmitting(false);
     }
   }
 
   // Timer — stops when finished
   useEffect(() => {
     if (finished) return;
-    const interval = setInterval(() => {
-      setElapsedSeconds((s) => s + 1);
-    }, 1000);
+    const interval = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
     return () => clearInterval(interval);
   }, [finished]);
 
-  const q = QUESTIONS[currentQ];
-  const isSubmitted = submittedSet.has(currentQ);
-  const userAnswer = isSubmitted ? answers[currentQ] : pendingAnswer;
-
-  function handleOptionSelect(key: string) {
-    if (isSubmitted) return;
-    setPendingAnswer(key);
-  }
-
-  function handleSubmit() {
-    if (!pendingAnswer || isSubmitted) return;
-    setAnswers((prev) => ({ ...prev, [currentQ]: pendingAnswer }));
-    setSubmittedSet((prev) => {
-      const next = new Set(prev);
-      next.add(currentQ);
-      return next;
-    });
-  }
-
   function handlePrev() {
+    if ((activeType === "YL" || activeType === "JF") && currentSubQ > 0) {
+      setCurrentSubQ((q) => q - 1);
+      return;
+    }
     if (currentQ === 0) return;
-    setPendingAnswer(null);
-    setCurrentQ((q) => q - 1);
+    const prevIdx = currentQ - 1;
+    const prevGroup = questionGroups[prevIdx];
+    if (prevGroup && (prevGroup.type === "YL" || prevGroup.type === "JF") && prevGroup.questions.length > 1) {
+      setCurrentSubQ(prevGroup.questions.length - 1);
+    } else {
+      setCurrentSubQ(0);
+    }
+    setCurrentQ(prevIdx);
   }
 
   function handleNext() {
-    const total = questionGroups.length > 0 ? questionGroups.length : QUESTIONS.length;
-    if (currentQ === total - 1) return;
-    setPendingAnswer(null);
-    setCurrentQ((q) => q + 1);
+    if ((activeType === "YL" || activeType === "JF") && activeGroup && currentSubQ < activeGroup.questions.length - 1) {
+      setCurrentSubQ((q) => q + 1);
+      return;
+    }
+    setCurrentSubQ(0);
+    if (currentQ < questionGroups.length - 1) setCurrentQ((q) => q + 1);
   }
 
-  function handleJump(idx: number) {
-    setPendingAnswer(null);
-    setCurrentQ(idx);
+  function handleJump(groupIdx: number, subQIdx: number = 0) {
+    setCurrentSubQ(subQIdx);
+    setCurrentQ(groupIdx);
   }
 
   function toggleFlag() {
+    const qId = activeGroup?.questions[currentSubQ]?.id;
+    if (!qId) return;
     setFlaggedSet((prev) => {
       const next = new Set(prev);
-      if (next.has(currentQ)) next.delete(currentQ);
-      else next.add(currentQ);
+      if (next.has(qId)) next.delete(qId);
+      else next.add(qId);
       return next;
     });
   }
@@ -1465,16 +967,49 @@ export default function PracticeDetailPage() {
     });
   }
 
+  if (loading) {
+    return (
+      <Box style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, minHeight: "60vh" }}>
+        <Stack align="center" gap="md">
+          <div style={{
+            width: rem(40), height: rem(40), borderRadius: "50%",
+            border: `3px solid ${PRIMARY}`, borderTopColor: "transparent",
+            animation: "spin 0.8s linear infinite",
+          }} />
+          <Text size="sm" c={MUTED}>Loading session…</Text>
+        </Stack>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </Box>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Box style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, minHeight: "60vh" }}>
+        <Stack align="center" gap="md">
+          <IconAlertCircle size={40} color={WRONG_RED} stroke={1.5} />
+          <Text size="sm" c={WRONG_DARK} fw={600}>{loadError}</Text>
+          <Button variant="outline" color="dark" radius="md" onClick={() => router.push("/practice")}>
+            Back to Practice Sets
+          </Button>
+        </Stack>
+      </Box>
+    );
+  }
+
   if (finished) {
     return (
       <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
         <Box p={{ base: "md", sm: "xl" }} style={{ flex: 1 }}>
           <SummaryView
-            questions={QUESTIONS}
-            answers={answers}
+            questionGroups={questionGroups}
+            submitResults={submitResults}
             submittedSet={submittedSet}
+            answers={answers}
             totalSeconds={elapsedSeconds}
             lang={lang}
+            xpEarned={xpEarned}
+            topicName={topicName}
             onBack={() => router.push("/practice")}
           />
         </Box>
@@ -1489,90 +1024,53 @@ export default function PracticeDetailPage() {
           {/* ── Left column ── */}
           <Stack style={{ flex: 1, minWidth: 0 }} gap="md">
             {/* Question Card */}
-            <Box
-              p="lg"
-              className="no-select"
-              style={{ backgroundColor: "white", borderRadius: rem(14) }}
-            >
+            <Box p="lg" className="no-select" style={{ backgroundColor: "white", borderRadius: rem(14) }}>
               {/* Header row */}
               <Group justify="space-between" align="center" mb="md" wrap="nowrap">
                 <Group gap={rem(8)} wrap="nowrap" style={{ minWidth: 0 }}>
-                  <Badge
-                    size="sm"
-                    style={{
-                      backgroundColor: INK,
-                      color: "white",
-                      fontWeight: 700,
-                      borderRadius: rem(999),
-                      flexShrink: 0,
-                    }}
-                  >
-                    Question {currentQ + 1}
+                  <Badge size="sm" style={{ backgroundColor: INK, color: "white", fontWeight: 700, borderRadius: rem(999), flexShrink: 0 }}>
+                    Problem {currentQ + 1}
                   </Badge>
-                  <Badge
-                    size="sm"
-                    style={{
-                      backgroundColor: CREAM,
-                      color: PRIMARY,
-                      fontWeight: 600,
-                      borderRadius: rem(999),
-                      flexShrink: 0,
-                    }}
-                  >
-                    {lang === "zh" ? (q.zh?.topic ?? q.topic) : q.topic}
+                  {(activeType === "YL" || activeType === "JF") && activeGroup && activeGroup.questions.length > 1 && (
+                    <Badge size="sm" style={{ backgroundColor: SURFACE, color: MUTED, fontWeight: 600, borderRadius: rem(999), flexShrink: 0 }}>
+                      {currentSubQ + 1}/{activeGroup.questions.length}
+                    </Badge>
+                  )}
+                  <Badge size="sm" style={{ backgroundColor: CREAM, color: PRIMARY, fontWeight: 600, borderRadius: rem(999), flexShrink: 0 }}>
+                    {topicName || activeType}
                   </Badge>
                 </Group>
                 <Group gap={rem(6)} wrap="nowrap" style={{ flexShrink: 0 }}>
                   <LanguageToggle lang={lang} onChange={setLang} />
-                  <Tooltip label={flaggedSet.has(currentQ) ? "Remove flag" : "Flag question"} withArrow>
-                    <UnstyledButton
-                      onClick={toggleFlag}
-                      style={{
-                        width: rem(32),
-                        height: rem(32),
-                        borderRadius: rem(8),
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: flaggedSet.has(currentQ) ? "#FFF9EC" : SURFACE,
-                      }}
-                    >
-                      {flaggedSet.has(currentQ) ? (
-                        <IconFlagFilled size={16} color={PRIMARY} />
-                      ) : (
-                        <IconFlag size={16} color={MUTED} />
-                      )}
-                    </UnstyledButton>
-                  </Tooltip>
+                  {(() => {
+                    const isFlaggedCurrent = flaggedSet.has(activeGroup?.questions[currentSubQ]?.id ?? "");
+                    return (
+                      <Tooltip label={isFlaggedCurrent ? "Remove flag" : "Flag question"} withArrow>
+                        <UnstyledButton onClick={toggleFlag} style={{
+                          width: rem(32), height: rem(32), borderRadius: rem(8),
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          backgroundColor: isFlaggedCurrent ? "#FFF9EC" : SURFACE,
+                        }}>
+                          {isFlaggedCurrent ? <IconFlagFilled size={16} color={PRIMARY} /> : <IconFlag size={16} color={MUTED} />}
+                        </UnstyledButton>
+                      </Tooltip>
+                    );
+                  })()}
                   <Tooltip label={bookmarked.has(currentQ) ? "Remove bookmark" : "Bookmark question"} withArrow>
-                    <UnstyledButton
-                      onClick={toggleBookmark}
-                      style={{
-                        width: rem(32),
-                        height: rem(32),
-                        borderRadius: rem(8),
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: bookmarked.has(currentQ) ? "#FFF9EC" : SURFACE,
-                      }}
-                    >
-                      {bookmarked.has(currentQ) ? (
-                        <IconBookmarkFilled size={16} color={PRIMARY} />
-                      ) : (
-                        <IconBookmark size={16} color={MUTED} />
-                      )}
+                    <UnstyledButton onClick={toggleBookmark} style={{
+                      width: rem(32), height: rem(32), borderRadius: rem(8),
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      backgroundColor: bookmarked.has(currentQ) ? "#FFF9EC" : SURFACE,
+                    }}>
+                      {bookmarked.has(currentQ) ? <IconBookmarkFilled size={16} color={PRIMARY} /> : <IconBookmark size={16} color={MUTED} />}
                     </UnstyledButton>
                   </Tooltip>
                   <Tooltip label="Report a problem" withArrow>
-                    <UnstyledButton
-                      onClick={() => setReportOpen(true)}
-                      style={{
-                        width: rem(32), height: rem(32), borderRadius: rem(8),
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        backgroundColor: SURFACE,
-                      }}
-                    >
+                    <UnstyledButton onClick={() => setReportOpen(true)} style={{
+                      width: rem(32), height: rem(32), borderRadius: rem(8),
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      backgroundColor: SURFACE,
+                    }}>
                       <IconAlertCircle size={16} color={MUTED} stroke={1.5} />
                     </UnstyledButton>
                   </Tooltip>
@@ -1589,11 +1087,15 @@ export default function PracticeDetailPage() {
               {activeType === "DT" && activeGroup ? (
                 <>
                   <DragDropParagraph
-                    questionText={
-                      (lang === "zh"
-                        ? (activeGroup.questions[0].content_zh?.question as string)
-                        : (activeGroup.questions[0].content_en?.question as string)) ?? ""
-                    }
+                    questionText={(() => {
+                      const content = lang === "zh"
+                        ? activeGroup.questions[0].content_zh
+                        : activeGroup.questions[0].content_en;
+                      const q = content?.question ?? activeGroup.questions[0].content_zh?.question;
+                      if (!q) return "";
+                      if (typeof q === "string") return q;
+                      return Object.values(q as Record<string, string>)[0] ?? "";
+                    })()}
                     wordChoices={activeGroup.questions[0].choices ?? []}
                     userAnswers={fillAnswers[activeGroup.questions[0].id] ?? {}}
                     submitted={submittedGroups.has(currentQ)}
@@ -1603,50 +1105,18 @@ export default function PracticeDetailPage() {
                     }
                   />
                   {submittedGroups.has(currentQ) && (
-                    <Box
-                      mt="md"
-                      style={{
-                        backgroundColor: "#FFF9EC",
-                        borderLeft: `4px solid ${PRIMARY}`,
-                        borderRadius: rem(10),
-                        padding: rem(20),
-                      }}
-                    >
+                    <Box mt="md" style={{
+                      backgroundColor: "#FFF9EC",
+                      borderLeft: `4px solid ${PRIMARY}`,
+                      borderRadius: rem(10),
+                      padding: rem(20),
+                    }}>
                       <Group gap={8} mb={rem(10)}>
                         <IconNotes size={18} stroke={1.5} color={PRIMARY} />
-                        <Text size="sm" fw={700} c={PRIMARY}>
-                          Answer Key &amp; Explanation
-                        </Text>
+                        <Text size="sm" fw={700} c={PRIMARY}>Answer Key &amp; Explanation</Text>
                       </Group>
-                      {/* Blank result chips */}
-                      {submitResults[activeGroup.questions[0].id]?.blank_results && (
-                        <Box style={{ display: "flex", flexWrap: "wrap", gap: rem(8), marginBottom: rem(14) }}>
-                          {submitResults[activeGroup.questions[0].id].blank_results!.map((r) => (
-                            <span
-                              key={r.blank_index}
-                              style={{
-                                padding: `${rem(4)} ${rem(12)}`,
-                                borderRadius: rem(8),
-                                border: `1px solid ${r.correct ? CORRECT_BORDER : WRONG_BORDER}`,
-                                backgroundColor: r.correct ? CORRECT_BG : WRONG_BG,
-                                color: r.correct ? CORRECT_GREEN : WRONG_RED,
-                                fontSize: rem(13),
-                                fontWeight: 500,
-                              }}
-                            >
-                              {`{${r.blank_index}}`} → {(activeGroup.questions[0].choices ?? []).find((c) => c.key === r.correct_answer)?.text ?? r.correct_answer}
-                              {!r.correct && (
-                                <span style={{ color: MUTED, fontWeight: 400 }}>
-                                  {" "}(you: {((activeGroup.questions[0].choices ?? []).find((c) => c.key === r.user_answer)?.text ?? r.user_answer) || "—"})
-                                </span>
-                              )}
-                            </span>
-                          ))}
-                        </Box>
-                      )}
-                      {/* Markdown explanation */}
                       {(activeGroup.questions[0].content_zh.explanation as string | undefined) && (
-                        <MarkdownLatexText>
+                        <MarkdownLatexText circleNums>
                           {activeGroup.questions[0].content_zh.explanation as string}
                         </MarkdownLatexText>
                       )}
@@ -1661,71 +1131,42 @@ export default function PracticeDetailPage() {
                   submitted={submittedGroups.has(currentQ)}
                   results={submitResults}
                   lang={lang}
+                  highlightIdx={currentSubQ}
+                  flaggedQIds={flaggedSet}
                   onChange={updateFillAnswer}
                   onSubmitSet={() => handleSubmitGroup(currentQ)}
                 />
-              ) : activeType === "passage" && activeGroup ? (
+              ) : (activeType === "YL" || activeType === "JF") && activeGroup ? (
                 <PassageQuestionGroup
-                  passage={activeGroup.passage ?? ""}
-                  questions={activeGroup.questions}
-                  userAnswers={answers as unknown as Record<string, string>}
+                  passage={activeGroup.passage ?? activeGroup.questions[0]?.passage ?? ""}
+                  questions={[activeGroup.questions[currentSubQ]].filter(Boolean) as typeof activeGroup.questions}
+                  startIndex={currentSubQ}
+                  userAnswers={answers}
                   submittedIds={submittedIds}
                   results={submitResults}
                   lang={lang}
+                  submitting={submitting}
                   onAnswer={handlePassageAnswer}
                   onSubmit={handlePassageSubmit}
                 />
-              ) : (
-                <>
-                  {/* Standard MC — existing render */}
-                  <Box
-                    mb="md"
-                    p="md"
-                    style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}
-                  >
-                    <Text size="md" c={INK} lh={1.7}>
-                      <LatexText>{lang === "zh" ? (q.zh?.text ?? q.text) : q.text}</LatexText>
-                    </Text>
-                  </Box>
-
-                  <Stack gap={rem(8)}>
-                    {q.options.map((opt) => {
-                      const isCorrect = isSubmitted && opt.key === q.correctAnswer;
-                      const isUserAns = isSubmitted && opt.key === answers[currentQ];
-                      return (
-                        <UnstyledButton
-                          key={opt.key}
-                          onClick={() => handleOptionSelect(opt.key)}
-                          disabled={isSubmitted}
-                          style={{ width: "100%", cursor: isSubmitted ? "default" : "pointer" }}
-                        >
-                          <OptionButton
-                            optKey={opt.key}
-                            text={lang === "zh" ? ((opt as { text_zh?: string }).text_zh ?? opt.text) : opt.text}
-                            selected={userAnswer === opt.key}
-                            submitted={isSubmitted}
-                            isCorrect={isCorrect}
-                            isUserAnswer={isUserAns}
-                          />
-                        </UnstyledButton>
-                      );
-                    })}
-                  </Stack>
-
-                  {isSubmitted && (
-                    <ExplanationBox explanation={lang === "zh" ? (q.zh?.explanation ?? q.explanation) : q.explanation} />
-                  )}
-                </>
-              )}
+              ) : null}
             </Box>
 
             {/* Navigation buttons */}
+            {(() => {
+              const isYLorJF = activeType === "YL" || activeType === "JF";
+              const hasMoreSubQ = isYLorJF && activeGroup && currentSubQ < activeGroup.questions.length - 1;
+              const isLastGroup = currentQ === questionGroups.length - 1;
+              const showFinish = isLastGroup && !hasMoreSubQ;
+              const prevDisabled = currentQ === 0 && (!isYLorJF || currentSubQ === 0);
+
+              return (
             <Group justify="space-between" align="center">
               <Button
                 variant="outline"
                 radius="xl"
                 leftSection={<IconChevronLeft size={15} stroke={2} />}
-                disabled={currentQ === 0}
+                disabled={prevDisabled}
                 onClick={handlePrev}
                 style={{ borderColor: "#E2E8F0", color: INK }}
               >
@@ -1741,8 +1182,18 @@ export default function PracticeDetailPage() {
                   </Button>
                 );
                 const submitBtn = (enabled: boolean, onClick: () => void) => (
-                  <Button radius="md" onClick={onClick} disabled={!enabled}
-                    style={{ backgroundColor: enabled ? PRIMARY : SURFACE, color: enabled ? "white" : MUTED, fontWeight: 600 }}>
+                  <Button
+                    radius="md"
+                    onClick={onClick}
+                    disabled={!enabled || submitting}
+                    loading={submitting}
+                    loaderProps={{ type: "dots", color: "white" }}
+                    style={{
+                      backgroundColor: enabled && !submitting ? PRIMARY : SURFACE,
+                      color: enabled && !submitting ? "white" : MUTED,
+                      fontWeight: 600,
+                    }}
+                  >
                     Submit
                   </Button>
                 );
@@ -1754,26 +1205,51 @@ export default function PracticeDetailPage() {
                 }
                 if (activeType === "XT") {
                   const xtEnabled = activeGroup?.questions.every((q) => {
-                    const text = (q.content_zh?.question as string) ?? "";
-                    return [...text.matchAll(/\{(\d+)\}/g)].every((m) => Boolean(fillAnswers[q.id]?.[m[1]]));
+                    const qField = q.content_zh?.question;
+                    if (typeof qField !== "string") return Boolean(fillAnswers[q.id]?.["1"]);
+                    const blanks = [...qField.matchAll(/\{(\d+)\}/g)].map((m) => m[1]);
+                    if (blanks.length === 0) return Boolean(fillAnswers[q.id]?.["1"]);
+                    return blanks.every((idx) => Boolean(fillAnswers[q.id]?.[idx]));
                   }) ?? false;
                   return submittedGroups.has(currentQ) ? submittedBtn : submitBtn(xtEnabled, () => handleSubmitGroup(currentQ));
                 }
-                if (activeType === "passage") {
-                  const pqId = activeGroup?.questions[0].id ?? "";
-                  const pEnabled = Boolean((answers as Record<string, string>)[pqId]);
+                if (isYLorJF) {
+                  const pq = activeGroup?.questions[currentSubQ];
+                  const pqId = pq?.id ?? "";
+                  const pEnabled = Boolean(answers[pqId]);
                   return submittedIds.has(pqId) ? submittedBtn : submitBtn(pEnabled, () => handlePassageSubmit(pqId));
                 }
-                // Standard MC
-                return isSubmitted ? submittedBtn : submitBtn(Boolean(pendingAnswer), handleSubmit);
+                return null;
               })()}
 
-
-              {currentQ === (questionGroups.length > 0 ? questionGroups.length : QUESTIONS.length) - 1 ? (
+              {showFinish ? (
                 <Button
                   radius="xl"
-                  leftSection={<IconCheck size={15} stroke={2.5} />}
-                  onClick={() => setFinished(true)}
+                  leftSection={finishing ? undefined : <IconCheck size={15} stroke={2.5} />}
+                  loading={finishing}
+                  loaderProps={{ type: "dots", color: "white" }}
+                  disabled={finishing}
+                  onClick={async () => {
+                    setFinishing(true);
+                    try {
+                      await completeSession(sessionId);
+                      // Fetch authoritative results from the review endpoint
+                      const { groups, restored, fillAnswers: reviewFill, xpEarned: xp } = await fetchSessionReview(sessionId);
+                      setXpEarned(xp);
+                      setQuestionGroups(groups);
+                      setAnswers(restored.answers as Record<string, string>);
+                      setSubmittedIds(restored.submittedIds);
+                      setSubmittedGroups(restored.submittedGroupIndices);
+                      setSubmitResults(restored.submitResults);
+                      setFillAnswers(reviewFill);
+                      // Mark all groups submitted for the summary
+                      const allSubmitted = new Set<number>(groups.map((_, i) => i));
+                      setSubmittedSet(allSubmitted);
+                    } catch (err) {
+                      console.error("Failed to load review after completing:", err);
+                    }
+                    setFinished(true);
+                  }}
                   style={{ backgroundColor: CORRECT_GREEN, color: "white", fontWeight: 600 }}
                 >
                   Finish
@@ -1785,30 +1261,33 @@ export default function PracticeDetailPage() {
                   onClick={handleNext}
                   style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
                 >
-                  Next Question
+                  {hasMoreSubQ ? "Next" : "Next Question"}
                 </Button>
               )}
             </Group>
+              );
+            })()}
           </Stack>
 
           {/* ── Right panel ── */}
-          <Box
-            visibleFrom="lg"
-            style={{ width: rem(272), flexShrink: 0 }}
-          >
+          <Box visibleFrom="lg" style={{ width: rem(272), flexShrink: 0 }}>
             <Stack gap="md">
               <ProgressCard
-                total={questionGroups.length > 0 ? questionGroups.length : QUESTIONS.length}
                 submittedSet={submittedSet}
-                answers={answers}
+                submitResults={submitResults}
+                questionGroups={questionGroups}
                 flaggedSet={flaggedSet}
+                fillAnswers={fillAnswers}
+                answers={answers}
               />
               <QuestionNavigator
-                total={questionGroups.length > 0 ? questionGroups.length : QUESTIONS.length}
                 currentQ={currentQ}
-                submittedSet={submittedSet}
-                answers={answers}
+                currentSubQ={currentSubQ}
+                submitResults={submitResults}
+                questionGroups={questionGroups}
                 flaggedSet={flaggedSet}
+                fillAnswers={fillAnswers}
+                answers={answers}
                 onJump={handleJump}
               />
             </Stack>
@@ -1819,12 +1298,7 @@ export default function PracticeDetailPage() {
       <ReportModal opened={reportOpen} onClose={() => setReportOpen(false)} />
 
       <FloatingChatbot
-        questionContext={[
-          `Topic: ${q.topic}`,
-          `Question: ${q.text}`,
-          `Options:`,
-          ...q.options.map((o) => `  ${o.key}. ${o.text}`),
-        ].join("\n")}
+        questionContext={`Type: ${activeType}\nQuestion ${currentQ + 1}`}
       />
     </Box>
   );

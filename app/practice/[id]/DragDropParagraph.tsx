@@ -212,7 +212,14 @@ export function DragDropParagraph({
                 ? getChoiceText(userAnswers[idx])
                 : submitted && result
                   ? result.correct_answer
-                  : <span style={{ color: MUTED, fontSize: rem(12) }}>____</span>
+                  : (
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      width: rem(22), height: rem(22), borderRadius: "50%",
+                      backgroundColor: "#F0F4FF", color: "#6670B0",
+                      fontSize: rem(11), fontWeight: 700, flexShrink: 0,
+                    }}>{idx}</span>
+                  )
               }
             </span>
           );

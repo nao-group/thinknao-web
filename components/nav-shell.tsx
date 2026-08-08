@@ -29,6 +29,7 @@ import {
 } from "@tabler/icons-react";
 import { ProfileMenu } from "@/components/profile-menu";
 import { useAuthStore } from "@/store/auth";
+import { useNavStore } from "@/store/nav";
 
 const INK = "#0F172A";
 const MUTED = "#667080";
@@ -176,7 +177,7 @@ function slugToLabel(slug: string) {
   return slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function getBreadcrumbs(pathname: string) {
+function getBreadcrumbs(pathname: string, sessionName?: string | null) {
   if (BREADCRUMBS[pathname]) return BREADCRUMBS[pathname];
   const savedProblemMatch = pathname.match(/^\/practice\/saved-problems\/([^/]+)$/);
   if (savedProblemMatch) {
@@ -190,7 +191,7 @@ function getBreadcrumbs(pathname: string) {
   if (practiceMatch) {
     return [
       { label: "Practice", href: "/practice" },
-      { label: slugToLabel(practiceMatch[1]), href: "" },
+      { label: sessionName || slugToLabel(practiceMatch[1]), href: "" },
     ];
   }
   return null;
@@ -212,6 +213,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
     });
   const pathname = usePathname();
   const router = useRouter();
+  const storeSessionName = useNavStore((s) => s.sessionName);
   const firstName = useAuthStore((s) => s.user?.full_name?.split(" ")[0] ?? "");
   const fullName = useAuthStore((s) => s.user?.full_name ?? "");
   const email = useAuthStore((s) => s.user?.email ?? "");
@@ -219,7 +221,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
   const initials = fullName ? fullName.slice(0, 1).toUpperCase() : "?";
 
   const navbarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
-  const breadcrumbs = getBreadcrumbs(pathname);
+  const breadcrumbs = getBreadcrumbs(pathname, storeSessionName);
 
   const allNavItems = NAV_SECTIONS.flatMap((s) => s.items);
   const hasExactMatch = allNavItems.some((i) => i.href === pathname);

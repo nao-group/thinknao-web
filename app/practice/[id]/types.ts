@@ -1,6 +1,6 @@
 // ─── Question type definitions for the practice module ───────────────────────
 
-export type QuestionType = "standard" | "DT" | "XT" | "passage";
+export type QuestionType = "JF" | "DT" | "XT" | "YL";
 
 export interface WordChoice {
   key: string;   // "A", "B", "C", ...
@@ -11,9 +11,29 @@ export interface ApiQuestion {
   id: string;
   code: string;
   difficulty: "easy" | "medium" | "hard";
-  content_en: { question?: string; choices?: Record<string, string>; [key: string]: unknown };
-  content_zh: { question?: string; choices?: Record<string, string>; [key: string]: unknown };
+  /**
+   * content_en / content_zh shapes differ by question type:
+   *   YL / JF: { question: { "1": "text" }, answer: { A: "...", B: "..." } }
+   *   XT:      { question: { "1": "sent1", "2": "sent2", … }, answer: { A: "word", … } }
+   *   DT:      { question: "text with {1} {2} placeholders", correct_answers: { "1": "B" } }
+   *   correct_answer / correct_answers are only present in mock data (not real API).
+   */
+  content_en: {
+    question?: string | Record<string, string>;
+    answer?: Record<string, string>;
+    correct_answer?: string;
+    [key: string]: unknown;
+  };
+  content_zh: {
+    question?: string | Record<string, string>;
+    answer?: Record<string, string>;
+    correct_answer?: string;
+    correct_answers?: Record<string, string>;
+    explanation?: string;
+    [key: string]: unknown;
+  };
   image_url: string | null;
+  question_number: number | null;
   question_type: QuestionType;
   group_id: string | null;
   passage: string | null;
@@ -25,7 +45,7 @@ export interface QuestionGroup {
   type: QuestionType;
   group_id: string | null;
   questions: ApiQuestion[];
-  passage?: string;   // hoisted for passage type
+  passage?: string;
 }
 
 // DT/XT answer state: questionId → { blankIndex → choiceKey }

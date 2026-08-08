@@ -1,13 +1,15 @@
 "use client";
 
 import { rem, Stack, Text, Group, Box } from "@mantine/core";
-import { IconNotes, IconCircleCheck, IconCircleX } from "@tabler/icons-react";
+import { IconNotes, IconCircleCheck, IconCircleX, IconZoomIn } from "@tabler/icons-react";
+import { useState } from "react";
 import {
   INK, SURFACE, MUTED, PRIMARY,
   CORRECT_BG, CORRECT_BORDER, CORRECT_GREEN, CORRECT_DARK,
   WRONG_BG, WRONG_BORDER, WRONG_RED, WRONG_DARK,
 } from "@/constants/colors";
 import { MarkdownLatexText } from "@/components/markdown-latex-text";
+import { ImageLightbox } from "@/components/image-lightbox";
 import type { ApiQuestion, SubmitResult } from "./types";
 
 interface PassageQuestionGroupProps {
@@ -17,6 +19,10 @@ interface PassageQuestionGroupProps {
   submittedIds: Set<string>;
   results?: Record<string, SubmitResult>;
   lang: "en" | "zh";
+  /** Offset added to the displayed question number (for page-by-page YL) */
+  startIndex?: number;
+  /** True while the submit API call is in flight — shows loading skeleton in explanation box */
+  submitting?: boolean;
   onAnswer: (questionId: string, key: string) => void;
   onSubmit: (questionId: string) => void;
 }
@@ -24,12 +30,14 @@ interface PassageQuestionGroupProps {
 // ─── Option button — same design as page.tsx's OptionButton ──────────────────
 
 function PassageOption({
-  optKey, text, selected, submitted, isCorrect, isUserAnswer, onClick,
+  optKey, text, selected, submitted, resultReady, isCorrect, isUserAnswer, onClick,
 }: {
   optKey: string;
   text: string;
   selected: boolean;
   submitted: boolean;
+  /** True once the API result has returned — only then show correct/wrong colours */
+  resultReady: boolean;
   isCorrect: boolean;
   isUserAnswer: boolean;
   onClick: () => void;
@@ -64,7 +72,8 @@ function PassageOption({
   let textColor = INK;
   let rightBadge: React.ReactNode = null;
 
-  if (!submitted) {
+  if (!submitted || !resultReady) {
+    // Pre-submit OR submitted but result still loading — show selection highlight only
     if (selected) {
       containerStyle = { ...containerStyle, backgroundColor: "#FFF9EC", border: `2px solid ${PRIMARY}` };
       circleStyle = { ...circleStyle, backgroundColor: PRIMARY, color: INK };
@@ -98,15 +107,17 @@ function PassageOption({
   return (
     <Box style={containerStyle} onClick={submitted ? undefined : onClick}>
       <Box style={circleStyle}>
-        {submitted && isCorrect ? (
+        {submitted && resultReady && isCorrect ? (
           <IconCircleCheck size={18} stroke={2.5} color="white" style={{ display: "block" }} />
-        ) : submitted && isUserAnswer && !isCorrect ? (
+        ) : submitted && resultReady && isUserAnswer && !isCorrect ? (
           <IconCircleX size={18} stroke={2.5} color="white" style={{ display: "block" }} />
         ) : (
           <Text size="xs" fw={700} style={{ color: "inherit" }}>{optKey}</Text>
         )}
       </Box>
-      <Text size="md" fw={500} c={textColor} style={{ flex: 1 }}>{text}</Text>
+      <div style={{ flex: 1, color: textColor, fontWeight: 500 }}>
+        <MarkdownLatexText>{text}</MarkdownLatexText>
+      </div>
       {rightBadge}
     </Box>
   );
@@ -138,13 +149,7 @@ function PassageBox({ passage }: { passage: string }) {
 
 // ─── Explanation box — same amber design as standard ExplanationBox ───────────
 
-function PassageExplanationBox({
-  correctStatement,
-  explanation,
-}: {
-  correctStatement: string;
-  explanation?: string;
-}) {
+function PassageExplanationBox({ explanation, loading }: { explanation?: string; loading?: boolean }) {
   return (
     <Box
       mt="md"
@@ -159,10 +164,31 @@ function PassageExplanationBox({
         <IconNotes size={18} stroke={1.5} color={PRIMARY} />
         <Text size="sm" fw={700} c={PRIMARY}>Answer Key &amp; Explanation</Text>
       </Group>
-      <Text size="md" fw={700} c={CORRECT_DARK} mb={rem(explanation ? 12 : 0)}>
-        Correct Answer: {correctStatement}
-      </Text>
-      {explanation && <MarkdownLatexText>{explanation}</MarkdownLatexText>}
+      {loading ? (
+        <Box style={{ display: "flex", flexDirection: "column", gap: rem(8) }}>
+          {[80, 60, 90].map((w, i) => (
+            <Box
+              key={i}
+              style={{
+                height: rem(14),
+                width: `${w}%`,
+                borderRadius: rem(6),
+                backgroundColor: "rgba(245,158,11,0.18)",
+                animation: "skeleton-pulse 1.4s ease-in-out infinite",
+                animationDelay: `${i * 0.15}s`,
+              }}
+            />
+          ))}
+          <style>{`
+            @keyframes skeleton-pulse {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0.35; }
+            }
+          `}</style>
+        </Box>
+      ) : explanation ? (
+        <MarkdownLatexText>{explanation}</MarkdownLatexText>
+      ) : null}
     </Box>
   );
 }
@@ -176,19 +202,34 @@ export function PassageQuestionGroup({
   submittedIds,
   results,
   lang,
+  startIndex = 0,
+  submitting = false,
   onAnswer,
   onSubmit,
 }: PassageQuestionGroupProps) {
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+
   function getQuestionText(q: ApiQuestion): string {
-    const content = lang === "zh" ? q.content_zh : q.content_en;
-    return (content?.question as string) ?? "";
+    function extract(content: ApiQuestion["content_zh"] | ApiQuestion["content_en"]): string {
+      const qField = content?.question;
+      if (!qField) return "";
+      if (typeof qField === "string") return qField;
+      return Object.values(qField as Record<string, string>)[0] ?? "";
+    }
+    return extract(lang === "zh" ? q.content_zh : q.content_en) || extract(q.content_zh);
   }
 
   function getOptions(q: ApiQuestion): Array<{ key: string; text: string }> {
-    const content = lang === "zh" ? q.content_zh : q.content_en;
-    const choices = content?.choices as Record<string, string> | undefined;
-    if (!choices) return [];
-    return Object.entries(choices).map(([key, text]) => ({ key, text }));
+    function extractOptions(content: ApiQuestion["content_zh"] | ApiQuestion["content_en"]): Array<{ key: string; text: string }> | null {
+      const answer = content?.answer as Record<string, string> | undefined;
+      if (answer && Object.keys(answer).length > 0) return Object.entries(answer).map(([key, text]) => ({ key, text }));
+      const choices = content?.choices as Record<string, string> | undefined;
+      if (choices && Object.keys(choices).length > 0) return Object.entries(choices).map(([key, text]) => ({ key, text }));
+      return null;
+    }
+    return extractOptions(lang === "zh" ? q.content_zh : q.content_en)
+      ?? extractOptions(q.content_zh)
+      ?? [];
   }
 
   function getExplanation(q: ApiQuestion): string | undefined {
@@ -196,24 +237,30 @@ export function PassageQuestionGroup({
   }
 
   return (
-    <Stack gap={rem(24)}>
+    <>
+      {lightboxSrc && (
+        <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
+      )}
+      <Stack gap={rem(24)}>
       {questions.map((q, qi) => {
         const submitted = submittedIds.has(q.id);
         const result = results?.[q.id];
+        const resultReady = result != null;
         const selected = userAnswers[q.id] ?? "";
         const correctAnswer = result?.correct_answer ?? (q.content_zh.correct_answer as string | undefined) ?? (q.content_en.correct_answer as string | undefined) ?? "";
         const options = getOptions(q);
         const explanation = getExplanation(q);
+        const questionNum = q.question_number ?? (startIndex + qi + 1);
 
         return (
           <Stack key={q.id} gap={rem(12)}>
-            {/* Passage above each question */}
-            <PassageBox passage={passage} />
+            {/* Passage above each question — omitted for JF (no passage) */}
+            {passage && <PassageBox passage={passage} />}
 
             {/* Question card */}
             <Box p="lg" style={{ backgroundColor: "white", borderRadius: rem(14) }}>
               {/* Question number + text */}
-              <Group gap={rem(10)} mb="md" align="flex-start">
+              <Group gap={rem(10)} mb={q.image_url ? rem(12) : "md"} align="flex-start">
                 <Box
                   style={{
                     minWidth: rem(28), height: rem(28), borderRadius: "50%",
@@ -222,12 +269,38 @@ export function PassageQuestionGroup({
                     color: "#6670B0", flexShrink: 0,
                   }}
                 >
-                  {qi + 1}
+                  {questionNum}
                 </Box>
-                <Text size="md" fw={500} c={INK} style={{ lineHeight: 1.7, flex: 1 }}>
-                  {getQuestionText(q)}
-                </Text>
+                <div style={{ flex: 1, lineHeight: 1.7 }}>
+                  <MarkdownLatexText>{getQuestionText(q)}</MarkdownLatexText>
+                </div>
               </Group>
+
+              {/* Question image — thumbnail, click to open lightbox */}
+              {q.image_url && (
+                <Box mb="md" style={{ display: "flex", justifyContent: "center" }}>
+                  <div
+                    style={{ position: "relative", display: "inline-block", cursor: "zoom-in" }}
+                    onClick={() => setLightboxSrc(q.image_url!)}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={q.image_url}
+                      alt="Question diagram"
+                      style={{ maxHeight: rem(220), maxWidth: "100%", height: "auto", borderRadius: rem(8), display: "block" }}
+                    />
+                    <div style={{
+                      position: "absolute", bottom: rem(8), right: rem(8),
+                      backgroundColor: "rgba(0,0,0,0.45)", borderRadius: rem(6),
+                      padding: `${rem(4)} ${rem(6)}`, display: "flex", alignItems: "center", gap: rem(4),
+                      color: "white", fontSize: rem(11), fontWeight: 600,
+                    }}>
+                      <IconZoomIn size={13} />
+                      Click to zoom
+                    </div>
+                  </div>
+                </Box>
+              )}
 
               {/* Options */}
               <Stack gap={rem(8)} mb="md">
@@ -238,24 +311,26 @@ export function PassageQuestionGroup({
                     text={opt.text}
                     selected={selected === opt.key}
                     submitted={submitted}
-                    isCorrect={submitted && opt.key === correctAnswer}
-                    isUserAnswer={submitted && selected === opt.key}
+                    resultReady={resultReady}
+                    isCorrect={resultReady && opt.key === correctAnswer}
+                    isUserAnswer={resultReady && selected === opt.key}
                     onClick={() => onAnswer(q.id, opt.key)}
                   />
                 ))}
               </Stack>
 
-              {/* Explanation after submit */}
-              {submitted && (
+              {/* Explanation after submit — only render when content is available or loading */}
+              {submitted && (explanation || (submitting && !explanation)) && (
                 <PassageExplanationBox
-                  correctStatement={`${correctAnswer} — ${options.find((o) => o.key === correctAnswer)?.text ?? ""}`}
                   explanation={explanation}
+                  loading={submitting && !explanation}
                 />
               )}
             </Box>
           </Stack>
         );
       })}
-    </Stack>
+      </Stack>
+    </>
   );
 }

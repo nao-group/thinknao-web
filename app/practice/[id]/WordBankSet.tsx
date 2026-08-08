@@ -2,6 +2,7 @@
 
 import { Box, Group, rem, Stack, Text } from "@mantine/core";
 import { IconNotes } from "@tabler/icons-react";
+import { MarkdownLatexText } from "@/components/markdown-latex-text";
 import {
   INK, SURFACE, MUTED, PRIMARY,
   CORRECT_BG, CORRECT_BORDER, CORRECT_GREEN,
@@ -22,26 +23,57 @@ interface WordBankSetProps {
   /** questionId → SubmitResult (populated after submit) */
   results?: Record<string, SubmitResult>;
   lang: "en" | "zh";
+  /** 0-based index of the sentence to highlight (from question navigator) */
+  highlightIdx?: number;
+  /** Set of question IDs that are flagged (per-question, not per-group) */
+  flaggedQIds?: Set<string>;
   onChange: (questionId: string, blankIndex: string, choiceKey: string) => void;
   onSubmitSet: () => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * Supports two blank formats:
+ *  - Old:  "text{1}more{2}end"  →  blank value = "1", "2", …
+ *  - Real API:  "text____more"  →  blank value = "1" (one blank per sentence)
+ */
 function parseSegments(text: string): Array<{ type: "text" | "blank"; value: string }> {
-  const parts = text.split(/(\{\d+\})/g);
-  return parts.map((part) => {
-    const m = part.match(/^\{(\d+)\}$/);
-    return m ? { type: "blank" as const, value: m[1] } : { type: "text" as const, value: part };
+  if (/\{\d+\}/.test(text)) {
+    const parts = text.split(/(\{\d+\})/g);
+    return parts.map((part) => {
+      const m = part.match(/^\{(\d+)\}$/);
+      return m ? { type: "blank" as const, value: m[1] } : { type: "text" as const, value: part };
+    });
+  }
+  // ____ format — one blank per sentence, always index "1"
+  const parts = text.split("____");
+  const result: Array<{ type: "text" | "blank"; value: string }> = [];
+  parts.forEach((part, i) => {
+    result.push({ type: "text" as const, value: part });
+    if (i < parts.length - 1) result.push({ type: "blank" as const, value: "1" });
   });
+  return result;
 }
 
-function getQuestionText(q: ApiQuestion, lang: "en" | "zh"): string {
-  const content = lang === "zh" ? q.content_zh : q.content_en;
-  if (content?.question) return content.question as string;
-  // Fallback: stringify first value
-  const first = Object.values(content ?? {})[0];
-  return typeof first === "string" ? first : "";
+/**
+ * Extract the sentence text for a given question + its index in the group.
+ *
+ * Real API: content_zh.question = { "1": "sent1", "2": "sent2", … }
+ * Old mock: content_zh.question = "sentence with {1} placeholder"
+ */
+function getQuestionText(q: ApiQuestion, lang: "en" | "zh", qi: number): string {
+  function extract(content: ApiQuestion["content_zh"] | ApiQuestion["content_en"]): string {
+    const qField = content?.question;
+    if (!qField) return "";
+    if (typeof qField === "string") return qField;
+    const obj = qField as Record<string, string>;
+    const sentenceKey = String(q.question_number ?? qi + 1);
+    return obj[sentenceKey] ?? Object.values(obj)[qi] ?? "";
+  }
+  // Try requested language first, fall back to zh
+  const primary = lang === "zh" ? q.content_zh : q.content_en;
+  return extract(primary) || extract(q.content_zh);
 }
 
 /** All choice keys currently placed across all blanks in the set */
@@ -57,8 +89,13 @@ function allPlacedKeys(userAnswers: FillAnswerMap): Set<string> {
 
 function allBlanksFilledForSet(questions: ApiQuestion[], userAnswers: FillAnswerMap): boolean {
   return questions.every((q) => {
-    const text = q.content_zh?.question as string ?? "";
-    const blanks = [...text.matchAll(/\{(\d+)\}/g)].map((m) => m[1]);
+    const qField = q.content_zh?.question;
+    if (typeof qField !== "string") {
+      // Real API format: each question has exactly one blank at index "1"
+      return Boolean(userAnswers[q.id]?.["1"]);
+    }
+    const blanks = [...qField.matchAll(/\{(\d+)\}/g)].map((m) => m[1]);
+    if (blanks.length === 0) return Boolean(userAnswers[q.id]?.["1"]);
     return blanks.every((idx) => Boolean(userAnswers[q.id]?.[idx]));
   });
 }
@@ -73,6 +110,8 @@ function SentenceRow({
   wordChoices,
   submitted,
   blankResults,
+  isHighlighted = false,
+  isFlagged = false,
   onDrop,
   onClear,
 }: {
@@ -83,6 +122,8 @@ function SentenceRow({
   wordChoices: WordChoice[];
   submitted: boolean;
   blankResults?: BlankResult[];
+  isHighlighted?: boolean;
+  isFlagged?: boolean;
   onDrop: (blankIdx: string, key: string) => void;
   onClear: (blankIdx: string) => void;
 }) {
@@ -103,8 +144,8 @@ function SentenceRow({
         minHeight: rem(28),
         padding: `${rem(3)} ${rem(10)}`,
         borderRadius: rem(8),
-        border: `1.5px dashed ${filled ? "#93C5FD" : MUTED}`,
-        backgroundColor: filled ? "#EFF6FF" : SURFACE,
+        border: `1.5px dashed ${filled ? "#93C5FD" : isFlagged ? "#F59E0B" : MUTED}`,
+        backgroundColor: filled ? "#EFF6FF" : isFlagged ? "#FFF9EC" : SURFACE,
         cursor: filled ? "pointer" : "default",
         verticalAlign: "middle",
         margin: `0 ${rem(4)}`,
@@ -139,6 +180,13 @@ function SentenceRow({
     return wordChoices.find((c) => c.key === key)?.text ?? key;
   }
 
+  const rowBorder = isHighlighted
+    ? `2px solid ${INK}`
+    : isFlagged
+    ? `2px solid #F59E0B`
+    : "1px solid #E2E8F0";
+  const rowBg = isHighlighted ? "#F8FAFC" : isFlagged ? "#FFFBEB" : "white";
+
   return (
     <div
       style={{
@@ -147,9 +195,10 @@ function SentenceRow({
         gap: rem(8),
         padding: `${rem(12)} ${rem(16)}`,
         borderRadius: rem(10),
-        border: "1px solid #E2E8F0",
-        backgroundColor: "white",
+        border: rowBorder,
+        backgroundColor: rowBg,
         lineHeight: 2,
+        transition: "border-color 150ms ease, background-color 150ms ease",
       }}
     >
       <span
@@ -212,6 +261,8 @@ export function WordBankSet({
   submitted,
   results,
   lang,
+  highlightIdx,
+  flaggedQIds,
   onChange,
   onSubmitSet,
 }: WordBankSetProps) {
@@ -271,13 +322,15 @@ export function WordBankSet({
         {questions.map((q, qi) => (
           <SentenceRow
             key={q.id}
-            questionIndex={qi}
-            questionText={getQuestionText(q, lang)}
+            questionIndex={q.question_number != null ? q.question_number - 1 : qi}
+            questionText={getQuestionText(q, lang, qi)}
             questionId={q.id}
             userAnswers={userAnswers[q.id] ?? {}}
             wordChoices={wordChoices}
             submitted={submitted}
             blankResults={results?.[q.id]?.blank_results}
+            isHighlighted={!submitted && qi === highlightIdx}
+            isFlagged={!submitted && (flaggedQIds?.has(q.id) ?? false)}
             onDrop={(blankIdx, key) => onChange(q.id, blankIdx, key)}
             onClear={(blankIdx) => onChange(q.id, blankIdx, "")}
           />
@@ -286,7 +339,7 @@ export function WordBankSet({
 
 
       {/* Post-submit answer key & explanation */}
-      {submitted && results && (
+      {submitted && (
         <Box
           style={{
             backgroundColor: "#FFF9EC",
@@ -299,37 +352,12 @@ export function WordBankSet({
             <IconNotes size={18} stroke={1.5} color={PRIMARY} />
             <Text size="sm" fw={700} c={PRIMARY}>Answer Key &amp; Explanation</Text>
           </Group>
-          <Stack gap={rem(12)}>
-            {questions.map((q, qi) => {
-              const res = results[q.id];
-              if (!res?.blank_results) return null;
+          <Stack gap={rem(16)}>
+            {questions.map((q) => {
+              const explanation = q.content_zh?.explanation as string | undefined;
+              if (!explanation) return null;
               return (
-                <div key={q.id}>
-                  <Text size="xs" fw={600} c={MUTED} mb={rem(6)}>Sentence {qi + 1}</Text>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: rem(6) }}>
-                    {res.blank_results.map((r) => (
-                      <span
-                        key={r.blank_index}
-                        style={{
-                          padding: `${rem(4)} ${rem(12)}`,
-                          borderRadius: rem(8),
-                          border: `1px solid ${r.correct ? CORRECT_BORDER : WRONG_BORDER}`,
-                          backgroundColor: r.correct ? CORRECT_BG : WRONG_BG,
-                          color: r.correct ? CORRECT_GREEN : WRONG_RED,
-                          fontSize: rem(13),
-                          fontWeight: 500,
-                        }}
-                      >
-                        {`{${r.blank_index}}`} → {wordChoices.find((c) => c.key === r.correct_answer)?.text ?? r.correct_answer}
-                        {!r.correct && (
-                          <span style={{ color: MUTED, fontWeight: 400 }}>
-                            {" "}(you: {(wordChoices.find((c) => c.key === r.user_answer)?.text ?? r.user_answer) || "—"})
-                          </span>
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                <MarkdownLatexText key={q.id} circleNums>{explanation}</MarkdownLatexText>
               );
             })}
           </Stack>
