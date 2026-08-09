@@ -293,8 +293,9 @@ export default function PracticePage() {
     setSessionsError(null);
     try {
       const status = activeTab === "in-progress" ? "in_progress" : "completed";
-      const { data } = await api.get("/api/practice", {
+      const { data } = await api.get("/api/sessions", {
         params: {
+          type: "practice",
           status,
           page,
           page_size: PAGE_SIZE,
@@ -404,7 +405,7 @@ export default function PracticePage() {
   // ── Rename session ────────────────────────────────────────────────────────
   async function handleRename(sessionId: string, name: string) {
     try {
-      await api.patch(`/api/practice/${sessionId}/name`, { name });
+      await api.patch(`/api/sessions/${sessionId}/name`, { name });
       setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, name } : s));
       notifications.show({
         title: "Renamed",

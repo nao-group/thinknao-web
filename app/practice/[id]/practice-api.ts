@@ -215,7 +215,7 @@ export async function fetchSessionQuestions(sessionId: string): Promise<{
   sessionName: string;
 }> {
   const { data } = await api.get<SessionQuestionsResponse>(
-    `/api/practice/${sessionId}/questions`
+    `/api/sessions/${sessionId}/questions`
   );
   const groups = data.groups.map(adaptGroup);
   const restored = buildRestoredState(data.groups);
@@ -232,7 +232,7 @@ export async function fetchSessionReview(sessionId: string): Promise<{
   sessionName: string;
 }> {
   const { data } = await api.get<SessionQuestionsResponse>(
-    `/api/practice/${sessionId}/review`
+    `/api/sessions/${sessionId}/review`
   );
   const groups = data.groups.map(adaptGroup);
   const restored = buildRestoredState(data.groups);
@@ -305,5 +305,5 @@ export async function submitQuestionGroup(
 }
 
 export async function completeSession(sessionId: string): Promise<void> {
-  await api.patch(`/api/practice/${sessionId}/complete`);
+  await api.patch(`/api/sessions/${sessionId}/complete`);
 }
