@@ -1,6 +1,6 @@
 // ─── Question type definitions for the practice module ───────────────────────
 
-export type QuestionType = "JF" | "DT" | "XT" | "YL";
+export type QuestionType = "JF" | "DT" | "XT" | "YL" | "SH" | "BY";
 
 export interface WordChoice {
   key: string;   // "A", "B", "C", ...

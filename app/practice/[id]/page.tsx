@@ -277,7 +277,7 @@ function SummaryView({
 
   function handleReviewPrev() {
     const cg = questionGroups[currentReviewQ];
-    const isP = cg?.type === "YL" || cg?.type === "JF";
+    const isP = cg?.type === "YL" || cg?.type === "JF" || cg?.type === "SH" || cg?.type === "BY";
     if (isP && currentReviewSubQ > 0) { setCurrentReviewSubQ((q) => q - 1); return; }
     const prevIdx = currentReviewQ - 1;
     const prevG = questionGroups[prevIdx];
@@ -288,13 +288,13 @@ function SummaryView({
 
   function handleReviewNext() {
     const cg = questionGroups[currentReviewQ];
-    const isP = cg?.type === "YL" || cg?.type === "JF";
+    const isP = cg?.type === "YL" || cg?.type === "JF" || cg?.type === "SH" || cg?.type === "BY";
     if (isP && currentReviewSubQ < cg.questions.length - 1) { setCurrentReviewSubQ((q) => q + 1); return; }
     setCurrentReviewSubQ(0);
     setCurrentReviewQ((q) => q + 1);
   }
 
-  const isCurrentGroupPassage = questionGroups[currentReviewQ]?.type === "YL" || questionGroups[currentReviewQ]?.type === "JF";
+  const isCurrentGroupPassage = questionGroups[currentReviewQ]?.type === "YL" || questionGroups[currentReviewQ]?.type === "JF" || questionGroups[currentReviewQ]?.type === "SH" || questionGroups[currentReviewQ]?.type === "BY";
   const prevDisabledReview = currentReviewQ === 0 && currentReviewSubQ === 0;
   const nextDisabledReview = currentReviewQ === questionGroups.length - 1 &&
     (!isCurrentGroupPassage || currentReviewSubQ >= (questionGroups[currentReviewQ]?.questions.length ?? 1) - 1);
@@ -412,7 +412,7 @@ function SummaryView({
         const resultBg = !submitted ? SURFACE : groupIsCorrect ? "#DCFCE7" : "#FEE2E2";
         const resultColor = !submitted ? MUTED : groupIsCorrect ? CORRECT_GREEN : WRONG_RED;
 
-        const isPassage = group.type === "YL" || group.type === "JF";
+        const isPassage = group.type === "YL" || group.type === "JF" || group.type === "SH" || group.type === "BY";
         const isFill = group.type === "DT" || group.type === "XT";
 
         return (
@@ -918,14 +918,14 @@ export default function PracticeDetailPage() {
   }, [finished]);
 
   function handlePrev() {
-    if ((activeType === "YL" || activeType === "JF") && currentSubQ > 0) {
+    if ((activeType === "YL" || activeType === "JF" || activeType === "SH" || activeType === "BY") && currentSubQ > 0) {
       setCurrentSubQ((q) => q - 1);
       return;
     }
     if (currentQ === 0) return;
     const prevIdx = currentQ - 1;
     const prevGroup = questionGroups[prevIdx];
-    if (prevGroup && (prevGroup.type === "YL" || prevGroup.type === "JF") && prevGroup.questions.length > 1) {
+    if (prevGroup && (prevGroup.type === "YL" || prevGroup.type === "JF" || prevGroup.type === "SH" || prevGroup.type === "BY") && prevGroup.questions.length > 1) {
       setCurrentSubQ(prevGroup.questions.length - 1);
     } else {
       setCurrentSubQ(0);
@@ -934,7 +934,7 @@ export default function PracticeDetailPage() {
   }
 
   function handleNext() {
-    if ((activeType === "YL" || activeType === "JF") && activeGroup && currentSubQ < activeGroup.questions.length - 1) {
+    if ((activeType === "YL" || activeType === "JF" || activeType === "SH" || activeType === "BY") && activeGroup && currentSubQ < activeGroup.questions.length - 1) {
       setCurrentSubQ((q) => q + 1);
       return;
     }
@@ -1031,7 +1031,7 @@ export default function PracticeDetailPage() {
                   <Badge size="sm" style={{ backgroundColor: INK, color: "white", fontWeight: 700, borderRadius: rem(999), flexShrink: 0 }}>
                     Problem {currentQ + 1}
                   </Badge>
-                  {(activeType === "YL" || activeType === "JF") && activeGroup && activeGroup.questions.length > 1 && (
+                  {(activeType === "YL" || activeType === "JF" || activeType === "SH" || activeType === "BY") && activeGroup && activeGroup.questions.length > 1 && (
                     <Badge size="sm" style={{ backgroundColor: SURFACE, color: MUTED, fontWeight: 600, borderRadius: rem(999), flexShrink: 0 }}>
                       {currentSubQ + 1}/{activeGroup.questions.length}
                     </Badge>
@@ -1136,7 +1136,7 @@ export default function PracticeDetailPage() {
                   onChange={updateFillAnswer}
                   onSubmitSet={() => handleSubmitGroup(currentQ)}
                 />
-              ) : (activeType === "YL" || activeType === "JF") && activeGroup ? (
+              ) : (activeType === "YL" || activeType === "JF" || activeType === "SH" || activeType === "BY") && activeGroup ? (
                 <PassageQuestionGroup
                   passage={activeGroup.passage ?? activeGroup.questions[0]?.passage ?? ""}
                   questions={[activeGroup.questions[currentSubQ]].filter(Boolean) as typeof activeGroup.questions}
@@ -1154,7 +1154,7 @@ export default function PracticeDetailPage() {
 
             {/* Navigation buttons */}
             {(() => {
-              const isYLorJF = activeType === "YL" || activeType === "JF";
+              const isYLorJF = activeType === "YL" || activeType === "JF" || activeType === "SH" || activeType === "BY";
               const hasMoreSubQ = isYLorJF && activeGroup && currentSubQ < activeGroup.questions.length - 1;
               const isLastGroup = currentQ === questionGroups.length - 1;
               const showFinish = isLastGroup && !hasMoreSubQ;

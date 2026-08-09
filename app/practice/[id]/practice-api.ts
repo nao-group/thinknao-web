@@ -22,7 +22,7 @@ interface RawQuestion {
   id: string;
   code: string;
   difficulty: "easy" | "medium" | "hard";
-  question_type: "JF" | "DT" | "XT" | "YL" | "standard";
+  question_type: "JF" | "DT" | "XT" | "YL" | "SH" | "BY" | "standard";
   question_number: number | null;
   image_url: string | null;
   content: { zh?: RawContent; en?: RawContent };
@@ -35,7 +35,7 @@ interface RawQuestion {
 
 interface RawGroup {
   group_id: string;
-  type: "JF" | "DT" | "XT" | "YL" | "standard";
+  type: "JF" | "DT" | "XT" | "YL" | "SH" | "BY" | "standard";
   passage: string | null;
   word_bank: WordChoice[] | null;
   questions: RawQuestion[];
