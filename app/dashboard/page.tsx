@@ -1,68 +1,79 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
   Group,
   Progress,
   SimpleGrid,
+  Skeleton,
   Stack,
   Text,
   Tooltip,
   rem,
 } from "@mantine/core";
 import {
+  IconAtom,
+  IconBook,
   IconChevronRight,
   IconClock,
   IconFlask,
   IconMathFunction,
-  IconAtom,
+  IconMicroscope,
 } from "@tabler/icons-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnnouncementCarousel } from "@/components/announcement-carousel";
+import api from "@/lib/api";
 
-import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA } from "@/constants/colors";
+import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
+
+interface Session {
+  id: string;
+  name: string;
+  status: "in_progress" | "completed";
+  type: string;
+  subject_code: string;
+  subject_name: string;
+  topic_name: string | null;
+  topic_code: string | null;
+  created_at: string;
+}
+
+interface SessionProgress {
+  answered_count: number;
+  total_count: number;
+}
+
+// ─── Subject meta ──────────────────────────────────────────────────────────────
+
+const SUBJECT_META: Record<string, {
+  icon: React.ComponentType<{ size?: number; stroke?: number; color?: string }>;
+  iconBg: string;
+  iconColor: string;
+}> = {
+  MT: { icon: IconMathFunction, iconBg: CREAM,     iconColor: PRIMARY },
+  PH: { icon: IconAtom,         iconBg: "#EEF0FF", iconColor: INDIGO  },
+  CM: { icon: IconFlask,        iconBg: "#FDF0EC", iconColor: PANDA   },
+  WH: { icon: IconBook,         iconBg: "#F5F3FF", iconColor: VIOLET  },
+  LH: { icon: IconMicroscope,   iconBg: "#ECFDF5", iconColor: EMERALD },
+};
+
+const PROGRESS_COLORS = [INK, INDIGO, PANDA, VIOLET, EMERALD];
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
+function ProblemSetCard({ session, onClick }: { session: Session; onClick: () => void }) {
+  const meta = SUBJECT_META[session.subject_code] ?? SUBJECT_META["MT"];
+  const Icon = meta.icon;
+  const date = new Date(session.created_at).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 
-
-const PROBLEM_SETS = [
-  {
-    icon: IconMathFunction,
-    iconBg: CREAM,
-    iconColor: PRIMARY,
-    label: "Mathematics 1",
-    meta: "40 questions",
-    added: "Created Jul 20",
-  },
-  {
-    icon: IconAtom,
-    iconBg: "#EEF0FF",
-    iconColor: INDIGO,
-    label: "Physics 2",
-    meta: "35 questions",
-    added: "Created Jul 21",
-  },
-  {
-    icon: IconFlask,
-    iconBg: "#FDF0EC",
-    iconColor: PANDA,
-    label: "Chemistry 3",
-    meta: "30 questions",
-    added: "Created Jul 21",
-  },
-];
-
-function ProblemSetCard({
-  icon: Icon,
-  iconBg,
-  iconColor,
-  label,
-  meta,
-  added,
-}: (typeof PROBLEM_SETS)[0]) {
   return (
     <Box
       p="lg"
@@ -73,67 +84,81 @@ function ProblemSetCard({
         display: "flex",
         flexDirection: "column",
         gap: rem(12),
+        cursor: "pointer",
       }}
+      onClick={onClick}
     >
-      <Group justify="space-between" align="flex-start">
-        <Box
-          style={{
-            width: rem(40),
-            height: rem(40),
-            borderRadius: rem(10),
-            backgroundColor: iconBg,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Icon size={20} stroke={1.5} color={iconColor} />
-        </Box>
-      </Group>
+      <Box
+        style={{
+          width: rem(40),
+          height: rem(40),
+          borderRadius: rem(10),
+          backgroundColor: meta.iconBg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Icon size={20} stroke={1.5} color={meta.iconColor} />
+      </Box>
 
       <Box style={{ flex: 1 }}>
         <Text fw={700} size="sm" c={INK} mb={4}>
-          {label}
+          {session.name}
         </Text>
         <Text size="xs" c="dimmed">
-          {meta}
+          {session.topic_name ?? session.subject_name}
         </Text>
       </Box>
 
       <Group justify="space-between" align="center">
         <Text size="xs" c="dimmed">
-          {added}
+          Created {date}
         </Text>
         <Button
           size="xs"
           radius="sm"
           style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
+          onClick={(e) => { e.stopPropagation(); onClick(); }}
         >
-          Start
+          {session.status === "in_progress" ? "Continue" : "Review"}
         </Button>
       </Group>
     </Box>
   );
 }
 
-const IN_PROGRESS = [
-  {
-    label: "Mathematics 1",
-    done: 17,
-    total: 25,
-    pct: 68,
-    color: INK,
-  },
-  {
-    label: "Chemistry 3",
-    done: 10,
-    total: 30,
-    pct: 32,
-    color: INDIGO,
-  },
-];
+function ProblemSetSkeleton() {
+  return (
+    <Box p="lg" style={{ backgroundColor: "white", borderRadius: rem(14), display: "flex", flexDirection: "column", gap: rem(12) }}>
+      <Skeleton height={40} width={40} radius={10} />
+      <Box style={{ flex: 1 }}>
+        <Skeleton height={14} width="70%" mb={6} radius="sm" />
+        <Skeleton height={11} width="50%" radius="sm" />
+      </Box>
+      <Group justify="space-between" align="center">
+        <Skeleton height={11} width={70} radius="sm" />
+        <Skeleton height={26} width={60} radius="sm" />
+      </Group>
+    </Box>
+  );
+}
 
-function InProgressItem({ label, done, total, pct, color }: (typeof IN_PROGRESS)[0]) {
+function InProgressItem({
+  session,
+  progress,
+  color,
+  onClick,
+}: {
+  session: Session;
+  progress: SessionProgress | undefined;
+  color: string;
+  onClick: () => void;
+}) {
+  const answered = progress?.answered_count ?? 0;
+  const total = progress?.total_count ?? 0;
+  const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
+
   return (
     <Box
       p="md"
@@ -144,7 +169,9 @@ function InProgressItem({ label, done, total, pct, color }: (typeof IN_PROGRESS)
         display: "flex",
         alignItems: "center",
         gap: rem(16),
+        cursor: "pointer",
       }}
+      onClick={onClick}
     >
       <Box
         style={{
@@ -164,15 +191,21 @@ function InProgressItem({ label, done, total, pct, color }: (typeof IN_PROGRESS)
       <Box style={{ flex: 1, minWidth: 0 }}>
         <Group justify="space-between" mb={6}>
           <Text size="sm" fw={600} c={INK} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {label}
+            {session.name}
           </Text>
           <Text size="sm" fw={700} c={color} style={{ flexShrink: 0 }}>
-            {pct}%
+            {progress ? `${pct}%` : "—"}
           </Text>
         </Group>
-        <Progress value={pct} size="sm" radius="xl" color={color === INK ? "dark" : "indigo"} mb={6} />
+        <Progress
+          value={pct}
+          size="sm"
+          radius="xl"
+          color={color === INK ? "dark" : color === INDIGO ? "indigo" : color === PANDA ? "orange" : color === VIOLET ? "violet" : "teal"}
+          mb={6}
+        />
         <Text size="xs" c="dimmed">
-          {done} of {total} questions done
+          {progress ? `${answered} of ${total} questions done` : "Loading progress…"}
         </Text>
       </Box>
 
@@ -181,9 +214,27 @@ function InProgressItem({ label, done, total, pct, color }: (typeof IN_PROGRESS)
         variant="default"
         radius="sm"
         style={{ flexShrink: 0 }}
+        onClick={(e) => { e.stopPropagation(); onClick(); }}
       >
         Continue
       </Button>
+    </Box>
+  );
+}
+
+function InProgressSkeleton() {
+  return (
+    <Box p="md" style={{ backgroundColor: "white", borderRadius: rem(14), display: "flex", alignItems: "center", gap: rem(16) }}>
+      <Skeleton height={40} width={40} radius={10} style={{ flexShrink: 0 }} />
+      <Box style={{ flex: 1 }}>
+        <Group justify="space-between" mb={6}>
+          <Skeleton height={14} width="50%" radius="sm" />
+          <Skeleton height={14} width={32} radius="sm" />
+        </Group>
+        <Skeleton height={8} radius="xl" mb={6} />
+        <Skeleton height={11} width={140} radius="sm" />
+      </Box>
+      <Skeleton height={28} width={70} radius="sm" style={{ flexShrink: 0 }} />
     </Box>
   );
 }
@@ -216,7 +267,6 @@ function LearningActivity() {
         Learning Activity
       </Text>
 
-      {/* Stats */}
       <SimpleGrid cols={3} mb={24}>
         {[
           { value: "7", label: "Day Streak", color: PRIMARY },
@@ -234,7 +284,6 @@ function LearningActivity() {
         ))}
       </SimpleGrid>
 
-      {/* Bar chart */}
       <Text size="xs" c="dimmed" mb={12}>
         This week
       </Text>
@@ -326,6 +375,69 @@ function SubscriptionCard() {
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const router = useRouter();
+
+  const [recentSessions, setRecentSessions] = useState<Session[]>([]);
+  const [inProgressSessions, setInProgressSessions] = useState<Session[]>([]);
+  const [progressMap, setProgressMap] = useState<Record<string, SessionProgress>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [recentRes, inProgressRes] = await Promise.all([
+          api.get<{ sessions: Session[] }>("/api/sessions", {
+            params: { type: "practice", page_size: 3 },
+          }),
+          api.get<{ sessions: Session[] }>("/api/sessions", {
+            params: { type: "practice", status: "in_progress", page_size: 3 },
+          }),
+        ]);
+
+        const recent = recentRes.data.sessions ?? [];
+        const inProgress = inProgressRes.data.sessions ?? [];
+
+        setRecentSessions(recent);
+        setInProgressSessions(inProgress);
+
+        if (inProgress.length > 0) {
+          const progressResults = await Promise.all(
+            inProgress.map((s) =>
+              api
+                .get<{ answered_count: number; total_count: number }>(
+                  `/api/sessions/${s.id}/questions`
+                )
+                .then((r) => ({
+                  id: s.id,
+                  answered_count: r.data.answered_count ?? 0,
+                  total_count: r.data.total_count ?? 0,
+                }))
+                .catch(() => ({ id: s.id, answered_count: 0, total_count: 0 }))
+            )
+          );
+          const map: Record<string, SessionProgress> = {};
+          for (const r of progressResults) {
+            map[r.id] = { answered_count: r.answered_count, total_count: r.total_count };
+          }
+          setProgressMap(map);
+        }
+      } catch (err) {
+        console.error("Dashboard load failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  function navigateToSession(session: Session) {
+    if (session.status === "in_progress") {
+      router.push(`/practice/${session.id}?topic=${encodeURIComponent(session.topic_name ?? session.subject_name)}&name=${encodeURIComponent(session.name)}`);
+    } else {
+      router.push(`/practice/${session.id}?review=true&name=${encodeURIComponent(session.name)}`);
+    }
+  }
+
   return (
     <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <Box p={{ base: "md", sm: "xl" }} style={{ flex: 1 }}>
@@ -340,7 +452,7 @@ export default function DashboardPage() {
               <AnnouncementCarousel />
             </Box>
 
-            {/* New Problem Sets */}
+            {/* Your Last Practice Sets */}
             <Box>
               <Group justify="space-between" mb={12}>
                 <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed">
@@ -351,9 +463,19 @@ export default function DashboardPage() {
                 </Link>
               </Group>
               <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-                {PROBLEM_SETS.map((ps) => (
-                  <ProblemSetCard key={ps.label} {...ps} />
-                ))}
+                {loading ? (
+                  <>
+                    <ProblemSetSkeleton />
+                    <ProblemSetSkeleton />
+                    <ProblemSetSkeleton />
+                  </>
+                ) : recentSessions.length > 0 ? (
+                  recentSessions.map((s) => (
+                    <ProblemSetCard key={s.id} session={s} onClick={() => navigateToSession(s)} />
+                  ))
+                ) : (
+                  <Text size="sm" c="dimmed">No practice sets yet.</Text>
+                )}
               </SimpleGrid>
             </Box>
 
@@ -368,9 +490,24 @@ export default function DashboardPage() {
                 </Link>
               </Group>
               <Stack gap="sm">
-                {IN_PROGRESS.map((item) => (
-                  <InProgressItem key={item.label} {...item} />
-                ))}
+                {loading ? (
+                  <>
+                    <InProgressSkeleton />
+                    <InProgressSkeleton />
+                  </>
+                ) : inProgressSessions.length > 0 ? (
+                  inProgressSessions.map((s, i) => (
+                    <InProgressItem
+                      key={s.id}
+                      session={s}
+                      progress={progressMap[s.id]}
+                      color={PROGRESS_COLORS[i % PROGRESS_COLORS.length]}
+                      onClick={() => navigateToSession(s)}
+                    />
+                  ))
+                ) : (
+                  <Text size="sm" c="dimmed">No sessions in progress.</Text>
+                )}
               </Stack>
             </Box>
           </Stack>

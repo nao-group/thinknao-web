@@ -408,6 +408,7 @@ function GalleryShell({
   headerExtra,
   progress,
   activeScale = 1.06,
+  bareSlots = false,
 }: {
   opened: boolean;
   onClose: () => void;
@@ -424,6 +425,9 @@ function GalleryShell({
   // (e.g. a flip card) — scaling an already-GPU-composited 3D layer stretches its
   // rasterized bitmap instead of repainting crisply, which looks blurry.
   activeScale?: number;
+  // When true, slots render with no background/padding — use when slot content
+  // provides its own card visuals (e.g. FlipCard with FlashcardFace).
+  bareSlots?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [cw, setCw] = useState(680);
@@ -530,21 +534,23 @@ function GalleryShell({
       zIndex: zIdx,
       width: cardW,
       flexShrink: 0,
-      backgroundColor: "white",
-      borderRadius: rem(16),
-      padding: rem(24),
-      maxHeight: "78vh",
-      overflowY: isActive ? "auto" : "hidden",
+      ...(!bareSlots && {
+        backgroundColor: "white",
+        borderRadius: rem(16),
+        padding: rem(24),
+        maxHeight: "78vh",
+        overflowY: isActive ? "auto" : "hidden",
+        boxShadow: isActive ? "0 32px 80px rgba(0,0,0,0.55)" : "none",
+      }),
       userSelect: "none",
       opacity: hasSide || slot === "current" ? 1 : 0,
       filter: blur,
       transform: scale,
       transformOrigin: "center center",
-      boxShadow: isActive ? "0 32px 80px rgba(0,0,0,0.55)" : "none",
       pointerEvents: (slot !== "current" && hasSide && !busy) ? "auto" : slot === "current" ? "auto" : "none",
       cursor: slot !== "current" ? "pointer" : "default",
       transition: trans,
-    };
+    } as React.CSSProperties;
   }
 
   return (
@@ -1004,6 +1010,7 @@ function FlashcardStudy({
       renderSlot={renderSlot}
       progress={((index + 1) / deck.length) * 100}
       activeScale={1}
+      bareSlots
       headerExtra={
         <Tooltip label="Shuffle deck" withArrow>
           <UnstyledButton
