@@ -4,11 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Box, Group, Stack, Text, TextInput, Tooltip, UnstyledButton, rem } from "@mantine/core";
 import { IconMessageCircle, IconSend, IconSparkles, IconX } from "@tabler/icons-react";
 import api from "@/lib/api";
-
-const INK = "#0F172A";
-const PRIMARY = "#D4A017";
-const SURFACE = "#F3F5F7";
-const CREAM = "#F7E7D3";
+import { INK, PRIMARY, SURFACE, CREAM } from "@/constants/colors";
 
 interface Message {
   role: "user" | "assistant";

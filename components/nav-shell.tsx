@@ -30,9 +30,8 @@ import {
 import { ProfileMenu } from "@/components/profile-menu";
 import { useAuthStore } from "@/store/auth";
 import { useNavStore } from "@/store/nav";
+import { INK, MUTED } from "@/constants/colors";
 
-const INK = "#0F172A";
-const MUTED = "#667080";
 const ACTIVE_BG = "#374151";
 const HEADER_HEIGHT = 80;
 const SIDEBAR_EXPANDED = 240;

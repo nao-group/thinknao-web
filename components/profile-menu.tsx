@@ -5,17 +5,8 @@ import { IconChevronDown, IconLogout, IconUser } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import api from "@/lib/api";
-
-const INK = "#0F172A";
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
+import { getInitials } from "@/lib/format";
+import { INK } from "@/constants/colors";
 
 export function ProfileMenu() {
   const router = useRouter();

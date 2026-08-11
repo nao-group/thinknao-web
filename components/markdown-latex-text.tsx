@@ -1,17 +1,12 @@
 "use client";
 
-import katex from "katex";
 import { PRIMARY, INK, CORRECT_DARK } from "@/constants/colors";
 import { rem } from "@mantine/core";
+import { MATH_RE, renderMath } from "@/lib/latex";
 
-const MATH_RE = /(\$\$[\s\S]+?\$\$|\$[^\$\n]+?\$)/g;
 const BOLD_RE = /(\*\*(?:[^*]|\*(?!\*))+\*\*)/g;
 const CODE_RE = /(`[^`]+`)/g;
 const CIRCLE_RE = /(\{\d+\})/g;
-
-function renderMath(latex: string, display: boolean): string {
-  return katex.renderToString(latex, { throwOnError: false, displayMode: display });
-}
 
 /** Leaf: plain text only — no further parsing */
 function plainText(text: string, key: string): React.ReactElement {

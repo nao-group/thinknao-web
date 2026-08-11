@@ -3,11 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Badge, Box, Button, Group, Text, Title, UnstyledButton, rem } from "@mantine/core";
 import { IconChevronLeft, IconChevronRight, IconPlayerPlayFilled } from "@tabler/icons-react";
-
-const INK = "#0F172A";
-const PRIMARY = "#D4A017";
-const INDIGO = "#6670B0";
-const SURFACE = "#F3F5F7";
+import { PaginationBtn } from "@/components/ui/pagination-btn";
+import { INK, PRIMARY, INDIGO, SURFACE } from "@/constants/colors";
 
 const SLIDES = [
   {
@@ -44,36 +41,6 @@ const SLIDES = [
 
 const SLIDE_WIDTH = 82;
 const GAP = 16;
-
-function PaginationBtn({
-  children,
-  onClick,
-  "aria-label": ariaLabel,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  "aria-label": string;
-}) {
-  return (
-    <UnstyledButton
-      onClick={onClick}
-      aria-label={ariaLabel}
-      style={{
-        width: rem(32),
-        height: rem(32),
-        borderRadius: rem(8),
-        border: "1.5px solid #D1D5DB",
-        backgroundColor: "white",
-        color: "#6B7280",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      {children}
-    </UnstyledButton>
-  );
-}
 
 export function AnnouncementCarousel() {
   const [current, setCurrent] = useState(0);

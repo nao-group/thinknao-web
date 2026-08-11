@@ -13,6 +13,7 @@ import {
   Tooltip,
   rem,
 } from "@mantine/core";
+import { Card } from "@/components/ui/card";
 import {
   IconAtom,
   IconBook,
@@ -75,12 +76,10 @@ function ProblemSetCard({ session, onClick }: { session: Session; onClick: () =>
   });
 
   return (
-    <Box
+    <Card
       p="lg"
       className="hover-zoom"
       style={{
-        backgroundColor: "white",
-        borderRadius: rem(14),
         display: "flex",
         flexDirection: "column",
         gap: rem(12),
@@ -124,13 +123,13 @@ function ProblemSetCard({ session, onClick }: { session: Session; onClick: () =>
           {session.status === "in_progress" ? "Continue" : "Review"}
         </Button>
       </Group>
-    </Box>
+    </Card>
   );
 }
 
 function ProblemSetSkeleton() {
   return (
-    <Box p="lg" style={{ backgroundColor: "white", borderRadius: rem(14), display: "flex", flexDirection: "column", gap: rem(12) }}>
+    <Card p="lg" style={{ display: "flex", flexDirection: "column", gap: rem(12) }}>
       <Skeleton height={40} width={40} radius={10} />
       <Box style={{ flex: 1 }}>
         <Skeleton height={14} width="70%" mb={6} radius="sm" />
@@ -140,7 +139,7 @@ function ProblemSetSkeleton() {
         <Skeleton height={11} width={70} radius="sm" />
         <Skeleton height={26} width={60} radius="sm" />
       </Group>
-    </Box>
+    </Card>
   );
 }
 
@@ -160,12 +159,10 @@ function InProgressItem({
   const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
 
   return (
-    <Box
+    <Card
       p="md"
       className="hover-zoom"
       style={{
-        backgroundColor: "white",
-        borderRadius: rem(14),
         display: "flex",
         alignItems: "center",
         gap: rem(16),
@@ -218,13 +215,13 @@ function InProgressItem({
       >
         Continue
       </Button>
-    </Box>
+    </Card>
   );
 }
 
 function InProgressSkeleton() {
   return (
-    <Box p="md" style={{ backgroundColor: "white", borderRadius: rem(14), display: "flex", alignItems: "center", gap: rem(16) }}>
+    <Card p="md" style={{ display: "flex", alignItems: "center", gap: rem(16) }}>
       <Skeleton height={40} width={40} radius={10} style={{ flexShrink: 0 }} />
       <Box style={{ flex: 1 }}>
         <Group justify="space-between" mb={6}>
@@ -235,7 +232,7 @@ function InProgressSkeleton() {
         <Skeleton height={11} width={140} radius="sm" />
       </Box>
       <Skeleton height={28} width={70} radius="sm" style={{ flexShrink: 0 }} />
-    </Box>
+    </Card>
   );
 }
 
@@ -252,9 +249,9 @@ const WEEK = [
 function LearningActivity() {
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
   return (
-    <Box
+    <Card
       p="lg"
-      style={{ backgroundColor: "white", borderRadius: rem(14), height: "100%" }}
+      style={{ height: "100%" }}
     >
       <Text
         size="xs"
@@ -320,7 +317,7 @@ function LearningActivity() {
           })}
         </Group>
       </Box>
-    </Box>
+    </Card>
   );
 }
 

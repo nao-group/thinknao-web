@@ -16,29 +16,18 @@ import {
   Stack,
   Text,
   TextInput,
-  Title,
   rem,
 } from "@mantine/core";
 import { IconAt, IconDeviceDesktop, IconLock, IconMail } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { AuthSplitLayout } from "@/components/auth-split-layout";
+import { AuthHeader } from "@/components/auth-header";
 import { useAuthStore } from "@/store/auth";
+import { getApiErrorMessage } from "@/lib/errors";
+import { AUTH_INPUT_STYLES as inputStyles } from "@/lib/auth-form-styles";
 import axios from "axios";
 
 import { INK, PRIMARY } from "@/constants/colors";
-
-const inputStyles = {
-  input: {
-    borderRadius: rem(10),
-    fontSize: rem(14),
-  },
-  label: {
-    fontWeight: 500,
-    fontSize: rem(14),
-    color: INK,
-    marginBottom: rem(6),
-  },
-};
 
 interface Session {
   session_id: string;
@@ -82,11 +71,7 @@ export default function LoginPage() {
       });
       setForgotSent(true);
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setForgotError(err.response?.data?.detail ?? "Something went wrong. Please try again.");
-      } else {
-        setForgotError("Something went wrong. Please try again.");
-      }
+      setForgotError(getApiErrorMessage(err, "Something went wrong. Please try again."));
     } finally {
       setForgotLoading(false);
     }
@@ -131,7 +116,7 @@ export default function LoginPage() {
           setMaxDevices(payload);
           setSelectedSession(payload.sessions[0]?.session_id ?? "");
         } else {
-          setError(err.response?.data?.detail ?? "Invalid email or password.");
+          setError(getApiErrorMessage(err, "Invalid email or password."));
         }
       } else {
         setError("Something went wrong. Please try again.");
@@ -172,24 +157,11 @@ export default function LoginPage() {
 
   return (
     <AuthSplitLayout>
-      <Text
-        size="xs"
-        fw={600}
-        c="dimmed"
-        tt="uppercase"
-        style={{ letterSpacing: "0.08em" }}
-        mb={8}
-      >
-        Welcome back
-      </Text>
-
-      <Title order={1} mb={8} style={{ fontSize: rem(36), color: INK }}>
-        Log in to ThinkNao
-      </Title>
-
-      <Text size="sm" c="dimmed" mb={32}>
-        Pick up right where you left off.
-      </Text>
+      <AuthHeader
+        eyebrow="Welcome back"
+        title="Log in to ThinkNao"
+        subtitle="Pick up right where you left off."
+      />
 
       <Box
         component="form"

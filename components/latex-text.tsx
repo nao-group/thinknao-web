@@ -1,14 +1,6 @@
 "use client";
 
-import katex from "katex";
-
-// Matches $$...$$ (display) and $...$ (inline) math blocks.
-// Display must be checked first so the longer delimiter wins.
-const MATH_RE = /(\$\$[\s\S]+?\$\$|\$[^\$\n]+?\$)/g;
-
-function renderMath(latex: string, display: boolean): string {
-  return katex.renderToString(latex, { throwOnError: false, displayMode: display });
-}
+import { MATH_RE, renderMath } from "@/lib/latex";
 
 /**
  * Renders a string that may contain LaTeX math delimited by $...$ (inline)
