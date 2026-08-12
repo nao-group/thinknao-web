@@ -3,7 +3,7 @@
 import { Box, Text, rem } from "@mantine/core";
 import { LatexText } from "@/components/latex-text";
 import { INK, PRIMARY, MUTED } from "@/constants/colors";
-import type { FormulaEntry } from "../data";
+import type { FormulaEntry } from "../types";
 import { SubjectBadge } from "./SubjectBadge";
 import { SUBJECT_META } from "./subject-meta";
 

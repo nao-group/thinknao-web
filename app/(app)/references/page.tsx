@@ -17,7 +17,8 @@ import {
   IconSearch,
   IconX,
 } from "@tabler/icons-react";
-import { fetchWords, fetchFormulas, type WordEntry, type FormulaEntry } from "./data";
+import { fetchWords, fetchFormulas } from "./api";
+import type { WordEntry, FormulaEntry } from "./types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

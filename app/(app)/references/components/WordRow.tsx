@@ -2,7 +2,7 @@
 
 import { Box, Text, rem } from "@mantine/core";
 import { INK, PRIMARY, MUTED } from "@/constants/colors";
-import type { WordEntry } from "../data";
+import type { WordEntry } from "../types";
 import { SubjectBadge } from "./SubjectBadge";
 
 export function WordRow({ entry, onClick }: { entry: WordEntry; onClick: () => void }) {

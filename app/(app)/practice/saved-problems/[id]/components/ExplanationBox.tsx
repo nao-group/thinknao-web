@@ -4,10 +4,10 @@ import { Box, Group, Stack, Text, rem } from "@mantine/core";
 import { LatexText } from "@/components/latex-text";
 import { MarkdownLatexText } from "@/components/markdown-latex-text";
 import { IconNotes } from "@tabler/icons-react";
-import { SAVED_PROBLEMS } from "../../data";
+import type { SavedProblem } from "../../types";
 import { INK, PRIMARY, CORRECT_DARK } from "@/constants/colors";
 
-export function ExplanationBox({ explanation }: { explanation: (typeof SAVED_PROBLEMS)[number]["explanation"] }) {
+export function ExplanationBox({ explanation }: { explanation: SavedProblem["explanation"] }) {
   return (
     <Box
       p="lg"

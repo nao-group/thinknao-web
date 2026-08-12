@@ -14,7 +14,8 @@ import {
 } from "@mantine/core";
 import { INK, SURFACE, PRIMARY, CREAM, MUTED, VIOLET } from "@/constants/colors";
 import type { Lang } from "@/components/language-toggle";
-import { ALL_QUESTIONS, ALL_SUBJECTS, SUBJECT_CONFIG, SUBJECT_META, type Subject } from "../data";
+import { ALL_QUESTIONS, ALL_SUBJECTS, SUBJECT_CONFIG, SUBJECT_META } from "../data";
+import type { Subject } from "../types";
 
 interface SetupModalProps {
   opened: boolean;

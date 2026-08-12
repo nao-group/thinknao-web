@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Group, Text, rem } from "@mantine/core";
-import type { Subject } from "../data";
+import type { Subject } from "../types";
 import { SUBJECT_META } from "./subject-meta";
 
 export function SubjectBadge({ subject }: { subject: Subject }) {

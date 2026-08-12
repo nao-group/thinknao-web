@@ -10,7 +10,6 @@ import {
   rem,
 } from "@mantine/core";
 import { IconTrophy } from "@tabler/icons-react";
-import api from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { INK, PRIMARY, MUTED } from "@/constants/colors";
 import { MyXpCard } from "./components/MyXpCard";
@@ -18,7 +17,8 @@ import { PodiumCard } from "./components/PodiumCard";
 import { RankRow } from "./components/RankRow";
 import { SkeletonRow } from "./components/SkeletonRow";
 import { UserProfileDrawer } from "./components/UserProfileDrawer";
-import type { MonthlyXp, LeaderboardEntry } from "./components/types";
+import type { MonthlyXp, LeaderboardEntry } from "./types";
+import { fetchLeaderboardEntries, fetchMyRank } from "./api";
 
 // ─── Mock data helpers ─────────────────────────────────────────────────────────
 
@@ -106,10 +106,9 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     // Fetch leaderboard
-    api
-      .get<LeaderboardEntry[]>("/api/leaderboard?limit=50")
-      .then((res) => {
-        const merged = res.data.map((entry) => {
+    fetchLeaderboardEntries()
+      .then((data) => {
+        const merged = data.map((entry) => {
           const mock = MOCK.find((m) => m.rank === entry.rank);
           return {
             ...entry,
@@ -123,10 +122,8 @@ export default function LeaderboardPage() {
       .finally(() => setLoading(false));
 
     // Fetch my rank
-    api
-      .get<{ rank: number; total_xp: number; yearly_xp: number; monthly_xp: MonthlyXp[] }>("/api/user/rank")
-      .then((res) => {
-        const d = res.data;
+    fetchMyRank()
+      .then((d) => {
         setMyEntry({
           rank: d.rank,
           user_id: currentUser?.user_id ?? "me",

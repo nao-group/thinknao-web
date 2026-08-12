@@ -26,28 +26,10 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnnouncementCarousel } from "@/components/announcement-carousel";
-import api from "@/lib/api";
 
 import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
-interface Session {
-  id: string;
-  name: string;
-  status: "in_progress" | "completed";
-  type: string;
-  subject_code: string;
-  subject_name: string;
-  topic_name: string | null;
-  topic_code: string | null;
-  created_at: string;
-}
-
-interface SessionProgress {
-  answered_count: number;
-  total_count: number;
-}
+import type { Session, SessionProgress } from "./types";
+import { fetchRecentSessions, fetchInProgressSessions, fetchSessionProgress } from "./api";
 
 // ─── Subject meta ──────────────────────────────────────────────────────────────
 
@@ -382,17 +364,10 @@ export default function DashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [recentRes, inProgressRes] = await Promise.all([
-          api.get<{ sessions: Session[] }>("/api/sessions", {
-            params: { type: "practice", page_size: 3 },
-          }),
-          api.get<{ sessions: Session[] }>("/api/sessions", {
-            params: { type: "practice", status: "in_progress", page_size: 3 },
-          }),
+        const [recent, inProgress] = await Promise.all([
+          fetchRecentSessions(),
+          fetchInProgressSessions(),
         ]);
-
-        const recent = recentRes.data.sessions ?? [];
-        const inProgress = inProgressRes.data.sessions ?? [];
 
         setRecentSessions(recent);
         setInProgressSessions(inProgress);
@@ -400,15 +375,8 @@ export default function DashboardPage() {
         if (inProgress.length > 0) {
           const progressResults = await Promise.all(
             inProgress.map((s) =>
-              api
-                .get<{ answered_count: number; total_count: number }>(
-                  `/api/sessions/${s.id}/questions`
-                )
-                .then((r) => ({
-                  id: s.id,
-                  answered_count: r.data.answered_count ?? 0,
-                  total_count: r.data.total_count ?? 0,
-                }))
+              fetchSessionProgress(s.id)
+                .then((progress) => ({ id: s.id, ...progress }))
                 .catch(() => ({ id: s.id, answered_count: 0, total_count: 0 }))
             )
           );

@@ -13,8 +13,8 @@ import {
 } from "@mantine/core";
 import { IconPencil } from "@tabler/icons-react";
 import { INK } from "@/constants/colors";
-import { SUBJECT_META } from "./constants";
-import type { ApiSession } from "./types";
+import { SUBJECT_META } from "../data";
+import type { ApiSession } from "../types";
 
 export function PracticeSetRow({
   session, action, onContinue, onRename,

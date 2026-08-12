@@ -17,7 +17,7 @@ import {
   IconMathFunction,
   IconMicroscope,
 } from "@tabler/icons-react";
-import { SAVED_PROBLEMS, type SubjectKey, type Difficulty } from "../data";
+import type { SubjectKey, Difficulty, SavedProblem } from "../types";
 import { INK, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
 
 export const DIFFICULTY_STYLE: Record<Difficulty, { bg: string; color: string }> = {
@@ -39,7 +39,7 @@ export function ProblemRow({
   onRemove,
   onView,
 }: {
-  problem: (typeof SAVED_PROBLEMS)[number];
+  problem: SavedProblem;
   onRemove: (id: string) => void;
   onView: (id: string) => void;
 }) {

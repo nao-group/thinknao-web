@@ -5,7 +5,7 @@ import { IconTrophy } from "@tabler/icons-react";
 import { PRIMARY } from "@/constants/colors";
 import { getInitials } from "@/lib/format";
 import { avatarStyle, RANK_MEDAL } from "./avatarStyle";
-import type { LeaderboardEntry } from "./types";
+import type { LeaderboardEntry } from "../types";
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 

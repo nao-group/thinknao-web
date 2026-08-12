@@ -28,7 +28,8 @@ import {
   IconMicroscope,
   IconSearch,
 } from "@tabler/icons-react";
-import { SAVED_PROBLEMS, type SubjectKey, type Difficulty } from "./data";
+import { SAVED_PROBLEMS } from "./data";
+import type { SubjectKey, Difficulty } from "./types";
 import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
 import { PaginationBtn } from "@/components/ui/pagination-btn";
 import { Card } from "@/components/ui/card";

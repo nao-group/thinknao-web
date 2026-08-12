@@ -1,4 +1,4 @@
-import type { Subject } from "../data";
+import type { Subject } from "../types";
 
 export interface FlashcardItem {
   id: string;

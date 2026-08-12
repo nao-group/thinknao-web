@@ -33,7 +33,6 @@ import {
   IconTrophy,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
-import api from "@/lib/api";
 import { ImageCropModal } from "@/components/image-crop-modal";
 import { CampusPickerModal, type Campus } from "@/components/campus-picker-modal";
 import { useAuthStore } from "@/store/auth";
@@ -46,6 +45,8 @@ import { ReadonlyField } from "./components/ReadonlyField";
 import { SectionCard } from "./components/SectionCard";
 import { ReadonlyBio } from "./components/ReadonlyBio";
 import { SocialLink } from "./components/SocialLink";
+import type { UserProfile } from "./types";
+import { fetchProfile, fetchProvinces, updateProfile, uploadProfileImage, changePassword } from "./api";
 
 const fieldInputStyles = {
   label: { fontSize: rem(12), fontWeight: 600, color: INK, marginBottom: rem(6) },
@@ -76,25 +77,6 @@ function useEditableSection<T extends Record<string, string>>() {
       setEditing(false);
     },
   };
-}
-
-interface UserProfile {
-  id: string;
-  user_id: string;
-  full_name: string;
-  email: string;
-  grade: string | null;
-  province: string | null;
-  current_school: string | null;
-  dream_university: string | null;
-  target_major: string | null;
-  bio: string | null;
-  instagram: string | null;
-  tiktok: string | null;
-  linkedin: string | null;
-  avatar_url: string | null;
-  banner_url: string | null;
-  created_at: string;
 }
 
 function formatJoinDate(dateStr: string) {
@@ -136,15 +118,15 @@ export default function ProfilePage() {
   const [passwordSaving, setPasswordSaving] = useState(false);
 
   useEffect(() => {
-    api.get<UserProfile>("/api/user/profile")
-      .then((res) => {
-        setProfile(res.data);
-        syncAvatarInStore(res.data.avatar_url);
+    fetchProfile()
+      .then((data) => {
+        setProfile(data);
+        syncAvatarInStore(data.avatar_url);
       })
       .finally(() => setLoading(false));
 
-    api.get<{ data: { code: string; name: string }[] }>("/api/onboarding/provinces")
-      .then((res) => setProvinces(res.data.data.map((p) => ({ value: p.name, label: p.name }))))
+    fetchProvinces()
+      .then(setProvinces)
       .catch(() => {});
   }, []);
 
@@ -153,8 +135,8 @@ export default function ProfilePage() {
 
   async function saveProfileFields(values: Record<string, string>) {
     try {
-      const res = await api.patch<UserProfile>("/api/user/profile", values);
-      setProfile(res.data);
+      const data = await updateProfile(values);
+      setProfile(data);
       notifications.show({
         title: "Saved",
         message: "Your profile has been updated.",
@@ -214,20 +196,14 @@ export default function ProfilePage() {
     const setUploading = kind === "avatar" ? setAvatarUploading : setBannerUploading;
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", blob, `${kind}.jpg`);
-      const res = await api.post<{ avatar_url?: string; banner_url?: string }>(
-        `/api/user/profile/${kind}`,
-        formData,
-        { headers: { "Content-Type": undefined } }
-      );
+      const data = await uploadProfileImage(kind, blob);
       setProfile((p) => {
         if (!p) return p;
-        if (kind === "avatar") return { ...p, avatar_url: res.data.avatar_url ?? p.avatar_url };
-        return { ...p, banner_url: res.data.banner_url ?? p.banner_url };
+        if (kind === "avatar") return { ...p, avatar_url: data.avatar_url ?? p.avatar_url };
+        return { ...p, banner_url: data.banner_url ?? p.banner_url };
       });
-      if (kind === "avatar" && res.data.avatar_url) {
-        syncAvatarInStore(res.data.avatar_url);
+      if (kind === "avatar" && data.avatar_url) {
+        syncAvatarInStore(data.avatar_url);
       }
       notifications.show({
         title: "Updated",
@@ -258,11 +234,7 @@ export default function ProfilePage() {
 
     setPasswordSaving(true);
     try {
-      await api.post("/api/user/change-password", {
-        current_password: currentPassword,
-        new_password: newPassword,
-        confirm_password: confirmPassword,
-      });
+      await changePassword({ currentPassword, newPassword, confirmPassword });
       notifications.show({
         title: "Password updated",
         message: "Your password has been changed.",

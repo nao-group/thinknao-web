@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Box, Group, Text, Tooltip, rem } from "@mantine/core";
 import { INK, SURFACE, PRIMARY, CREAM, MUTED } from "@/constants/colors";
-import type { MonthlyXp } from "./types";
+import type { MonthlyXp } from "../types";
 
 // ─── XP Stats ─────────────────────────────────────────────────────────────────
 

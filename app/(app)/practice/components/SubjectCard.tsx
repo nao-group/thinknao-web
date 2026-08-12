@@ -2,7 +2,7 @@
 
 import { Box, Text, UnstyledButton, rem } from "@mantine/core";
 import { INK, PRIMARY, CREAM } from "@/constants/colors";
-import type { SUBJECTS } from "./constants";
+import type { SUBJECTS } from "../data";
 
 export function SubjectCard({
   subject,

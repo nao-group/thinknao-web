@@ -3,7 +3,7 @@
 import { Box, Group, SimpleGrid, Text, UnstyledButton, rem } from "@mantine/core";
 import { Card } from "@/components/ui/card";
 import { INK, CREAM, MUTED, PRIMARY } from "@/constants/colors";
-import type { MockQ } from "../data";
+import type { MockQ } from "../types";
 
 interface QuestionNavigatorProps {
   questions: MockQ[];

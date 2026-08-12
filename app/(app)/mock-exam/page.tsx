@@ -25,15 +25,8 @@ import type { Lang } from "@/components/language-toggle";
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 import { INK, SURFACE, PRIMARY, CREAM, MUTED, CORRECT_GREEN } from "@/constants/colors";
-import {
-  ALL_QUESTIONS,
-  SUBJECT_CONFIG,
-  SUBJECT_META,
-  type ExamResult,
-  type MockQ,
-  type Phase,
-  type Subject,
-} from "./data";
+import { ALL_QUESTIONS, SUBJECT_CONFIG, SUBJECT_META } from "./data";
+import type { ExamResult, MockQ, Phase, Subject } from "./types";
 import { ExamStructureTable } from "./components/ExamStructureTable";
 import { RecentAttempts } from "./components/RecentAttempts";
 import { SetupModal } from "./components/SetupModal";

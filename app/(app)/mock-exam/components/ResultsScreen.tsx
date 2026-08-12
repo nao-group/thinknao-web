@@ -4,7 +4,8 @@ import { Badge, Box, Button, Group, SimpleGrid, Stack, Text, rem } from "@mantin
 import { IconClock, IconTrophy, IconX } from "@tabler/icons-react";
 import { CORRECT_GREEN, INK, MUTED, WRONG_RED } from "@/constants/colors";
 import { formatDuration } from "@/lib/format";
-import { SUBJECT_META, type ExamResult, type MockQ } from "../data";
+import { SUBJECT_META } from "../data";
+import type { ExamResult, MockQ } from "../types";
 
 interface ResultsScreenProps {
   examQuestions: MockQ[];

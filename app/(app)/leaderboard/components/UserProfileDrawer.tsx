@@ -24,7 +24,7 @@ import { INK, SURFACE, PRIMARY, CREAM, MUTED } from "@/constants/colors";
 import { getInitials } from "@/lib/format";
 import { avatarStyle, RANK_MEDAL } from "./avatarStyle";
 import { XpStats } from "./XpStats";
-import type { LeaderboardEntry } from "./types";
+import type { LeaderboardEntry } from "../types";
 
 // ─── Profile Drawer ────────────────────────────────────────────────────────────
 

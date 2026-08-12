@@ -3,7 +3,7 @@
 import { Box, Group, Stack, Text, rem } from "@mantine/core";
 import { LatexText } from "@/components/latex-text";
 import { INK, PRIMARY } from "@/constants/colors";
-import type { Subject } from "../data";
+import type { Subject } from "../types";
 import type { FlashcardItem } from "./flashcard-types";
 import type { SUBJECT_META } from "./subject-meta";
 

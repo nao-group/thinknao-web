@@ -2,7 +2,8 @@
 
 import { Box, Stack, Text, rem } from "@mantine/core";
 import { INK, SURFACE } from "@/constants/colors";
-import { SUBJECT_CONFIG, SUBJECT_META, type Subject } from "../data";
+import { SUBJECT_CONFIG, SUBJECT_META } from "../data";
+import type { Subject } from "../types";
 
 interface GeneratingScreenProps {
   subject: Subject;

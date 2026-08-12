@@ -32,7 +32,8 @@ import {
   IconZoomReset,
 } from "@tabler/icons-react";
 import { ReportModal } from "@/components/report-modal";
-import { SAVED_PROBLEMS, type SubjectKey, type Difficulty } from "../data";
+import { SAVED_PROBLEMS } from "../data";
+import type { SubjectKey, Difficulty } from "../types";
 import { FloatingChatbot } from "@/components/floating-chatbot";
 import { LanguageToggle, type Lang } from "@/components/language-toggle";
 import { OptionRow } from "./components/OptionRow";

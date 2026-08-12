@@ -29,15 +29,15 @@ import {
 } from "@tabler/icons-react";
 import { INK, SURFACE, PRIMARY, CREAM, MUTED } from "@/constants/colors";
 import { notifications } from "@mantine/notifications";
-import api from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { PaginationBtn } from "@/components/ui/pagination-btn";
 import { SubjectCard } from "./components/SubjectCard";
 import { QuestionCountPill } from "./components/QuestionCountPill";
 import { TopicPill } from "./components/TopicPill";
 import { PracticeSetRow } from "./components/PracticeSetRow";
-import { SUBJECTS, SUBJECT_META, QUESTION_COUNTS, PAGE_SIZE, type SubjectKey } from "./components/constants";
-import type { ApiSession, Topic } from "./components/types";
+import { SUBJECTS, SUBJECT_META, QUESTION_COUNTS, PAGE_SIZE, type SubjectKey } from "./data";
+import type { ApiSession, Topic } from "./types";
+import { fetchSessions, fetchTopics, generatePracticeSet, renameSession } from "./api";
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
@@ -77,29 +77,15 @@ export default function PracticePage() {
     setSessionsError(null);
     try {
       const status = activeTab === "in-progress" ? "in_progress" : "completed";
-      const { data } = await api.get("/api/sessions", {
-        params: {
-          type: "practice",
-          status,
-          page,
-          page_size: PAGE_SIZE,
-          ...(searchQuery ? { search: searchQuery } : {}),
-          ...(appliedSubjectCodes.length > 0 ? { subject_codes: appliedSubjectCodes } : {}),
-        },
-        paramsSerializer: (params) => {
-          const qs = new URLSearchParams();
-          for (const [key, value] of Object.entries(params)) {
-            if (Array.isArray(value)) {
-              value.forEach((v) => qs.append(key, v));
-            } else if (value !== undefined && value !== null) {
-              qs.append(key, String(value));
-            }
-          }
-          return qs.toString();
-        },
+      const { sessions, totalPages: newTotalPages } = await fetchSessions({
+        status,
+        page,
+        pageSize: PAGE_SIZE,
+        search: searchQuery || undefined,
+        subjectCodes: appliedSubjectCodes,
       });
-      setSessions(data.sessions ?? []);
-      setTotalPages(data.total_pages ?? 1);
+      setSessions(sessions);
+      setTotalPages(newTotalPages);
     } catch (err) {
       console.error("Failed to load sessions:", err);
       setSessionsError("Failed to load practice sets.");
@@ -157,8 +143,8 @@ export default function PracticePage() {
     const subject = SUBJECTS.find((s) => s.key === selectedSubject)!;
     setTopicsLoading(true);
     try {
-      const { data } = await api.get(`/api/subjects/${subject.subjectCode}/topics`);
-      setTopics(data.topics ?? []);
+      const fetchedTopics = await fetchTopics(subject.subjectCode);
+      setTopics(fetchedTopics);
     } catch (err) {
       console.error("Failed to load topics:", err);
       setTopics([]);
@@ -173,12 +159,12 @@ export default function PracticePage() {
     setGenerating(true);
     setGenerateError(null);
     try {
-      const { data } = await api.post("/api/practice", { topic_id: modalTopic.id, n });
+      const { sessionId, name } = await generatePracticeSet(modalTopic.id, n);
       setGenerateOpen(false);
       const paramObj: Record<string, string> = { topic: modalTopic.name };
-      if (data.name) paramObj.name = data.name;
+      if (name) paramObj.name = name;
       const params = new URLSearchParams(paramObj);
-      router.push(`/practice/${data.session_id}?${params.toString()}`);
+      router.push(`/practice/${sessionId}?${params.toString()}`);
     } catch (err) {
       console.error("Generate failed:", err);
       setGenerateError("Failed to generate practice set. Please try again.");
@@ -189,7 +175,7 @@ export default function PracticePage() {
   // ── Rename session ────────────────────────────────────────────────────────
   async function handleRename(sessionId: string, name: string) {
     try {
-      await api.patch(`/api/sessions/${sessionId}/name`, { name });
+      await renameSession(sessionId, name);
       setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, name } : s));
       notifications.show({
         title: "Renamed",

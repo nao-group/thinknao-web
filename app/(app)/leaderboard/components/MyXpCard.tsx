@@ -5,7 +5,7 @@ import { Avatar, Box, Group, Skeleton, Stack, Text, Tooltip, rem } from "@mantin
 import { INK, PRIMARY, CREAM } from "@/constants/colors";
 import { getInitials } from "@/lib/format";
 import { avatarStyle, RANK_MEDAL } from "./avatarStyle";
-import type { LeaderboardEntry } from "./types";
+import type { LeaderboardEntry } from "../types";
 
 // ─── My XP Card ───────────────────────────────────────────────────────────────
 

@@ -3,7 +3,7 @@
 import { Box, Group, Text, rem } from "@mantine/core";
 import { Card } from "@/components/ui/card";
 import { SURFACE, MUTED } from "@/constants/colors";
-import type { WordEntry } from "../data";
+import type { WordEntry } from "../types";
 import { ChineseLabel } from "./ChineseLabel";
 import { SubjectBadge } from "./SubjectBadge";
 

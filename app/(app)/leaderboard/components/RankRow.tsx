@@ -5,7 +5,7 @@ import { IconMapPin, IconSchool } from "@tabler/icons-react";
 import { INK, SURFACE, PRIMARY, CREAM, MUTED } from "@/constants/colors";
 import { getInitials } from "@/lib/format";
 import { avatarStyle } from "./avatarStyle";
-import type { LeaderboardEntry } from "./types";
+import type { LeaderboardEntry } from "../types";
 
 export function RankRow({ entry, index, isMe, onClick }: { entry: LeaderboardEntry; index: number; isMe?: boolean; onClick: () => void }) {
   const av = avatarStyle(index);

@@ -4,7 +4,7 @@ import { Box, Group, Text, rem } from "@mantine/core";
 import { Card } from "@/components/ui/card";
 import { LatexText } from "@/components/latex-text";
 import { MUTED } from "@/constants/colors";
-import type { FormulaEntry } from "../data";
+import type { FormulaEntry } from "../types";
 import { ChineseLabel } from "./ChineseLabel";
 import { SubjectBadge } from "./SubjectBadge";
 import { SUBJECT_META } from "./subject-meta";

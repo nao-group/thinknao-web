@@ -8,34 +8,7 @@ import {
 } from "@tabler/icons-react";
 import type { Lang } from "@/components/language-toggle";
 import { CREAM, PRIMARY, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
-export type Subject =
-  | "Liberal Arts Chinese"
-  | "Science Chinese"
-  | "Mathematics"
-  | "Physics"
-  | "Chemistry";
-export type Phase = "landing" | "generating" | "exam" | "results";
-
-export interface MockQ {
-  id: number;
-  subject: Subject;
-  topic: string;
-  text: string;
-  options: { key: string; text: string }[];
-  correctAnswer: string;
-  zh?: { topic: string; text: string; options?: { key: string; text: string }[] };
-}
-
-export interface ExamResult {
-  correct: number;
-  pct: number;
-  passed: boolean;
-  timeTaken: number;
-  timedOut: boolean;
-}
+import type { Subject, MockQ } from "./types";
 
 // ─── Subject config ─────────────────────────────────────────────────────────────
 
