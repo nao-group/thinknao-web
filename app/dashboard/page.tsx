@@ -13,6 +13,7 @@ import {
   Tooltip,
   rem,
 } from "@mantine/core";
+import { Card } from "@/components/ui/card";
 import {
   IconAtom,
   IconBook,
@@ -25,28 +26,10 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnnouncementCarousel } from "@/components/announcement-carousel";
-import api from "@/lib/api";
 
 import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
-interface Session {
-  id: string;
-  name: string;
-  status: "in_progress" | "completed";
-  type: string;
-  subject_code: string;
-  subject_name: string;
-  topic_name: string | null;
-  topic_code: string | null;
-  created_at: string;
-}
-
-interface SessionProgress {
-  answered_count: number;
-  total_count: number;
-}
+import type { Session, SessionProgress } from "./types";
+import { fetchRecentSessions, fetchInProgressSessions, fetchSessionProgress } from "./api";
 
 // ─── Subject meta ──────────────────────────────────────────────────────────────
 
@@ -75,12 +58,10 @@ function ProblemSetCard({ session, onClick }: { session: Session; onClick: () =>
   });
 
   return (
-    <Box
+    <Card
       p="lg"
       className="hover-zoom"
       style={{
-        backgroundColor: "white",
-        borderRadius: rem(14),
         display: "flex",
         flexDirection: "column",
         gap: rem(12),
@@ -124,13 +105,13 @@ function ProblemSetCard({ session, onClick }: { session: Session; onClick: () =>
           {session.status === "in_progress" ? "Continue" : "Review"}
         </Button>
       </Group>
-    </Box>
+    </Card>
   );
 }
 
 function ProblemSetSkeleton() {
   return (
-    <Box p="lg" style={{ backgroundColor: "white", borderRadius: rem(14), display: "flex", flexDirection: "column", gap: rem(12) }}>
+    <Card p="lg" style={{ display: "flex", flexDirection: "column", gap: rem(12) }}>
       <Skeleton height={40} width={40} radius={10} />
       <Box style={{ flex: 1 }}>
         <Skeleton height={14} width="70%" mb={6} radius="sm" />
@@ -140,7 +121,7 @@ function ProblemSetSkeleton() {
         <Skeleton height={11} width={70} radius="sm" />
         <Skeleton height={26} width={60} radius="sm" />
       </Group>
-    </Box>
+    </Card>
   );
 }
 
@@ -160,12 +141,10 @@ function InProgressItem({
   const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
 
   return (
-    <Box
+    <Card
       p="md"
       className="hover-zoom"
       style={{
-        backgroundColor: "white",
-        borderRadius: rem(14),
         display: "flex",
         alignItems: "center",
         gap: rem(16),
@@ -218,13 +197,13 @@ function InProgressItem({
       >
         Continue
       </Button>
-    </Box>
+    </Card>
   );
 }
 
 function InProgressSkeleton() {
   return (
-    <Box p="md" style={{ backgroundColor: "white", borderRadius: rem(14), display: "flex", alignItems: "center", gap: rem(16) }}>
+    <Card p="md" style={{ display: "flex", alignItems: "center", gap: rem(16) }}>
       <Skeleton height={40} width={40} radius={10} style={{ flexShrink: 0 }} />
       <Box style={{ flex: 1 }}>
         <Group justify="space-between" mb={6}>
@@ -235,7 +214,7 @@ function InProgressSkeleton() {
         <Skeleton height={11} width={140} radius="sm" />
       </Box>
       <Skeleton height={28} width={70} radius="sm" style={{ flexShrink: 0 }} />
-    </Box>
+    </Card>
   );
 }
 
@@ -252,9 +231,9 @@ const WEEK = [
 function LearningActivity() {
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
   return (
-    <Box
+    <Card
       p="lg"
-      style={{ backgroundColor: "white", borderRadius: rem(14), height: "100%" }}
+      style={{ height: "100%" }}
     >
       <Text
         size="xs"
@@ -320,7 +299,7 @@ function LearningActivity() {
           })}
         </Group>
       </Box>
-    </Box>
+    </Card>
   );
 }
 
@@ -385,17 +364,10 @@ export default function DashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [recentRes, inProgressRes] = await Promise.all([
-          api.get<{ sessions: Session[] }>("/api/sessions", {
-            params: { type: "practice", page_size: 3 },
-          }),
-          api.get<{ sessions: Session[] }>("/api/sessions", {
-            params: { type: "practice", status: "in_progress", page_size: 3 },
-          }),
+        const [recent, inProgress] = await Promise.all([
+          fetchRecentSessions(),
+          fetchInProgressSessions(),
         ]);
-
-        const recent = recentRes.data.sessions ?? [];
-        const inProgress = inProgressRes.data.sessions ?? [];
 
         setRecentSessions(recent);
         setInProgressSessions(inProgress);
@@ -403,15 +375,8 @@ export default function DashboardPage() {
         if (inProgress.length > 0) {
           const progressResults = await Promise.all(
             inProgress.map((s) =>
-              api
-                .get<{ answered_count: number; total_count: number }>(
-                  `/api/sessions/${s.id}/questions`
-                )
-                .then((r) => ({
-                  id: s.id,
-                  answered_count: r.data.answered_count ?? 0,
-                  total_count: r.data.total_count ?? 0,
-                }))
+              fetchSessionProgress(s.id)
+                .then((progress) => ({ id: s.id, ...progress }))
                 .catch(() => ({ id: s.id, answered_count: 0, total_count: 0 }))
             )
           );

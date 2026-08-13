@@ -20,11 +20,7 @@ import {
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import api from "@/lib/api";
-
-const INK = "#0F172A";
-const PRIMARY = "#D4A017";
-const SURFACE = "#F3F5F7";
-const MUTED = "#667080";
+import { INK, PRIMARY, SURFACE, MUTED } from "@/constants/colors";
 
 const labelStyles = {
   label: {

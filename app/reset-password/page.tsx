@@ -15,14 +15,12 @@ import {
 import { IconLock } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { AuthSplitLayout } from "@/components/auth-split-layout";
+import { AuthHeader } from "@/components/auth-header";
+import { getApiErrorMessage } from "@/lib/errors";
+import { AUTH_INPUT_STYLES as inputStyles } from "@/lib/auth-form-styles";
 import axios from "axios";
 
 import { INK } from "@/constants/colors";
-
-const inputStyles = {
-  input: { borderRadius: rem(10), fontSize: rem(14) },
-  label: { fontWeight: 500, fontSize: rem(14), color: INK, marginBottom: rem(6) },
-};
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -69,7 +67,7 @@ function ResetPasswordForm() {
         if (status === 400 || status === 404) {
           setTokenInvalid(true);
         } else {
-          setError(err.response?.data?.detail ?? "Something went wrong. Please try again.");
+          setError(getApiErrorMessage(err, "Something went wrong. Please try again."));
         }
       } else {
         setError("Something went wrong. Please try again.");
@@ -119,24 +117,11 @@ function ResetPasswordForm() {
 
   return (
     <>
-      <Text
-        size="xs"
-        fw={600}
-        c="dimmed"
-        tt="uppercase"
-        style={{ letterSpacing: "0.08em" }}
-        mb={8}
-      >
-        Security
-      </Text>
-
-      <Title order={1} mb={8} style={{ fontSize: rem(36), color: INK }}>
-        Set a new password
-      </Title>
-
-      <Text size="sm" c="dimmed" mb={32}>
-        Choose a strong password you haven&apos;t used before.
-      </Text>
+      <AuthHeader
+        eyebrow="Security"
+        title="Set a new password"
+        subtitle="Choose a strong password you haven&apos;t used before."
+      />
 
       <Box
         component="form"

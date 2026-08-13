@@ -12,7 +12,6 @@ import {
   PasswordInput,
   Text,
   TextInput,
-  Title,
   rem,
 } from "@mantine/core";
 import {
@@ -24,22 +23,12 @@ import {
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { AuthSplitLayout } from "@/components/auth-split-layout";
+import { AuthHeader } from "@/components/auth-header";
+import { getApiErrorMessage } from "@/lib/errors";
+import { AUTH_INPUT_STYLES as inputStyles } from "@/lib/auth-form-styles";
 import axios from "axios";
 
 import { INK, PRIMARY } from "@/constants/colors";
-
-const inputStyles = {
-  input: {
-    borderRadius: rem(10),
-    fontSize: rem(14),
-  },
-  label: {
-    fontWeight: 500,
-    fontSize: rem(14),
-    color: INK,
-    marginBottom: rem(6),
-  },
-};
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -94,7 +83,7 @@ export default function RegisterPage() {
         if (err.response?.status === 409) {
           setOtpError("This email is already registered. Try logging in.");
         } else {
-          setOtpError(err.response?.data?.detail ?? "Failed to send OTP.");
+          setOtpError(getApiErrorMessage(err, "Failed to send OTP."));
         }
       } else {
         setOtpError("Something went wrong. Please try again.");
@@ -128,11 +117,10 @@ export default function RegisterPage() {
       router.push("/login");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        const detail = err.response?.data?.detail;
         if (err.response?.status === 400) {
-          setError(detail ?? "Invalid or expired verification code.");
+          setError(getApiErrorMessage(err, "Invalid or expired verification code."));
         } else {
-          setError(detail ?? "Registration failed. Please try again.");
+          setError(getApiErrorMessage(err, "Registration failed. Please try again."));
         }
       } else {
         setError("Something went wrong. Please try again.");
@@ -144,24 +132,11 @@ export default function RegisterPage() {
 
   return (
     <AuthSplitLayout>
-      <Text
-        size="xs"
-        fw={600}
-        c="dimmed"
-        tt="uppercase"
-        style={{ letterSpacing: "0.08em" }}
-        mb={8}
-      >
-        Get started
-      </Text>
-
-      <Title order={1} mb={8} style={{ fontSize: rem(36), color: INK }}>
-        Create your account
-      </Title>
-
-      <Text size="sm" c="dimmed" mb={32}>
-        Start prepping for the CSCA exam today.
-      </Text>
+      <AuthHeader
+        eyebrow="Get started"
+        title="Create your account"
+        subtitle="Start prepping for the CSCA exam today."
+      />
 
       <Box
         component="form"
