@@ -2,6 +2,24 @@
 
 export type QuestionType = "JF" | "DT" | "XT" | "YL" | "SH" | "BY";
 
+// ─── Vocab / alignment types ──────────────────────────────────────────────────
+
+export interface VocabEntry {
+  /** Tone-marked pinyin, e.g. "cí gǎn yìng qiáng dù" */
+  pinyin: string;
+  /** English meaning, e.g. "magnetic flux density" */
+  en: string;
+  /** Exact phrase as it appears in EN text when different from `en` */
+  en_phrase?: string;
+}
+
+/** key = Chinese word/phrase → vocab entry */
+export type Vocab = Record<string, VocabEntry>;
+
+export interface Alignment {
+  vocab: Vocab;
+}
+
 export interface WordChoice {
   key: string;   // "A", "B", "C", ...
   text: string;  // "过滤"
@@ -38,6 +56,8 @@ export interface ApiQuestion {
   group_id: string | null;
   passage: string | null;
   choices: WordChoice[] | null;   // DT/XT word bank
+  /** Pre-computed vocab dictionary for hover translations (may be absent for new questions) */
+  alignment?: Alignment;
 }
 
 // A logical group rendered as a single navigable unit
@@ -46,6 +66,8 @@ export interface QuestionGroup {
   group_id: string | null;
   questions: ApiQuestion[];
   passage?: string;
+  /** Vocab dict for the passage text (YL only) */
+  passage_alignment?: Alignment;
 }
 
 // DT/XT answer state: questionId → { blankIndex → choiceKey }

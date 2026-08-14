@@ -40,9 +40,10 @@ import {
   WRONG_BG, WRONG_BORDER, WRONG_RED, WRONG_DARK,
   NAV_CORRECT, NAV_WRONG,
 } from "@/constants/colors";
-import { DragDropParagraph } from "./DragDropParagraph";
-import { WordBankSet } from "./WordBankSet";
-import { PassageQuestionGroup } from "./PassageQuestionGroup";
+import { DragDropParagraph } from "./components/DragDropParagraph";
+import { WordBankSet } from "./components/WordBankSet";
+import { PassageQuestionGroup } from "./components/PassageQuestionGroup";
+import { AlignedText } from "./components/AlignedText";
 import type { ApiQuestion, QuestionGroup, FillAnswerMap, SubmitResult } from "./types";
 import {
   fetchSessionQuestions,
@@ -50,7 +51,7 @@ import {
   submitSingleQuestion,
   submitQuestionGroup,
   completeSession,
-} from "./practice-api";
+} from "./api";
 import { useNavStore } from "@/store/nav";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -463,7 +464,14 @@ function SummaryView({
                         style={{ letterSpacing: "0.05em", textTransform: "uppercase" }}>
                         Passage / 阅读材料
                       </Text>
-                      <div style={{ whiteSpace: "pre-wrap" }} dangerouslySetInnerHTML={{ __html: passage }} />
+                      <div style={{ whiteSpace: "pre-wrap" }}>
+                        <AlignedText
+                          text={passage}
+                          vocab={group.passage_alignment?.vocab ?? {}}
+                          mode={lang}
+                          multiline
+                        />
+                      </div>
                     </Box>
                   )}
 
@@ -479,7 +487,11 @@ function SummaryView({
                         {qi + 1}
                       </Box>
                       <div style={{ flex: 1, lineHeight: 1.7 }}>
-                        <MarkdownLatexText>{getQuestionText(q)}</MarkdownLatexText>
+                        <AlignedText
+                          text={getQuestionText(q)}
+                          vocab={q.alignment?.vocab ?? {}}
+                          mode={lang}
+                        />
                       </div>
                     </Group>
                   </Box>
@@ -514,7 +526,7 @@ function SummaryView({
                               : <Text size="xs" fw={700} style={{ color: "inherit" }}>{opt.key}</Text>}
                           </Box>
                           <div style={{ flex: 1, color: textColor, fontWeight: 500, fontSize: rem(14) }}>
-                            <MarkdownLatexText>{opt.text}</MarkdownLatexText>
+                            <AlignedText text={opt.text} vocab={q.alignment?.vocab ?? {}} mode={lang} />
                           </div>
                           {isCorrectOpt && (
                             <Box style={{ padding: `${rem(2)} ${rem(8)}`, borderRadius: rem(999), backgroundColor: "#DCFCE7", flexShrink: 0 }}>
@@ -1139,6 +1151,7 @@ export default function PracticeDetailPage() {
               ) : (activeType === "YL" || activeType === "JF" || activeType === "SH" || activeType === "BY") && activeGroup ? (
                 <PassageQuestionGroup
                   passage={activeGroup.passage ?? activeGroup.questions[0]?.passage ?? ""}
+                  passageVocab={activeGroup.passage_alignment?.vocab ?? {}}
                   questions={[activeGroup.questions[currentSubQ]].filter(Boolean) as typeof activeGroup.questions}
                   startIndex={currentSubQ}
                   userAnswers={answers}

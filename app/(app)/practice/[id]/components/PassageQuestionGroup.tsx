@@ -10,10 +10,13 @@ import {
 } from "@/constants/colors";
 import { MarkdownLatexText } from "@/components/markdown-latex-text";
 import { ImageLightbox } from "@/components/image-lightbox";
-import type { ApiQuestion, SubmitResult } from "./types";
+import { AlignedText } from "./AlignedText";
+import type { ApiQuestion, SubmitResult, Vocab } from "../types";
 
 interface PassageQuestionGroupProps {
   passage: string;
+  /** Vocab dict for the passage (from group.passage_alignment) */
+  passageVocab?: Vocab;
   questions: ApiQuestion[];
   userAnswers: Record<string, string>;
   submittedIds: Set<string>;
@@ -30,7 +33,8 @@ interface PassageQuestionGroupProps {
 // ─── Option button — same design as page.tsx's OptionButton ──────────────────
 
 function PassageOption({
-  optKey, text, selected, submitted, resultReady, isCorrect, isUserAnswer, onClick,
+  optKey, text, selected, submitted, resultReady, isCorrect, isUserAnswer,
+  vocab, mode, onClick,
 }: {
   optKey: string;
   text: string;
@@ -40,6 +44,8 @@ function PassageOption({
   resultReady: boolean;
   isCorrect: boolean;
   isUserAnswer: boolean;
+  vocab: Vocab;
+  mode: "zh" | "en";
   onClick: () => void;
 }) {
   let containerStyle: React.CSSProperties = {
@@ -116,7 +122,7 @@ function PassageOption({
         )}
       </Box>
       <div style={{ flex: 1, color: textColor, fontWeight: 500 }}>
-        <MarkdownLatexText>{text}</MarkdownLatexText>
+        <AlignedText text={text} vocab={vocab} mode={mode} />
       </div>
       {rightBadge}
     </Box>
@@ -125,7 +131,11 @@ function PassageOption({
 
 // ─── Passage box ──────────────────────────────────────────────────────────────
 
-function PassageBox({ passage }: { passage: string }) {
+function PassageBox({ passage, vocab, mode }: {
+  passage: string;
+  vocab: Vocab;
+  mode: "zh" | "en";
+}) {
   return (
     <Box
       p="md"
@@ -142,7 +152,9 @@ function PassageBox({ passage }: { passage: string }) {
       <Text size="xs" fw={700} c={MUTED} mb={rem(6)} style={{ letterSpacing: "0.05em", textTransform: "uppercase" }}>
         Passage / 阅读材料
       </Text>
-      <div style={{ whiteSpace: "pre-wrap" }} dangerouslySetInnerHTML={{ __html: passage }} />
+      <div style={{ whiteSpace: "pre-wrap" }}>
+        <AlignedText text={passage} vocab={vocab} mode={mode} multiline />
+      </div>
     </Box>
   );
 }
@@ -197,6 +209,7 @@ function PassageExplanationBox({ explanation, loading }: { explanation?: string;
 
 export function PassageQuestionGroup({
   passage,
+  passageVocab = {},
   questions,
   userAnswers,
   submittedIds,
@@ -252,10 +265,12 @@ export function PassageQuestionGroup({
         const explanation = getExplanation(q);
         const questionNum = q.question_number ?? (startIndex + qi + 1);
 
+        const qVocab = q.alignment?.vocab ?? {};
+
         return (
           <Stack key={q.id} gap={rem(12)}>
             {/* Passage above each question — omitted for JF (no passage) */}
-            {passage && <PassageBox passage={passage} />}
+            {passage && <PassageBox passage={passage} vocab={passageVocab} mode={lang} />}
 
             {/* Question card */}
             <Box p="lg" style={{ backgroundColor: "white", borderRadius: rem(14) }}>
@@ -272,7 +287,7 @@ export function PassageQuestionGroup({
                   {questionNum}
                 </Box>
                 <div style={{ flex: 1, lineHeight: 1.7 }}>
-                  <MarkdownLatexText>{getQuestionText(q)}</MarkdownLatexText>
+                  <AlignedText text={getQuestionText(q)} vocab={qVocab} mode={lang} />
                 </div>
               </Group>
 
@@ -314,6 +329,8 @@ export function PassageQuestionGroup({
                     resultReady={resultReady}
                     isCorrect={resultReady && opt.key === correctAnswer}
                     isUserAnswer={resultReady && selected === opt.key}
+                    vocab={qVocab}
+                    mode={lang}
                     onClick={() => onAnswer(q.id, opt.key)}
                   />
                 ))}
