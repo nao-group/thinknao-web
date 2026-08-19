@@ -6,7 +6,7 @@ import {
   CORRECT_BG, CORRECT_BORDER, CORRECT_GREEN,
   WRONG_BG, WRONG_BORDER, WRONG_RED,
 } from "@/constants/colors";
-import type { WordChoice, BlankResult } from "./types";
+import type { WordChoice, BlankResult } from "../types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

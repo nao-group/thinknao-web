@@ -8,7 +8,7 @@ import {
   CORRECT_BG, CORRECT_BORDER, CORRECT_GREEN,
   WRONG_BG, WRONG_BORDER, WRONG_RED,
 } from "@/constants/colors";
-import type { ApiQuestion, WordChoice, FillAnswerMap, BlankResult, SubmitResult } from "./types";
+import type { ApiQuestion, WordChoice, FillAnswerMap, BlankResult, SubmitResult } from "../types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

@@ -6,7 +6,7 @@
 import api from "@/lib/api";
 import type {
   ApiQuestion, QuestionGroup, WordChoice,
-  BlankResult, SubmitResult,
+  BlankResult, SubmitResult, Alignment,
 } from "./types";
 
 // ─── Raw API shapes ───────────────────────────────────────────────────────────
@@ -31,12 +31,14 @@ interface RawQuestion {
   /** Only on /review */
   correct_answer?: string;
   explanation?: string;
+  alignment?: Alignment | null;
 }
 
 interface RawGroup {
   group_id: string;
   type: "JF" | "DT" | "XT" | "YL" | "SH" | "BY" | "standard";
   passage: string | null;
+  passage_alignment?: Alignment | null;
   word_bank: WordChoice[] | null;
   questions: RawQuestion[];
   /** /questions endpoint — true when all questions in group are answered */
@@ -94,6 +96,7 @@ function adaptQuestion(raw: RawQuestion, wordBank: WordChoice[] | null, passage:
     group_id: null, // filled by caller
     passage,
     choices: wordBank,
+    alignment: raw.alignment ?? undefined,
     content_zh: {
       question: zhRaw.question,
       answer: zhRaw.options ?? zhRaw.choices,  // API uses "options" (JF/YL) or "choices" (standard)
@@ -119,6 +122,7 @@ function adaptGroup(raw: RawGroup): QuestionGroup {
     type: raw.type === "standard" ? "JF" : raw.type,
     group_id: raw.group_id,
     passage: raw.passage ?? undefined,
+    passage_alignment: raw.passage_alignment ?? undefined,
     questions,
   };
 }
