@@ -135,6 +135,14 @@ export interface RestoredState {
   submitResults: Record<string, SubmitResult>;
 }
 
+/**
+ * Continue-mode (`/questions`) intentionally never sends `correct_answer` for an
+ * already-answered-but-still-in-progress question — only `/review` does, once the
+ * session is done. Every `correct_answer` below falls back to "", the same sentinel
+ * the rendering components already use to mean "don't highlight anything", rather
+ * than the student's own selected key — which would render a wrong answer as if it
+ * were the correct one.
+ */
 function buildRestoredState(rawGroups: RawGroup[]): RestoredState {
   const answers: Record<string, string> = {};
   const submittedIds = new Set<string>();
@@ -163,13 +171,13 @@ function buildRestoredState(rawGroups: RawGroup[]): RestoredState {
         const blankResult: BlankResult = {
           blank_index: "1",
           correct,
-          correct_answer: q.correct_answer ?? selected_key,
+          correct_answer: q.correct_answer ?? "",
           user_answer: selected_key,
         };
         submitResults[q.id] = {
           question_id: q.id,
           correct,
-          correct_answer: q.correct_answer ?? selected_key,
+          correct_answer: q.correct_answer ?? "",
           difficulty: q.difficulty,
           xp_awarded: 0,
           blank_results: [blankResult],
@@ -181,7 +189,7 @@ function buildRestoredState(rawGroups: RawGroup[]): RestoredState {
         submitResults[q.id] = {
           question_id: q.id,
           correct,
-          correct_answer: q.correct_answer ?? selected_key,
+          correct_answer: q.correct_answer ?? "",
           difficulty: q.difficulty,
           xp_awarded: 0,
         };

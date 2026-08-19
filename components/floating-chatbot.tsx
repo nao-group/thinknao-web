@@ -1,102 +1,471 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Box, Group, Stack, Text, TextInput, Tooltip, UnstyledButton, rem } from "@mantine/core";
-import { IconMessageCircle, IconSend, IconSparkles, IconX } from "@tabler/icons-react";
-import api from "@/lib/api";
-import { INK, PRIMARY, SURFACE, CREAM } from "@/constants/colors";
+import {
+  IconArrowLeft,
+  IconHistory,
+  IconMessageCircle,
+  IconPin,
+  IconPinFilled,
+  IconPlus,
+  IconSearch,
+  IconSend,
+  IconSparkles,
+  IconTrash,
+  IconX,
+} from "@tabler/icons-react";
+import { useAuthStore } from "@/store/auth";
+import { INK, PRIMARY, SURFACE, MUTED, CORRECT_DARK } from "@/constants/colors";
+import { MarkdownLatexText } from "@/components/markdown-latex-text";
 
 interface Message {
   role: "user" | "assistant";
   text: string;
+  type?: "text" | "practice_set";
 }
 
 interface FloatingChatbotProps {
-  /** Plain-text description of the current problem shown to the AI as context */
-  questionContext: string;
+  /** The active practice session — the chat thread is scoped to this, not to a single question. */
+  sessionId: string;
+  /** The question currently on screen — grounds the bot's context for this turn. */
+  questionId: string;
 }
 
 const GREETING = "Hi! I'm here to help you understand this problem. Feel free to ask anything about it.";
+const THINKING = "Thinking about the best answer…";
+const PANEL_WIDTH = 400;
 
-export function FloatingChatbot({ questionContext }: FloatingChatbotProps) {
+// Static, zero-cost starter suggestions — no AI call needed to generate these,
+// so there's nothing to cache (plan §16).
+const STARTER_PROMPTS = [
+  "What is this question asking me to do?",
+  "Can you give me a hint without the answer?",
+  "Can you explain the key idea here?",
+];
+
+interface HistoryMessage {
+  role: string;
+  content: string;
+  type?: string;
+}
+
+interface ConversationSummary {
+  conversation_id: string;
+  session_id: string;
+  title: string;
+  pinned: boolean;
+  last_message_at: string;
+  preview: string;
+}
+
+interface PracticeQuestion {
+  id: string;
+  difficulty: string;
+  question: string;
+  choices: Record<string, string> | null;
+  correct_answer: string | null;
+  explanation: string | null;
+}
+
+function authHeaders(): Record<string, string> {
+  const token = useAuthStore.getState().accessToken;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// ─── /practice command rendering ───────────────────────────────────────────
+
+function PracticeQuestionCard({ q, index }: { q: PracticeQuestion; index: number }) {
+  const [revealed, setRevealed] = useState(false);
+  return (
+    <Box style={{ border: "1px solid #E2E8F0", borderRadius: rem(10), padding: rem(10), marginBottom: rem(8) }}>
+      <Text size="xs" fw={700} c={MUTED} mb={4} tt="uppercase">
+        Question {index + 1} · {q.difficulty}
+      </Text>
+      <Box fz="sm" mb={8}>
+        <MarkdownLatexText>{q.question}</MarkdownLatexText>
+      </Box>
+      {q.choices && (
+        <Stack gap={4} mb={8}>
+          {Object.entries(q.choices).map(([key, text]) => (
+            <Text key={key} size="sm" c={INK}>
+              <strong>{key}.</strong> {text}
+            </Text>
+          ))}
+        </Stack>
+      )}
+      {revealed ? (
+        <Box style={{ backgroundColor: "#F5E6CC", borderRadius: rem(8), padding: rem(8) }}>
+          <Text size="sm" fw={700} c={CORRECT_DARK}>Answer: {q.correct_answer}</Text>
+          {q.explanation && (
+            <Box fz="xs" mt={4}>
+              <MarkdownLatexText>{q.explanation}</MarkdownLatexText>
+            </Box>
+          )}
+        </Box>
+      ) : (
+        <UnstyledButton
+          onClick={() => setRevealed(true)}
+          style={{ fontSize: rem(12.5), color: PRIMARY, fontWeight: 600 }}
+        >
+          Reveal answer
+        </UnstyledButton>
+      )}
+    </Box>
+  );
+}
+
+function PracticeSetMessage({ text }: { text: string }) {
+  let parsed: { questions: PracticeQuestion[] } | null = null;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    parsed = null;
+  }
+  if (!parsed?.questions?.length) {
+    return <Text size="sm" c={INK}>{text}</Text>;
+  }
+  return (
+    <Box>
+      <Text size="sm" fw={700} c={INK} mb={8}>Here&rsquo;s a quick practice set — give them a shot!</Text>
+      {parsed.questions.map((q, i) => (
+        <PracticeQuestionCard key={q.id} q={q} index={i} />
+      ))}
+    </Box>
+  );
+}
+
+// ─── Main component ─────────────────────────────────────────────────────────
+
+export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"chat" | "history">("chat");
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", text: GREETING },
   ]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const historyLoadedForSession = useRef<string | null>(null);
 
-  // Reset chat whenever the displayed problem changes
+  const [historyList, setHistoryList] = useState<ConversationSummary[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historySearch, setHistorySearch] = useState("");
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  // Fetch one specific conversation's thread (or "most recent for this session" if
+  // conversationId is omitted) and load it into view.
+  async function loadConversation(targetConversationId?: string) {
+    try {
+      const params = targetConversationId ? `?conversation_id=${targetConversationId}` : "";
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/chatbot/conversations/${sessionId}${params}`,
+        { headers: authHeaders() }
+      );
+      if (!res.ok) return;
+      const data: { conversation_id: string | null; messages: HistoryMessage[] } = await res.json();
+      setConversationId(data.conversation_id);
+      setMessages(
+        data.messages?.length
+          ? data.messages.map((m) => ({
+              role: m.role === "user" ? "user" : "assistant",
+              text: m.content,
+              type: m.type === "practice_set" ? "practice_set" : "text",
+            }))
+          : [{ role: "assistant", text: GREETING }]
+      );
+    } catch {
+      // Keep whatever's already showing if this fails.
+    }
+  }
+
+  // Reset the visible thread when the session changes (not on every question navigation —
+  // the conversation is scoped to the whole practice session, per the technical plan).
   useEffect(() => {
     setMessages([{ role: "assistant", text: GREETING }]);
-  }, [questionContext]);
+    setConversationId(null);
+    historyLoadedForSession.current = null;
+  }, [sessionId]);
+
+  // Restore the most recent thread the first time the panel is opened for this session —
+  // unless a specific conversation was requested via history navigation (see openConversation).
+  useEffect(() => {
+    if (!open || !sessionId || historyLoadedForSession.current === sessionId) return;
+    historyLoadedForSession.current = sessionId;
+
+    const pendingRaw = sessionStorage.getItem("chatbot_open_conversation");
+    if (pendingRaw) {
+      try {
+        const pending = JSON.parse(pendingRaw) as { sessionId: string; conversationId: string };
+        if (pending.sessionId === sessionId) {
+          sessionStorage.removeItem("chatbot_open_conversation");
+          loadConversation(pending.conversationId);
+          return;
+        }
+      } catch {
+        sessionStorage.removeItem("chatbot_open_conversation");
+      }
+    }
+    loadConversation();
+  }, [open, sessionId]);
+
+  // Auto-open the panel if we just navigated here to jump into a specific past conversation.
+  useEffect(() => {
+    const pendingRaw = sessionStorage.getItem("chatbot_open_conversation");
+    if (!pendingRaw) return;
+    try {
+      const pending = JSON.parse(pendingRaw) as { sessionId: string; conversationId: string };
+      if (pending.sessionId === sessionId) setOpen(true);
+    } catch {
+      sessionStorage.removeItem("chatbot_open_conversation");
+    }
+  }, [sessionId]);
+
+  // Load the conversation-history list whenever the history view is opened, and on search.
+  useEffect(() => {
+    if (!open || view !== "history") return;
+    let cancelled = false;
+    setHistoryLoading(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams();
+        if (historySearch.trim()) params.set("q", historySearch.trim());
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/chatbot/conversations?${params.toString()}`,
+          { headers: authHeaders() }
+        );
+        if (!res.ok || cancelled) return;
+        const data: { conversations: ConversationSummary[] } = await res.json();
+        if (!cancelled) setHistoryList(data.conversations ?? []);
+      } catch {
+        // leave the previous list showing
+      } finally {
+        if (!cancelled) setHistoryLoading(false);
+      }
+    }, historySearch ? 300 : 0);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [open, view, historySearch]);
 
   // Scroll to bottom whenever messages update
   useEffect(() => {
-    if (open) {
+    if (open && view === "chat") {
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     }
-  }, [messages, open]);
+  }, [messages, open, view]);
 
   // Focus input when panel opens
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 100);
-  }, [open]);
+    if (open && view === "chat") setTimeout(() => inputRef.current?.focus(), 100);
+  }, [open, view]);
 
-  async function handleSend() {
-    const text = input.trim();
-    if (!text || loading) return;
-    setInput("");
+  async function togglePin(conv: ConversationSummary) {
+    const nextPinned = !conv.pinned;
+    setHistoryList((prev) =>
+      prev.map((c) => (c.conversation_id === conv.conversation_id ? { ...c, pinned: nextPinned } : c))
+    );
+    try {
+      await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/chatbot/conversations/${conv.conversation_id}/pin`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ pinned: nextPinned }),
+        }
+      );
+    } catch {
+      // revert on failure
+      setHistoryList((prev) =>
+        prev.map((c) => (c.conversation_id === conv.conversation_id ? { ...c, pinned: conv.pinned } : c))
+      );
+    }
+  }
+
+  async function deleteConversation(conv: ConversationSummary) {
+    setPendingDeleteId(null);
+    const previousList = historyList;
+    setHistoryList((prev) => prev.filter((c) => c.conversation_id !== conv.conversation_id));
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/chatbot/conversations/${conv.conversation_id}`,
+        { method: "DELETE", headers: authHeaders() }
+      );
+      if (!res.ok) throw new Error("delete failed");
+
+      // If we just deleted the thread currently on screen, don't leave it displayed.
+      if (conv.conversation_id === conversationId) {
+        setConversationId(null);
+        setMessages([{ role: "assistant", text: GREETING }]);
+      }
+    } catch {
+      setHistoryList(previousList);
+    }
+  }
+
+  function openConversation(conv: ConversationSummary) {
+    if (conv.session_id === sessionId) {
+      // Already on the right session — just switch back to the chat view and load
+      // that specific thread. No navigation, no closing the panel.
+      setView("chat");
+      loadConversation(conv.conversation_id);
+      return;
+    }
+    // Different session — the bot's context is grounded in whatever session page
+    // we're on, so we do need to navigate. Stash the target conversation so the
+    // destination page's FloatingChatbot instance auto-opens straight into it.
+    sessionStorage.setItem(
+      "chatbot_open_conversation",
+      JSON.stringify({ sessionId: conv.session_id, conversationId: conv.conversation_id })
+    );
+    setOpen(false);
+    router.push(`/practice/${conv.session_id}`);
+  }
+
+  async function startNewChat() {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/chatbot/conversations/${sessionId}/new`,
+        { method: "POST", headers: authHeaders() }
+      );
+      if (!res.ok) return;
+      const data: { conversation_id: string } = await res.json();
+      setConversationId(data.conversation_id);
+      setMessages([{ role: "assistant", text: GREETING }]);
+      setView("chat");
+    } catch {
+      // leave the current thread showing if this fails
+    }
+  }
+
+  async function handleSend(overrideText?: string) {
+    const text = (overrideText ?? input).trim();
+    if (!text || loading || !questionId) return;
+    if (!overrideText) setInput("");
+    const isPracticeCmd = text.toLowerCase().startsWith("/practice");
     setMessages((prev) => [...prev, { role: "user", text }]);
     setLoading(true);
+
+    let started = false;
+
     try {
-      const { data } = await api.post<{ reply: string }>("/api/chatbot/ask", {
-        context: questionContext,
-        message: text,
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chatbot/message`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          session_id: sessionId,
+          question_id: questionId,
+          conversation_id: conversationId,
+          message: text,
+        }),
       });
-      setMessages((prev) => [...prev, { role: "assistant", text: data.reply }]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", text: "Sorry, I couldn't connect right now. Please try again." },
-      ]);
+
+      if (!res.ok || !res.body) {
+        // Surface the backend's actual reason (e.g. a hard-cap message) instead of a generic error.
+        let detail = "Sorry, I couldn't connect right now. Please try again.";
+        try {
+          const errBody = await res.json();
+          if (typeof errBody?.detail === "string") detail = errBody.detail;
+        } catch {
+          // not JSON — keep the generic message
+        }
+        throw new Error(detail);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        if (!chunk) continue;
+
+        if (!started) {
+          started = true;
+          setLoading(false);
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", text: chunk, type: isPracticeCmd ? "practice_set" : "text" },
+          ]);
+        } else {
+          setMessages((prev) => {
+            const next = [...prev];
+            const last = next[next.length - 1];
+            next[next.length - 1] = { ...last, text: last.text + chunk };
+            return next;
+          });
+        }
+      }
+    } catch (err) {
+      const errorText = err instanceof Error && err.message
+        ? err.message
+        : "Sorry, I couldn't connect right now. Please try again.";
+      setMessages((prev) => [...prev, { role: "assistant", text: errorText }]);
     } finally {
       setLoading(false);
     }
   }
 
+  function timeAgo(iso: string): string {
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  }
+
   return (
     <>
-      {/* ── Chat panel ── */}
-      {open && (
+      {/* ── Sliding panel ── */}
+      <Box
+        style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: rem(PANEL_WIDTH),
+          maxWidth: "92vw",
+          backgroundColor: "white",
+          boxShadow: "-8px 0 32px rgba(0,0,0,0.14)",
+          display: "flex",
+          flexDirection: "column",
+          zIndex: 9998,
+          transform: open ? "translateX(0)" : `translateX(${PANEL_WIDTH}px)`,
+          transition: "transform 220ms ease",
+        }}
+      >
+        {/* Header */}
         <Box
+          px="md"
+          py="sm"
           style={{
-            position: "fixed",
-            bottom: rem(96),
-            right: rem(24),
-            width: rem(360),
-            height: rem(480),
-            backgroundColor: "white",
-            borderRadius: rem(18),
-            boxShadow: "0 12px 40px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)",
-            display: "flex",
-            flexDirection: "column",
-            zIndex: 9998,
-            overflow: "hidden",
+            background: `linear-gradient(135deg, ${INK} 0%, #252060 100%)`,
+            flexShrink: 0,
           }}
         >
-          {/* Header */}
-          <Box
-            px="md"
-            py="sm"
-            style={{
-              background: `linear-gradient(135deg, ${INK} 0%, #252060 100%)`,
-              flexShrink: 0,
-            }}
-          >
-            <Group justify="space-between" align="center">
+          <Group justify="space-between" align="center">
+            {view === "history" ? (
+              <Group gap={8}>
+                <UnstyledButton
+                  onClick={() => { setView("chat"); setPendingDeleteId(null); }}
+                  style={{ width: rem(28), height: rem(28), display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <IconArrowLeft size={16} stroke={1.8} color="white" />
+                </UnstyledButton>
+                <Text fw={700} size="sm" c="white" lh={1.2}>Chat history</Text>
+              </Group>
+            ) : (
               <Group gap={8}>
                 <Box
                   style={{
@@ -116,184 +485,294 @@ export function FloatingChatbot({ questionContext }: FloatingChatbotProps) {
                   <Text size="xs" c="rgba(255,255,255,0.5)" lh={1.2}>Ask about this problem</Text>
                 </Box>
               </Group>
+            )}
+            <Group gap={4}>
+              {view === "chat" && (
+                <>
+                  <Tooltip label="New chat" position="bottom" withArrow>
+                    <UnstyledButton
+                      onClick={startNewChat}
+                      style={{
+                        width: rem(28), height: rem(28), borderRadius: "50%",
+                        backgroundColor: "rgba(255,255,255,0.1)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}
+                    >
+                      <IconPlus size={15} stroke={1.8} color="rgba(255,255,255,0.85)" />
+                    </UnstyledButton>
+                  </Tooltip>
+                  <Tooltip label="Chat history" position="bottom" withArrow>
+                    <UnstyledButton
+                      onClick={() => setView("history")}
+                      style={{
+                        width: rem(28), height: rem(28), borderRadius: "50%",
+                        backgroundColor: "rgba(255,255,255,0.1)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}
+                    >
+                      <IconHistory size={15} stroke={1.6} color="rgba(255,255,255,0.85)" />
+                    </UnstyledButton>
+                  </Tooltip>
+                </>
+              )}
               <UnstyledButton
                 onClick={() => setOpen(false)}
                 style={{
-                  width: rem(28),
-                  height: rem(28),
-                  borderRadius: "50%",
+                  width: rem(28), height: rem(28), borderRadius: "50%",
                   backgroundColor: "rgba(255,255,255,0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  display: "flex", alignItems: "center", justifyContent: "center",
                 }}
               >
                 <IconX size={14} stroke={2} color="rgba(255,255,255,0.8)" />
               </UnstyledButton>
             </Group>
-          </Box>
+          </Group>
+        </Box>
 
-          {/* Messages */}
-          <Box
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: rem(12),
-              backgroundColor: "#FAFBFC",
-            }}
-          >
-            <Stack gap={8}>
-              {messages.map((m, i) => (
-                <Box
-                  key={i}
+        {view === "history" ? (
+          <>
+            {/* Search */}
+            <Box px="sm" py="sm" style={{ borderBottom: "1px solid #F1F5F9", flexShrink: 0 }}>
+              <TextInput
+                placeholder="Search past conversations…"
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                leftSection={<IconSearch size={14} color={MUTED} />}
+                size="sm"
+                styles={{ input: { borderRadius: rem(10), fontSize: rem(13), border: "1.5px solid #E2E8F0", backgroundColor: SURFACE } }}
+              />
+            </Box>
+
+            {/* List */}
+            <Box style={{ flex: 1, overflowY: "auto", padding: rem(12), backgroundColor: "#FAFBFC" }}>
+              {historyLoading && historyList.length === 0 ? (
+                <Text size="sm" c={MUTED} ta="center" mt="md">Loading…</Text>
+              ) : historyList.length === 0 ? (
+                <Text size="sm" c={MUTED} ta="center" mt="md">
+                  {historySearch ? "No conversations match that search." : "No past conversations yet."}
+                </Text>
+              ) : (
+                <Stack gap={8}>
+                  {historyList.map((c) => (
+                    <Box
+                      key={c.conversation_id}
+                      style={{
+                        backgroundColor: "white",
+                        border: pendingDeleteId === c.conversation_id ? "1px solid #F3D0D0" : "1px solid #F1F5F9",
+                        borderRadius: rem(10),
+                        padding: rem(10),
+                        boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      {pendingDeleteId === c.conversation_id ? (
+                        <Group justify="space-between" align="center" wrap="nowrap">
+                          <Text size="sm" c={INK} style={{ flex: 1 }}>
+                            Delete &ldquo;{c.title}&rdquo;? This can&rsquo;t be undone.
+                          </Text>
+                          <Group gap={6} wrap="nowrap">
+                            <UnstyledButton
+                              onClick={() => setPendingDeleteId(null)}
+                              style={{
+                                fontSize: rem(12.5), fontWeight: 600, color: MUTED,
+                                padding: `${rem(5)} ${rem(9)}`, borderRadius: rem(8),
+                                border: "1px solid #E2E8F0",
+                              }}
+                            >
+                              Cancel
+                            </UnstyledButton>
+                            <UnstyledButton
+                              onClick={() => deleteConversation(c)}
+                              style={{
+                                fontSize: rem(12.5), fontWeight: 600, color: "white",
+                                padding: `${rem(5)} ${rem(9)}`, borderRadius: rem(8),
+                                backgroundColor: "#C0392B",
+                              }}
+                            >
+                              Delete
+                            </UnstyledButton>
+                          </Group>
+                        </Group>
+                      ) : (
+                        <Group justify="space-between" align="flex-start" wrap="nowrap">
+                          <UnstyledButton onClick={() => openConversation(c)} style={{ flex: 1, minWidth: 0 }}>
+                            <Text size="sm" fw={700} c={INK} truncate>{c.title}</Text>
+                            <Text size="xs" c={MUTED} lineClamp={2} mt={2}>{c.preview}</Text>
+                            <Text size="xs" c={MUTED} mt={4} style={{ opacity: 0.7 }}>{timeAgo(c.last_message_at)}</Text>
+                          </UnstyledButton>
+                          <Group gap={2} wrap="nowrap">
+                            <UnstyledButton onClick={() => togglePin(c)} style={{ flexShrink: 0, padding: rem(4) }}>
+                              {c.pinned ? (
+                                <IconPinFilled size={16} color={PRIMARY} />
+                              ) : (
+                                <IconPin size={16} color={MUTED} />
+                              )}
+                            </UnstyledButton>
+                            <UnstyledButton onClick={() => setPendingDeleteId(c.conversation_id)} style={{ flexShrink: 0, padding: rem(4) }}>
+                              <IconTrash size={16} color={MUTED} />
+                            </UnstyledButton>
+                          </Group>
+                        </Group>
+                      )}
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+            </Box>
+          </>
+        ) : (
+          <>
+            {/* Messages */}
+            <Box style={{ flex: 1, overflowY: "auto", padding: rem(12), backgroundColor: "#FAFBFC" }}>
+              <Stack gap={8}>
+                {messages.map((m, i) => (
+                  <Box
+                    key={i}
+                    style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}
+                  >
+                    <Box
+                      px="sm"
+                      py="xs"
+                      style={{
+                        backgroundColor: m.role === "user" ? INK : "white",
+                        borderRadius: m.role === "user"
+                          ? `${rem(12)} ${rem(12)} ${rem(4)} ${rem(12)}`
+                          : `${rem(12)} ${rem(12)} ${rem(12)} ${rem(4)}`,
+                        maxWidth: m.type === "practice_set" ? "96%" : "82%",
+                        boxShadow: m.role === "assistant" ? "0 1px 4px rgba(0,0,0,0.06)" : "none",
+                        border: m.role === "assistant" ? "1px solid #F1F5F9" : "none",
+                      }}
+                    >
+                      {m.role === "assistant" ? (
+                        m.type === "practice_set" ? (
+                          <PracticeSetMessage text={m.text} />
+                        ) : (
+                          <Box fz="sm">
+                            <MarkdownLatexText>{m.text}</MarkdownLatexText>
+                          </Box>
+                        )
+                      ) : (
+                        <Text size="sm" c="white" lh={1.55}>{m.text}</Text>
+                      )}
+                    </Box>
+                  </Box>
+                ))}
+
+                {messages.length === 1 && !loading && (
+                  <Group gap={6} wrap="wrap" style={{ paddingLeft: rem(4) }}>
+                    {STARTER_PROMPTS.map((p) => (
+                      <UnstyledButton
+                        key={p}
+                        onClick={() => handleSend(p)}
+                        style={{
+                          fontSize: rem(12.5),
+                          padding: `${rem(6)} ${rem(10)}`,
+                          borderRadius: rem(999),
+                          border: "1px solid #E2E8F0",
+                          backgroundColor: "white",
+                          color: INK,
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {p}
+                      </UnstyledButton>
+                    ))}
+                  </Group>
+                )}
+
+                {loading && (
+                  <Box style={{ display: "flex", justifyContent: "flex-start" }}>
+                    <Box
+                      px="sm"
+                      py="xs"
+                      style={{
+                        backgroundColor: "white",
+                        borderRadius: `${rem(12)} ${rem(12)} ${rem(12)} ${rem(4)}`,
+                        border: "1px solid #F1F5F9",
+                        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                      }}
+                    >
+                      <Group gap={8} wrap="nowrap">
+                        <Text size="sm" c={INK} lh={1.55} style={{ opacity: 0.65 }}>{THINKING}</Text>
+                        <Group gap={4}>
+                          {[0, 1, 2].map((d) => (
+                            <Box
+                              key={d}
+                              style={{
+                                width: rem(6), height: rem(6), borderRadius: "50%",
+                                backgroundColor: "#CBD5E1",
+                                animation: `pulse 1.2s ease-in-out ${d * 0.2}s infinite`,
+                              }}
+                            />
+                          ))}
+                        </Group>
+                      </Group>
+                    </Box>
+                  </Box>
+                )}
+
+                <div ref={bottomRef} />
+              </Stack>
+            </Box>
+
+            {/* Input */}
+            <Box px="sm" py="sm" style={{ borderTop: "1px solid #F1F5F9", backgroundColor: "white", flexShrink: 0 }}>
+              <Group gap="xs" align="center" wrap="nowrap">
+                <TextInput
+                  ref={inputRef}
+                  placeholder="Ask about this problem, or type /practice…"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
+                  style={{ flex: 1 }}
+                  size="sm"
+                  styles={{ input: { borderRadius: rem(10), fontSize: rem(13), border: "1.5px solid #E2E8F0", backgroundColor: SURFACE } }}
+                />
+                <UnstyledButton
+                  onClick={() => handleSend()}
+                  disabled={!input.trim() || loading}
                   style={{
-                    display: "flex",
-                    justifyContent: m.role === "user" ? "flex-end" : "flex-start",
+                    width: rem(34), height: rem(34), borderRadius: rem(10),
+                    backgroundColor: input.trim() && !loading ? PRIMARY : "#E2E8F0",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0, transition: "background-color 150ms ease",
+                    cursor: input.trim() && !loading ? "pointer" : "default",
                   }}
                 >
-                  <Box
-                    px="sm"
-                    py="xs"
-                    style={{
-                      backgroundColor: m.role === "user" ? INK : "white",
-                      borderRadius: m.role === "user"
-                        ? `${rem(12)} ${rem(12)} ${rem(4)} ${rem(12)}`
-                        : `${rem(12)} ${rem(12)} ${rem(12)} ${rem(4)}`,
-                      maxWidth: "82%",
-                      boxShadow: m.role === "assistant" ? "0 1px 4px rgba(0,0,0,0.06)" : "none",
-                      border: m.role === "assistant" ? "1px solid #F1F5F9" : "none",
-                    }}
-                  >
-                    <Text size="sm" c={m.role === "user" ? "white" : INK} lh={1.55}>
-                      {m.text}
-                    </Text>
-                  </Box>
-                </Box>
-              ))}
-
-              {loading && (
-                <Box style={{ display: "flex", justifyContent: "flex-start" }}>
-                  <Box
-                    px="sm"
-                    py="xs"
-                    style={{
-                      backgroundColor: "white",
-                      borderRadius: `${rem(12)} ${rem(12)} ${rem(12)} ${rem(4)}`,
-                      border: "1px solid #F1F5F9",
-                      boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                    }}
-                  >
-                    <Group gap={4}>
-                      {[0, 1, 2].map((d) => (
-                        <Box
-                          key={d}
-                          style={{
-                            width: rem(6),
-                            height: rem(6),
-                            borderRadius: "50%",
-                            backgroundColor: "#CBD5E1",
-                            animation: `pulse 1.2s ease-in-out ${d * 0.2}s infinite`,
-                          }}
-                        />
-                      ))}
-                    </Group>
-                  </Box>
-                </Box>
-              )}
-
-              <div ref={bottomRef} />
-            </Stack>
-          </Box>
-
-          {/* Input */}
-          <Box
-            px="sm"
-            py="sm"
-            style={{
-              borderTop: "1px solid #F1F5F9",
-              backgroundColor: "white",
-              flexShrink: 0,
-            }}
-          >
-            <Group gap="xs" align="center" wrap="nowrap">
-              <TextInput
-                ref={inputRef}
-                placeholder="Ask about this problem…"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
-                style={{ flex: 1 }}
-                size="sm"
-                styles={{
-                  input: {
-                    borderRadius: rem(10),
-                    fontSize: rem(13),
-                    border: "1.5px solid #E2E8F0",
-                    backgroundColor: SURFACE,
-                  },
-                }}
-              />
-              <UnstyledButton
-                onClick={handleSend}
-                disabled={!input.trim() || loading}
-                style={{
-                  width: rem(34),
-                  height: rem(34),
-                  borderRadius: rem(10),
-                  backgroundColor: input.trim() && !loading ? PRIMARY : "#E2E8F0",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  transition: "background-color 150ms ease",
-                  cursor: input.trim() && !loading ? "pointer" : "default",
-                }}
-              >
-                <IconSend size={16} stroke={1.5} color={input.trim() && !loading ? "white" : "#94A3B8"} />
-              </UnstyledButton>
-            </Group>
-          </Box>
-        </Box>
-      )}
-
-      {/* ── FAB ── */}
-      <Tooltip
-        label="Ask AI about this problem"
-        position="left"
-        withArrow
-        disabled={open}
-      >
-      <Box
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          position: "fixed",
-          bottom: rem(24),
-          right: rem(24),
-          width: rem(56),
-          height: rem(56),
-          borderRadius: "50%",
-          background: open
-            ? `linear-gradient(135deg, ${INK} 0%, #252060 100%)`
-            : `linear-gradient(135deg, ${PRIMARY} 0%, #C47F10 100%)`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          boxShadow: open
-            ? "0 4px 20px rgba(15,23,42,0.35)"
-            : "0 4px 20px rgba(212,160,23,0.45)",
-          zIndex: 9999,
-          transition: "all 200ms ease",
-        }}
-        className="hover-zoom"
-      >
-        {open ? (
-          <IconX size={22} stroke={2} color="white" />
-        ) : (
-          <IconMessageCircle size={22} stroke={1.5} color="white" />
+                  <IconSend size={16} stroke={1.5} color={input.trim() && !loading ? "white" : "#94A3B8"} />
+                </UnstyledButton>
+              </Group>
+            </Box>
+          </>
         )}
       </Box>
-      </Tooltip>
+
+      {/* ── FAB ── */}
+      {!open && (
+        <Tooltip label="Ask AI about this problem" position="left" withArrow>
+          <Box
+            onClick={() => setOpen(true)}
+            style={{
+              position: "fixed",
+              bottom: rem(24),
+              right: rem(24),
+              width: rem(56),
+              height: rem(56),
+              borderRadius: "50%",
+              background: `linear-gradient(135deg, ${PRIMARY} 0%, #C47F10 100%)`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              boxShadow: "0 4px 20px rgba(212,160,23,0.45)",
+              zIndex: 9999,
+              transition: "all 200ms ease",
+            }}
+            className="hover-zoom"
+          >
+            <IconMessageCircle size={22} stroke={1.5} color="white" />
+          </Box>
+        </Tooltip>
+      )}
 
       <style>{`
         @keyframes pulse {

@@ -1298,7 +1298,8 @@ export default function PracticeDetailPage() {
       <ReportModal opened={reportOpen} onClose={() => setReportOpen(false)} />
 
       <FloatingChatbot
-        questionContext={`Type: ${activeType}\nQuestion ${currentQ + 1}`}
+        sessionId={sessionId}
+        questionId={activeGroup?.questions[currentSubQ]?.id ?? activeGroup?.questions[0]?.id ?? ""}
       />
     </Box>
   );

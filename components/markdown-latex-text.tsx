@@ -7,6 +7,9 @@ import { MATH_RE, renderMath } from "@/lib/latex";
 const BOLD_RE = /(\*\*(?:[^*]|\*(?!\*))+\*\*)/g;
 const CODE_RE = /(`[^`]+`)/g;
 const CIRCLE_RE = /(\{\d+\})/g;
+// Defense-in-depth: models are told never to use markdown headings, but a stray
+// "#### Step 1" shouldn't render as literal hash characters if one slips through.
+const HEADING_RE = /^#{1,6}\s+(.*)$/;
 
 /** Leaf: plain text only — no further parsing */
 function plainText(text: string, key: string): React.ReactElement {
@@ -158,12 +161,16 @@ export function MarkdownLatexText({ children, circleNums = false }: { children: 
         const lines = trimmed.split("\n");
         return (
           <p key={bi} style={{ margin: "0 0 0.6em 0" }}>
-            {lines.map((line, li) => (
-              <span key={li} style={{ display: "contents" }}>
-                {li > 0 && <br />}
-                {parseMath(line, `p${bi}l${li}`, circleNums)}
-              </span>
-            ))}
+            {lines.map((line, li) => {
+              const heading = line.match(HEADING_RE);
+              const parsed = parseMath(heading ? heading[1] : line, `p${bi}l${li}`, circleNums);
+              return (
+                <span key={li} style={{ display: "contents" }}>
+                  {li > 0 && <br />}
+                  {heading ? <strong>{parsed}</strong> : parsed}
+                </span>
+              );
+            })}
           </p>
         );
       })}

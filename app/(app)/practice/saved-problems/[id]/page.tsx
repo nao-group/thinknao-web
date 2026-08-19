@@ -34,7 +34,6 @@ import {
 import { ReportModal } from "@/components/report-modal";
 import { SAVED_PROBLEMS } from "../data";
 import type { SubjectKey, Difficulty } from "../types";
-import { FloatingChatbot } from "@/components/floating-chatbot";
 import { LanguageToggle, type Lang } from "@/components/language-toggle";
 import { OptionRow } from "./components/OptionRow";
 import { ExplanationBox } from "./components/ExplanationBox";
@@ -548,15 +547,12 @@ export default function SavedProblemDetailPage() {
 
       <ReportModal opened={reportOpen} onClose={() => setReportOpen(false)} />
 
-      <FloatingChatbot
-        questionContext={[
-          `Subject: ${problem.subject} — Topic: ${problem.topic}`,
-          `Question: ${problem.question}`,
-          `Options:`,
-          ...problem.options.map((o) => `  ${o.key}. ${o.text}`),
-          `Correct Answer: ${problem.correctAnswer}`,
-        ].join("\n")}
-      />
+      {/*
+        FloatingChatbot removed here: this page is backed by the local SAVED_PROBLEMS
+        mock (no real `sessions` row), and the chatbot API now requires a real
+        session_id/question_id for its ownership check and context assembly.
+        Re-add once saved problems are backed by a real session.
+      */}
     </Box>
   );
 }
