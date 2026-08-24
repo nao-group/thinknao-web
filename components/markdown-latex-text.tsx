@@ -49,20 +49,22 @@ function CircleBadge({ n, keyStr }: { n: string; keyStr: string }) {
 function parseMath(text: string, keyPrefix: string, circleNums: boolean): React.ReactElement[] {
   return text.split(MATH_RE).flatMap((part, i): React.ReactElement[] => {
     const key = `${keyPrefix}-m${i}`;
-    if (part.startsWith("$$") && part.endsWith("$$")) {
+    if ((part.startsWith("$$") && part.endsWith("$$")) || (part.startsWith("\\[") && part.endsWith("\\]"))) {
+      const inner = part.startsWith("$$") ? part.slice(2, -2) : part.slice(2, -2);
       return [
         <span
           key={key}
           style={{ display: "block", textAlign: "center", margin: "0.3em 0" }}
-          dangerouslySetInnerHTML={{ __html: renderMath(part.slice(2, -2), true) }}
+          dangerouslySetInnerHTML={{ __html: renderMath(inner, true) }}
         />,
       ];
     }
-    if (part.startsWith("$") && part.endsWith("$")) {
+    if ((part.startsWith("$") && part.endsWith("$")) || (part.startsWith("\\(") && part.endsWith("\\)"))) {
+      const inner = part.startsWith("$") ? part.slice(1, -1) : part.slice(2, -2);
       return [
         <span
           key={key}
-          dangerouslySetInnerHTML={{ __html: renderMath(part.slice(1, -1), false) }}
+          dangerouslySetInnerHTML={{ __html: renderMath(inner, false) }}
         />,
       ];
     }
