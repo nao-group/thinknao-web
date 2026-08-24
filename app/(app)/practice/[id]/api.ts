@@ -218,6 +218,7 @@ export async function fetchSessionQuestions(sessionId: string): Promise<{
   restored: RestoredState;
   fillAnswers: Record<string, Record<string, string>>;
   sessionName: string;
+  subjectCode: string;
 }> {
   const { data } = await api.get<SessionQuestionsResponse>(
     `/api/sessions/${sessionId}/questions`
@@ -235,6 +236,7 @@ export async function fetchSessionReview(sessionId: string): Promise<{
   fillAnswers: Record<string, Record<string, string>>;
   xpEarned: number;
   sessionName: string;
+  subjectCode: string;
 }> {
   const { data } = await api.get<SessionQuestionsResponse>(
     `/api/sessions/${sessionId}/review`
