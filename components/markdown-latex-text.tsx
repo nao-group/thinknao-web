@@ -41,11 +41,22 @@ function CircleBadge({ n, keyStr }: { n: string; keyStr: string }) {
 
 /**
  * Parsing order (outermost → innermost):
- *   Math → Bold → Code → CircleNum → plain text
+ *   Bold → Math → Code → CircleNum → plain text
  *
- * Math must be outermost so {N} inside LaTeX (e.g. \frac{0.5}{4}) is never
- * seen by the circle parser.
+ * Bold must be outermost so **...$formula$...** works correctly —
+ * math delimiters are processed within each bold/plain segment separately,
+ * preventing math splits from breaking incomplete ** pairs.
  */
+function parseSegment(text: string, keyPrefix: string, circleNums: boolean): React.ReactElement[] {
+  return text.split(BOLD_RE).flatMap((part, i): React.ReactElement[] => {
+    const key = `${keyPrefix}-b${i}`;
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return [<strong key={key}>{parseMath(part.slice(2, -2), key, circleNums)}</strong>];
+    }
+    return parseMath(part, key, circleNums);
+  });
+}
+
 function parseMath(text: string, keyPrefix: string, circleNums: boolean): React.ReactElement[] {
   return text.split(MATH_RE).flatMap((part, i): React.ReactElement[] => {
     const key = `${keyPrefix}-m${i}`;
@@ -69,16 +80,6 @@ function parseMath(text: string, keyPrefix: string, circleNums: boolean): React.
       ];
     }
     // Non-math segment — continue parsing
-    return parseBold(part, key, circleNums);
-  });
-}
-
-function parseBold(text: string, keyPrefix: string, circleNums: boolean): React.ReactElement[] {
-  return text.split(BOLD_RE).flatMap((part, i): React.ReactElement[] => {
-    const key = `${keyPrefix}-b${i}`;
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return [<strong key={key}>{parseCode(part.slice(2, -2), key, circleNums)}</strong>];
-    }
     return parseCode(part, key, circleNums);
   });
 }
@@ -124,6 +125,7 @@ function parseCircleNum(text: string, keyPrefix: string): React.ReactElement[] {
  * - **bold** text
  * - `inline code` (rendered as amber highlight chip)
  * - $inline$ and $$display$$ LaTeX math
+ * - \(...\) inline and \[...\] display LaTeX math
  * - > blockquote lines (rendered as highlighted answer box)
  * - Paragraphs separated by blank lines
  * - Line breaks within paragraphs
@@ -152,7 +154,7 @@ export function MarkdownLatexText({ children, circleNums = false }: { children: 
                 color: CORRECT_DARK,
               }}
             >
-              {parseMath(content, `bq${bi}`, circleNums)}
+              {parseSegment(content, `bq${bi}`, circleNums)}
             </div>
           );
         }
@@ -163,7 +165,7 @@ export function MarkdownLatexText({ children, circleNums = false }: { children: 
             {lines.map((line, li) => (
               <span key={li} style={{ display: "contents" }}>
                 {li > 0 && <br />}
-                {parseMath(line, `p${bi}l${li}`, circleNums)}
+                {parseSegment(line, `p${bi}l${li}`, circleNums)}
               </span>
             ))}
           </p>
