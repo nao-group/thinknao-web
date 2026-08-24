@@ -165,7 +165,8 @@ export default function PracticePage() {
     try {
       const { sessionId, name } = await generatePracticeSet(modalTopic.id, n);
       setGenerateOpen(false);
-      const paramObj: Record<string, string> = { topic: modalTopic.name };
+      const subject = SUBJECTS.find((s) => s.key === selectedSubject)!;
+      const paramObj: Record<string, string> = { topic: modalTopic.name, subject: subject.subjectCode };
       if (name) paramObj.name = name;
       const params = new URLSearchParams(paramObj);
       router.push(`/practice/${sessionId}?${params.toString()}`);
@@ -414,6 +415,7 @@ export default function PracticePage() {
                         const params = new URLSearchParams({
                           name: session.name,
                           topic: session.topic_name,
+                          subject: session.subject_code,
                         });
                         const base = `/practice/${session.id}`;
                         router.push(
@@ -549,7 +551,7 @@ export default function PracticePage() {
                     key={s.id}
                     onClick={() => {
                       setSearchOpen(false);
-                      const params = new URLSearchParams({ name: s.name, topic: s.topic_name });
+                      const params = new URLSearchParams({ name: s.name, topic: s.topic_name, subject: s.subject_code });
                       const base = `/practice/${s.id}`;
                       router.push(s.status === "completed" ? `${base}?review=true&${params.toString()}` : `${base}?${params.toString()}`);
                     }}

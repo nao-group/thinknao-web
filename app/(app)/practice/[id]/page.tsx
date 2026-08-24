@@ -721,15 +721,16 @@ export default function PracticeDetailPage() {
   const isReview = searchParams.get("review") === "true";
   const topicName = searchParams.get("topic") ?? "";
   const sessionNameParam = searchParams.get("name") ?? "";
+  const subjectParam = searchParams.get("subject") ?? "";
 
   const setSessionName = useNavStore((s) => s.setSessionName);
 
   // Push session name into the global nav store so the breadcrumb can display it.
-  // URL param takes priority; falls back to the name returned by the session API.
+  // Set immediately from URL param or topic name so breadcrumb is never empty while loading.
   useEffect(() => {
-    if (sessionNameParam) setSessionName(sessionNameParam);
+    setSessionName(sessionNameParam || topicName || "Practice Set");
     return () => setSessionName("");
-  }, [sessionNameParam, setSessionName]);
+  }, [sessionNameParam, topicName, setSessionName]);
 
   const [currentQ, setCurrentQ] = useState(0);
   const [currentSubQ, setCurrentSubQ] = useState(0);
@@ -744,7 +745,9 @@ export default function PracticeDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
-  const [lang, setLang] = useState<Lang>("en");
+  const [subjectCode, setSubjectCode] = useState(subjectParam);
+  const zhOnly = subjectCode === "WH" || subjectCode === "LH";
+  const [lang, setLang] = useState<Lang>(subjectParam === "WH" || subjectParam === "LH" ? "zh" : "en");
   const [reportOpen, setReportOpen] = useState(false);
 
   const [questionGroups, setQuestionGroups] = useState<QuestionGroup[]>([]);
@@ -761,8 +764,12 @@ export default function PracticeDetailPage() {
       .then((result) => {
         const { groups, restored, fillAnswers: restoredFill } = result;
         if ("xpEarned" in result) setXpEarned((result as { xpEarned: number }).xpEarned);
-        // Set session name from API response when not provided via URL param
-        if (!sessionNameParam && result.sessionName) setSessionName(result.sessionName);
+        // Update with the canonical name and subject from the API
+        if (result.sessionName) setSessionName(result.sessionName);
+        if (result.subjectCode) {
+          setSubjectCode(result.subjectCode);
+          if (result.subjectCode === "WH" || result.subjectCode === "LH") setLang("zh");
+        }
         setQuestionGroups(groups);
         setAnswers(restored.answers as Record<string, string>);
         setSubmittedIds(restored.submittedIds);
@@ -1053,7 +1060,7 @@ export default function PracticeDetailPage() {
                   </Badge>
                 </Group>
                 <Group gap={rem(6)} wrap="nowrap" style={{ flexShrink: 0 }}>
-                  <LanguageToggle lang={lang} onChange={setLang} />
+                  {!zhOnly && <LanguageToggle lang={lang} onChange={setLang} />}
                   {(() => {
                     const isFlaggedCurrent = flaggedSet.has(activeGroup?.questions[currentSubQ]?.id ?? "");
                     return (

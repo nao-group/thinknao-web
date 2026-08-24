@@ -396,10 +396,12 @@ export default function DashboardPage() {
   }, []);
 
   function navigateToSession(session: Session) {
+    const base = `/practice/${session.id}`;
+    const sharedParams = `name=${encodeURIComponent(session.name)}&subject=${encodeURIComponent(session.subject_code)}`;
     if (session.status === "in_progress") {
-      router.push(`/practice/${session.id}?topic=${encodeURIComponent(session.topic_name ?? session.subject_name)}&name=${encodeURIComponent(session.name)}`);
+      router.push(`${base}?topic=${encodeURIComponent(session.topic_name ?? session.subject_name)}&${sharedParams}`);
     } else {
-      router.push(`/practice/${session.id}?review=true&name=${encodeURIComponent(session.name)}`);
+      router.push(`${base}?review=true&${sharedParams}`);
     }
   }
 
