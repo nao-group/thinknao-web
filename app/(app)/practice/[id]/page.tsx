@@ -51,6 +51,9 @@ import {
   submitSingleQuestion,
   submitQuestionGroup,
   completeSession,
+  fetchBookmarkedIds,
+  addBookmark,
+  removeBookmark,
 } from "./api";
 import { useNavStore } from "@/store/nav";
 
@@ -736,7 +739,7 @@ export default function PracticeDetailPage() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submittedSet, setSubmittedSet] = useState<Set<number>>(new Set());
   const [flaggedSet, setFlaggedSet] = useState<Set<string>>(new Set()); // question IDs
-  const [bookmarked, setBookmarked] = useState<Set<number>>(new Set());
+  const [bookmarked, setBookmarked] = useState<Set<string>>(new Set()); // question IDs
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [finished, setFinished] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -791,6 +794,10 @@ export default function PracticeDetailPage() {
         setLoadError("Failed to load session. Please try again.");
       })
       .finally(() => setLoading(false));
+
+    fetchBookmarkedIds(sessionId)
+      .then(setBookmarked)
+      .catch((err) => console.error("Failed to load bookmarks:", err));
   }, [sessionId, isReview]);
 
   const activeGroup: QuestionGroup | null = questionGroups[currentQ] ?? null;
@@ -970,13 +977,31 @@ export default function PracticeDetailPage() {
     });
   }
 
-  function toggleBookmark() {
+  async function toggleBookmark() {
+    const qId = activeGroup?.questions[currentSubQ]?.id;
+    if (!qId) return;
+    const wasBookmarked = bookmarked.has(qId);
+
     setBookmarked((prev) => {
       const next = new Set(prev);
-      if (next.has(currentQ)) next.delete(currentQ);
-      else next.add(currentQ);
+      if (wasBookmarked) next.delete(qId);
+      else next.add(qId);
       return next;
     });
+
+    try {
+      if (wasBookmarked) await removeBookmark(qId);
+      else await addBookmark(qId, sessionId);
+    } catch (err) {
+      console.error("Bookmark toggle failed:", err);
+      // revert on failure
+      setBookmarked((prev) => {
+        const next = new Set(prev);
+        if (wasBookmarked) next.add(qId);
+        else next.delete(qId);
+        return next;
+      });
+    }
   }
 
   if (loading) {
@@ -1068,15 +1093,20 @@ export default function PracticeDetailPage() {
                       </Tooltip>
                     );
                   })()}
-                  <Tooltip label={bookmarked.has(currentQ) ? "Remove bookmark" : "Bookmark question"} withArrow>
-                    <UnstyledButton onClick={toggleBookmark} style={{
-                      width: rem(32), height: rem(32), borderRadius: rem(8),
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      backgroundColor: bookmarked.has(currentQ) ? "#FFF9EC" : SURFACE,
-                    }}>
-                      {bookmarked.has(currentQ) ? <IconBookmarkFilled size={16} color={PRIMARY} /> : <IconBookmark size={16} color={MUTED} />}
-                    </UnstyledButton>
-                  </Tooltip>
+                  {(() => {
+                    const isBookmarkedCurrent = bookmarked.has(activeGroup?.questions[currentSubQ]?.id ?? "");
+                    return (
+                      <Tooltip label={isBookmarkedCurrent ? "Remove bookmark" : "Bookmark question"} withArrow>
+                        <UnstyledButton onClick={toggleBookmark} style={{
+                          width: rem(32), height: rem(32), borderRadius: rem(8),
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          backgroundColor: isBookmarkedCurrent ? "#FFF9EC" : SURFACE,
+                        }}>
+                          {isBookmarkedCurrent ? <IconBookmarkFilled size={16} color={PRIMARY} /> : <IconBookmark size={16} color={MUTED} />}
+                        </UnstyledButton>
+                      </Tooltip>
+                    );
+                  })()}
                   <Tooltip label="Report a problem" withArrow>
                     <UnstyledButton onClick={() => setReportOpen(true)} style={{
                       width: rem(32), height: rem(32), borderRadius: rem(8),

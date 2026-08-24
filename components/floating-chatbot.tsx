@@ -7,6 +7,7 @@ import {
   IconArrowLeft,
   IconHistory,
   IconMessageCircle,
+  IconPencil,
   IconPin,
   IconPinFilled,
   IconPlus,
@@ -37,14 +38,6 @@ const GREETING = "Hi! I'm here to help you understand this problem. Feel free to
 const THINKING = "Thinking about the best answer…";
 const PANEL_WIDTH = 400;
 
-// Static, zero-cost starter suggestions — no AI call needed to generate these,
-// so there's nothing to cache (plan §16).
-const STARTER_PROMPTS = [
-  "What is this question asking me to do?",
-  "Can you give me a hint without the answer?",
-  "Can you explain the key idea here?",
-];
-
 interface HistoryMessage {
   role: string;
   content: string;
@@ -55,9 +48,19 @@ interface ConversationSummary {
   conversation_id: string;
   session_id: string;
   title: string;
+  session_name: string;
   pinned: boolean;
   last_message_at: string;
   preview: string;
+}
+
+// Same ordering the backend uses (pinned first, then most recently active) — applied
+// client-side too so a pin/unpin re-sorts the list immediately, no refetch needed.
+function sortConversations(list: ConversationSummary[]): ConversationSummary[] {
+  return [...list].sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+  });
 }
 
 interface PracticeQuestion {
@@ -156,6 +159,33 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historySearch, setHistorySearch] = useState("");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [starterPrompts, setStarterPrompts] = useState<string[]>([]);
+
+  // Suggested prompts come from the API only (Redis-cached per question_id server-side —
+  // see routers/chatbot.py). Deliberately NOT duplicated as a local constant: the server
+  // is the single source of truth, so changing the list there takes effect everywhere
+  // without a frontend deploy, and there's no stale copy to flash on first paint.
+  // On failure the list stays empty and the chips simply don't render — they're a
+  // convenience affordance, and the student can always just type instead.
+  useEffect(() => {
+    if (!questionId) return;
+    let cancelled = false;
+    setStarterPrompts([]);
+    fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/chatbot/questions/${questionId}/suggested-prompts`,
+      { headers: authHeaders() }
+    )
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { prompts: string[] } | null) => {
+        if (!cancelled && data?.prompts?.length) setStarterPrompts(data.prompts);
+      })
+      .catch(() => {
+        // no chips this time — not worth surfacing an error for
+      });
+    return () => { cancelled = true; };
+  }, [questionId]);
 
   // Fetch one specific conversation's thread (or "most recent for this session" if
   // conversationId is omitted) and load it into view.
@@ -269,8 +299,10 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
 
   async function togglePin(conv: ConversationSummary) {
     const nextPinned = !conv.pinned;
+    // Re-sort immediately (not just flip the flag in place) so a newly-pinned chat
+    // jumps to the top of the list right away, without waiting on a refetch.
     setHistoryList((prev) =>
-      prev.map((c) => (c.conversation_id === conv.conversation_id ? { ...c, pinned: nextPinned } : c))
+      sortConversations(prev.map((c) => (c.conversation_id === conv.conversation_id ? { ...c, pinned: nextPinned } : c)))
     );
     try {
       await fetch(
@@ -284,7 +316,38 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
     } catch {
       // revert on failure
       setHistoryList((prev) =>
-        prev.map((c) => (c.conversation_id === conv.conversation_id ? { ...c, pinned: conv.pinned } : c))
+        sortConversations(prev.map((c) => (c.conversation_id === conv.conversation_id ? { ...c, pinned: conv.pinned } : c)))
+      );
+    }
+  }
+
+  function startRename(conv: ConversationSummary) {
+    setRenamingId(conv.conversation_id);
+    setRenameValue(conv.title);
+  }
+
+  async function commitRename(conv: ConversationSummary) {
+    setRenamingId(null);
+    const title = renameValue.trim();
+    if (!title || title === conv.title) return;
+
+    const previousTitle = conv.title;
+    setHistoryList((prev) =>
+      prev.map((c) => (c.conversation_id === conv.conversation_id ? { ...c, title } : c))
+    );
+    try {
+      await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/chatbot/conversations/${conv.conversation_id}/title`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ title }),
+        }
+      );
+    } catch {
+      // revert on failure
+      setHistoryList((prev) =>
+        prev.map((c) => (c.conversation_id === conv.conversation_id ? { ...c, title: previousTitle } : c))
       );
     }
   }
@@ -594,11 +657,40 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                         </Group>
                       ) : (
                         <Group justify="space-between" align="flex-start" wrap="nowrap">
-                          <UnstyledButton onClick={() => openConversation(c)} style={{ flex: 1, minWidth: 0 }}>
-                            <Text size="sm" fw={700} c={INK} truncate>{c.title}</Text>
-                            <Text size="xs" c={MUTED} lineClamp={2} mt={2}>{c.preview}</Text>
-                            <Text size="xs" c={MUTED} mt={4} style={{ opacity: 0.7 }}>{timeAgo(c.last_message_at)}</Text>
-                          </UnstyledButton>
+                          <Box style={{ flex: 1, minWidth: 0 }}>
+                            {renamingId === c.conversation_id ? (
+                              <TextInput
+                                value={renameValue}
+                                onChange={(e) => setRenameValue(e.currentTarget.value)}
+                                onBlur={() => commitRename(c)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") commitRename(c);
+                                  if (e.key === "Escape") setRenamingId(null);
+                                }}
+                                size="xs"
+                                autoFocus
+                                onClick={(e) => e.stopPropagation()}
+                                styles={{ input: { fontWeight: 700, fontSize: rem(13.5), color: INK, padding: `${rem(2)} ${rem(6)}` } }}
+                              />
+                            ) : (
+                              <Box onClick={() => openConversation(c)} style={{ width: "100%", textAlign: "left", cursor: "pointer" }}>
+                                <Group gap={4} align="center" wrap="nowrap">
+                                  <Text size="sm" fw={700} c={INK} truncate style={{ flex: 1, minWidth: 0 }}>{c.title}</Text>
+                                  <UnstyledButton
+                                    onClick={(e) => { e.stopPropagation(); startRename(c); }}
+                                    style={{ display: "flex", alignItems: "center", color: "#94A3B8", flexShrink: 0 }}
+                                  >
+                                    <IconPencil size={12} stroke={1.5} />
+                                  </UnstyledButton>
+                                </Group>
+                                {c.session_name && (
+                                  <Text size="xs" c={PRIMARY} fw={600} mt={2} truncate>{c.session_name}</Text>
+                                )}
+                                <Text size="xs" c={MUTED} lineClamp={2} mt={2}>{c.preview}</Text>
+                                <Text size="xs" c={MUTED} mt={4} style={{ opacity: 0.7 }}>{timeAgo(c.last_message_at)}</Text>
+                              </Box>
+                            )}
+                          </Box>
                           <Group gap={2} wrap="nowrap">
                             <UnstyledButton onClick={() => togglePin(c)} style={{ flexShrink: 0, padding: rem(4) }}>
                               {c.pinned ? (
@@ -657,9 +749,9 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                   </Box>
                 ))}
 
-                {messages.length === 1 && !loading && (
+                {messages.length === 1 && !loading && starterPrompts.length > 0 && (
                   <Group gap={6} wrap="wrap" style={{ paddingLeft: rem(4) }}>
-                    {STARTER_PROMPTS.map((p) => (
+                    {starterPrompts.map((p) => (
                       <UnstyledButton
                         key={p}
                         onClick={() => handleSend(p)}

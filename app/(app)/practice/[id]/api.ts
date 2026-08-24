@@ -319,3 +319,20 @@ export async function submitQuestionGroup(
 export async function completeSession(sessionId: string): Promise<void> {
   await api.patch(`/api/sessions/${sessionId}/complete`);
 }
+
+// ─── Bookmarks ──────────────────────────────────────────────────────────────
+
+export async function fetchBookmarkedIds(sessionId: string): Promise<Set<string>> {
+  const { data } = await api.get<{ question_ids: string[] }>("/api/bookmarks/question-ids", {
+    params: { session_id: sessionId },
+  });
+  return new Set(data.question_ids ?? []);
+}
+
+export async function addBookmark(questionId: string, sessionId: string): Promise<void> {
+  await api.post(`/api/questions/${questionId}/bookmark`, { session_id: sessionId });
+}
+
+export async function removeBookmark(questionId: string): Promise<void> {
+  await api.delete(`/api/questions/${questionId}/bookmark`);
+}

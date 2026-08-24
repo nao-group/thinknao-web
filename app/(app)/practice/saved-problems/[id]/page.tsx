@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Badge,
   Box,
@@ -14,66 +14,70 @@ import {
   UnstyledButton,
   rem,
 } from "@mantine/core";
-import { LatexText } from "@/components/latex-text";
+import { MarkdownLatexText } from "@/components/markdown-latex-text";
 import { Card } from "@/components/ui/card";
 import {
   IconAlertCircle,
-  IconAtom,
-  IconBook,
   IconBookmarkFilled,
   IconCheck,
   IconChevronLeft,
   IconChevronRight,
-  IconFlask,
-  IconMathFunction,
-  IconMicroscope,
   IconZoomIn,
   IconZoomOut,
   IconZoomReset,
 } from "@tabler/icons-react";
 import { ReportModal } from "@/components/report-modal";
-import { SAVED_PROBLEMS } from "../data";
-import type { SubjectKey, Difficulty } from "../types";
+import { SUBJECT_META } from "../../data";
+import { DIFFICULTY_STYLE, DIFFICULTY_LABEL } from "../components/ProblemRow";
+import { fetchSavedQuestion, removeBookmark } from "../api";
+import type { SavedQuestionDetail } from "../types";
 import { LanguageToggle, type Lang } from "@/components/language-toggle";
 import { OptionRow } from "./components/OptionRow";
 import { ExplanationBox } from "./components/ExplanationBox";
 
 import {
-  INK, SURFACE, PRIMARY, CREAM, MUTED, INDIGO, PANDA, VIOLET, EMERALD,
-  CORRECT_GREEN,
+  INK, SURFACE, PRIMARY, CREAM, MUTED,
 } from "@/constants/colors";
 
-// ─── Styling constants ─────────────────────────────────────────────────────────
+// ─── Content extraction — same shape/logic as practice/[id]/page.tsx's SummaryView ──
 
-const DIFFICULTY_STYLE: Record<Difficulty, { bg: string; color: string }> = {
-  Easy: { bg: "#DCFCE7", color: "#16A34A" },
-  Medium: { bg: CREAM, color: PRIMARY },
-  Hard: { bg: "#FEE2E2", color: "#DC2626" },
-};
+function getQuestionText(content: SavedQuestionDetail["content_en"] | undefined): string {
+  const q = content?.question;
+  if (!q) return "";
+  if (typeof q === "string") return q;
+  return Object.values(q)[0] ?? "";
+}
 
-const SUBJECT_META: Record<SubjectKey, { icon: React.ElementType; iconBg: string; iconColor: string }> = {
-  Mathematics:            { icon: IconMathFunction, iconBg: CREAM,     iconColor: PRIMARY  },
-  Physics:                { icon: IconAtom,         iconBg: "#EEF0FF", iconColor: INDIGO   },
-  Chemistry:              { icon: IconFlask,        iconBg: "#FDF0EC", iconColor: PANDA    },
-  "Liberal Arts Chinese": { icon: IconBook,         iconBg: "#F5F3FF", iconColor: VIOLET   },
-  "Science Chinese":      { icon: IconMicroscope,   iconBg: "#ECFDF5", iconColor: EMERALD  },
-};
+function getOptions(content: SavedQuestionDetail["content_en"] | undefined): { key: string; text: string }[] {
+  const answer = content?.options ?? content?.choices;
+  if (answer && Object.keys(answer).length > 0) return Object.entries(answer).map(([key, text]) => ({ key, text }));
+  return [];
+}
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function SavedProblemDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const id = params.id as string;
+  const searchParams = useSearchParams();
+  const questionId = params.id as string;
 
-  const allProblems = SAVED_PROBLEMS;
-  const currentIndex = allProblems.findIndex((p) => p.id === id);
-  const problem = allProblems[currentIndex];
+  // The list of ids currently shown on the Saved Problems list (whatever page/filter
+  // was active there) — passed through so Prev/Next can walk that same set without
+  // a dedicated "ordered saved questions" endpoint.
+  const idList = (searchParams.get("ids") ?? questionId).split(",").filter(Boolean);
+  const currentIndex = idList.indexOf(questionId);
+  const idsParam = idList.length > 0 ? `?ids=${idList.join(",")}` : "";
+
+  const [problem, setProblem] = useState<SavedQuestionDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [lang, setLang] = useState<Lang>("en");
   const [reportOpen, setReportOpen] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -83,6 +87,20 @@ export default function SavedProblemDetailPage() {
   const ZOOM_STEP = 0.25;
   const ZOOM_MIN = 0.5;
   const ZOOM_MAX = 3;
+
+  useEffect(() => {
+    setLoading(true);
+    setLoadError(null);
+    setSelectedOption(null);
+    setSubmitted(false);
+    fetchSavedQuestion(questionId)
+      .then(setProblem)
+      .catch((err) => {
+        console.error("Failed to load saved question:", err);
+        setLoadError("Failed to load this saved question.");
+      })
+      .finally(() => setLoading(false));
+  }, [questionId]);
 
   function openLightbox() { setZoom(1); setPan({ x: 0, y: 0 }); setLightboxOpen(true); }
 
@@ -110,26 +128,63 @@ export default function SavedProblemDetailPage() {
     if (clamped <= 1) setPan({ x: 0, y: 0 });
   }
 
-  if (!problem) {
+  async function handleUnbookmark() {
+    if (!problem || removing) return;
+    setRemoving(true);
+    try {
+      await removeBookmark(problem.question_id);
+      router.push("/practice/saved-problems");
+    } catch (err) {
+      console.error("Failed to remove bookmark:", err);
+      setRemoving(false);
+    }
+  }
+
+  if (loading) {
     return (
-      <Box p="xl">
-        <Text c="dimmed">Problem not found.</Text>
+      <Box style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, minHeight: "60vh" }}>
+        <Stack align="center" gap="md">
+          <div style={{
+            width: rem(40), height: rem(40), borderRadius: "50%",
+            border: `3px solid ${PRIMARY}`, borderTopColor: "transparent",
+            animation: "spin 0.8s linear infinite",
+          }} />
+          <Text size="sm" c={MUTED}>Loading saved question…</Text>
+        </Stack>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </Box>
     );
   }
 
-  const meta = SUBJECT_META[problem.subject];
+  if (loadError || !problem) {
+    return (
+      <Box style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, minHeight: "60vh" }}>
+        <Stack align="center" gap="md">
+          <IconAlertCircle size={40} color={PRIMARY} stroke={1.5} />
+          <Text size="sm" c={INK} fw={600}>{loadError ?? "Saved question not found."}</Text>
+          <Button variant="outline" color="dark" radius="md" onClick={() => router.push("/practice/saved-problems")}>
+            Back to Saved Problems
+          </Button>
+        </Stack>
+      </Box>
+    );
+  }
+
+  const meta = SUBJECT_META[problem.subject_code ?? ""] ?? SUBJECT_META["MT"];
   const SubjectIcon = meta.icon;
   const diff = DIFFICULTY_STYLE[problem.difficulty];
-  const date = new Date(problem.dateAdded).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const date = new Date(problem.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+  const content = lang === "zh" ? problem.content_zh : problem.content_en;
+  const question = getQuestionText(content) || getQuestionText(problem.content_zh);
+  const options = getOptions(content).length > 0 ? getOptions(content) : getOptions(problem.content_zh);
+  const explanation = lang === "zh" ? problem.explanation_zh : problem.explanation_en;
 
   const hasPrev = currentIndex > 0;
-  const hasNext = currentIndex < allProblems.length - 1;
+  const hasNext = currentIndex >= 0 && currentIndex < idList.length - 1;
 
   function goTo(idx: number) {
-    setSelectedOption(null);
-    setSubmitted(false);
-    router.push(`/practice/saved-problems/${allProblems[idx].id}`);
+    router.push(`/practice/saved-problems/${idList[idx]}${idsParam}`);
   }
 
   return (
@@ -148,22 +203,28 @@ export default function SavedProblemDetailPage() {
                     radius="md"
                     style={{ backgroundColor: INK, color: "white", fontWeight: 700, fontSize: rem(13) }}
                   >
-                    Problem {problem.id}
+                    {problem.code}
                   </Badge>
-                  <Badge
-                    size="md"
-                    radius="md"
-                    style={{ backgroundColor: CREAM, color: PRIMARY, fontWeight: 600 }}
-                  >
-                    {lang === "zh" ? (problem.zh?.topic ?? problem.topic) : problem.topic}
-                  </Badge>
+                  {problem.topic_name && (
+                    <Badge
+                      size="md"
+                      radius="md"
+                      style={{ backgroundColor: CREAM, color: PRIMARY, fontWeight: 600 }}
+                    >
+                      {problem.topic_name}
+                    </Badge>
+                  )}
                 </Group>
                 <Group gap={6}>
                   <LanguageToggle lang={lang} onChange={setLang} />
                   <Badge size="sm" radius="sm" style={{ backgroundColor: diff.bg, color: diff.color, fontWeight: 600 }}>
-                    {problem.difficulty}
+                    {DIFFICULTY_LABEL[problem.difficulty]}
                   </Badge>
-                  <IconBookmarkFilled size={16} color={PRIMARY} />
+                  <Tooltip label="Remove bookmark" withArrow>
+                    <UnstyledButton onClick={handleUnbookmark} disabled={removing} style={{ display: "flex", alignItems: "center" }}>
+                      <IconBookmarkFilled size={16} color={PRIMARY} />
+                    </UnstyledButton>
+                  </Tooltip>
                   <Tooltip label="Report a problem" withArrow>
                     <UnstyledButton
                       onClick={() => setReportOpen(true)}
@@ -181,17 +242,17 @@ export default function SavedProblemDetailPage() {
 
               {/* Question text */}
               <Box p="md" mb="lg" style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}>
-                <Text size="md" c={INK} lh={1.7}>
-                  <LatexText>{lang === "zh" ? (problem.zh?.question ?? problem.question) : problem.question}</LatexText>
-                </Text>
+                <Box fz="md" c={INK} lh={1.7}>
+                  <MarkdownLatexText>{question}</MarkdownLatexText>
+                </Box>
               </Box>
 
               {/* Question image */}
-              {problem.image && (
+              {problem.image_url && (
                 <Box mb="lg" style={{ display: "flex", justifyContent: "center" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={problem.image}
+                    src={problem.image_url}
                     alt="Question figure"
                     onClick={openLightbox}
                     style={{
@@ -207,19 +268,17 @@ export default function SavedProblemDetailPage() {
 
               {/* Options */}
               <Stack gap="sm" mb="lg">
-                {problem.options.map((opt) => {
-                  const isCorrect = opt.key === problem.correctAnswer;
+                {options.map((opt) => {
+                  const isCorrect = opt.key === problem.answer;
                   const isSelected = submitted && opt.key === selectedOption && !isCorrect;
                   const showResult = submitted;
-
-                  const displayText = lang === "zh" ? (opt.text_zh ?? opt.text) : opt.text;
 
                   if (showResult) {
                     return (
                       <OptionRow
                         key={opt.key}
                         optKey={opt.key}
-                        text={displayText}
+                        text={opt.text}
                         isCorrect={isCorrect}
                         isSelected={isSelected}
                       />
@@ -260,16 +319,14 @@ export default function SavedProblemDetailPage() {
                       >
                         {opt.key}
                       </Box>
-                      <Text size="sm" c={INK} fw={chosen ? 600 : 400}><LatexText>{displayText}</LatexText></Text>
+                      <Text size="sm" c={INK} fw={chosen ? 600 : 400}>{opt.text}</Text>
                     </Box>
                   );
                 })}
               </Stack>
 
               {/* Explanation — shown after submit */}
-              {submitted && (
-                <ExplanationBox explanation={lang === "zh" ? (problem.zh?.explanation ?? problem.explanation) : problem.explanation} />
-              )}
+              {submitted && explanation && <ExplanationBox explanation={explanation} />}
             </Card>
 
             {/* Navigation row */}
@@ -287,7 +344,7 @@ export default function SavedProblemDetailPage() {
 
               {submitted ? (
                 <Group gap={6}>
-                  <IconCheck size={15} stroke={2} color={CORRECT_GREEN} />
+                  <IconCheck size={15} stroke={2} color={PRIMARY} />
                   <Text size="sm" c="dimmed" fw={500}>Submitted</Text>
                 </Group>
               ) : (
@@ -322,39 +379,45 @@ export default function SavedProblemDetailPage() {
                   Problem Info
                 </Text>
                 <Stack gap="sm">
-                  <Group justify="space-between">
-                    <Text size="sm" c="dimmed">Subject</Text>
-                    <Group gap={6}>
-                      <Box style={{ width: rem(20), height: rem(20), borderRadius: rem(5), backgroundColor: meta.iconBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <SubjectIcon size={12} stroke={1.5} color={meta.iconColor} />
-                      </Box>
-                      <Text size="sm" fw={600} c={INK}>{problem.subject}</Text>
+                  {problem.subject_name && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Subject</Text>
+                      <Group gap={6}>
+                        <Box style={{ width: rem(20), height: rem(20), borderRadius: rem(5), backgroundColor: meta.iconBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <SubjectIcon size={12} stroke={1.5} color={meta.iconColor} />
+                        </Box>
+                        <Text size="sm" fw={600} c={INK}>{problem.subject_name}</Text>
+                      </Group>
                     </Group>
-                  </Group>
-                  <Group justify="space-between">
-                    <Text size="sm" c="dimmed">Topic</Text>
-                    <Text size="sm" fw={600} c={INK}>{problem.topic}</Text>
-                  </Group>
-                  <Group justify="space-between" align="center">
-                    <Text size="sm" c="dimmed">Practice Set</Text>
-                    <UnstyledButton
-                      onClick={() => router.push(`/practice/${problem.setSlug}`)}
-                      style={{
-                        fontSize: rem(14),
-                        fontWeight: 600,
-                        color: PRIMARY,
-                        textDecoration: "underline",
-                        textUnderlineOffset: rem(3),
-                        cursor: "pointer",
-                      }}
-                    >
-                      {problem.setName}
-                    </UnstyledButton>
-                  </Group>
+                  )}
+                  {problem.topic_name && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Topic</Text>
+                      <Text size="sm" fw={600} c={INK}>{problem.topic_name}</Text>
+                    </Group>
+                  )}
+                  {problem.session_name && problem.session_id && (
+                    <Group justify="space-between" align="center">
+                      <Text size="sm" c="dimmed">Practice Set</Text>
+                      <UnstyledButton
+                        onClick={() => router.push(`/practice/${problem.session_id}`)}
+                        style={{
+                          fontSize: rem(14),
+                          fontWeight: 600,
+                          color: PRIMARY,
+                          textDecoration: "underline",
+                          textUnderlineOffset: rem(3),
+                          cursor: "pointer",
+                        }}
+                      >
+                        {problem.session_name}
+                      </UnstyledButton>
+                    </Group>
+                  )}
                   <Group justify="space-between">
                     <Text size="sm" c="dimmed">Difficulty</Text>
                     <Badge size="sm" radius="sm" style={{ backgroundColor: diff.bg, color: diff.color, fontWeight: 600 }}>
-                      {problem.difficulty}
+                      {DIFFICULTY_LABEL[problem.difficulty]}
                     </Badge>
                   </Group>
                   <Group justify="space-between">
@@ -365,34 +428,36 @@ export default function SavedProblemDetailPage() {
               </Card>
 
               {/* Problem counter */}
-              <Card p="lg">
-                <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mb="md">
-                  Saved Problems
-                </Text>
-                <Group justify="space-between" align="center">
-                  <Text fw={700} size="xl" c={INK}>{currentIndex + 1}</Text>
-                  <Text size="sm" c="dimmed">of {allProblems.length}</Text>
-                </Group>
-                <Box
-                  mt="sm"
-                  style={{
-                    height: rem(6),
-                    borderRadius: rem(999),
-                    backgroundColor: SURFACE,
-                    overflow: "hidden",
-                  }}
-                >
+              {currentIndex >= 0 && idList.length > 1 && (
+                <Card p="lg">
+                  <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mb="md">
+                    Saved Problems
+                  </Text>
+                  <Group justify="space-between" align="center">
+                    <Text fw={700} size="xl" c={INK}>{currentIndex + 1}</Text>
+                    <Text size="sm" c="dimmed">of {idList.length}</Text>
+                  </Group>
                   <Box
+                    mt="sm"
                     style={{
-                      height: "100%",
-                      width: `${((currentIndex + 1) / allProblems.length) * 100}%`,
-                      backgroundColor: PRIMARY,
+                      height: rem(6),
                       borderRadius: rem(999),
-                      transition: "width 300ms ease",
+                      backgroundColor: SURFACE,
+                      overflow: "hidden",
                     }}
-                  />
-                </Box>
-              </Card>
+                  >
+                    <Box
+                      style={{
+                        height: "100%",
+                        width: `${((currentIndex + 1) / idList.length) * 100}%`,
+                        backgroundColor: PRIMARY,
+                        borderRadius: rem(999),
+                        transition: "width 300ms ease",
+                      }}
+                    />
+                  </Box>
+                </Card>
+              )}
 
               {/* Back button */}
               <Button
@@ -410,7 +475,7 @@ export default function SavedProblemDetailPage() {
       </Box>
 
       {/* Image lightbox */}
-      {problem?.image && (
+      {problem.image_url && (
         <Modal
           opened={lightboxOpen}
           onClose={() => setLightboxOpen(false)}
@@ -526,7 +591,7 @@ export default function SavedProblemDetailPage() {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={problem.image}
+                src={problem.image_url}
                 alt="Question figure"
                 draggable={false}
                 style={{
@@ -548,10 +613,11 @@ export default function SavedProblemDetailPage() {
       <ReportModal opened={reportOpen} onClose={() => setReportOpen(false)} />
 
       {/*
-        FloatingChatbot removed here: this page is backed by the local SAVED_PROBLEMS
-        mock (no real `sessions` row), and the chatbot API now requires a real
-        session_id/question_id for its ownership check and context assembly.
-        Re-add once saved problems are backed by a real session.
+        No FloatingChatbot on this page — each saved question can come from a
+        different session, and the chatbot's context (mastery summary, sibling
+        Problems in the session, etc.) is grounded in one specific session, not
+        a cross-session shortlist like this. Ask about a saved question from
+        its own practice session instead.
       */}
     </Box>
   );

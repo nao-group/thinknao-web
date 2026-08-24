@@ -9,29 +9,21 @@ import {
   UnstyledButton,
   rem,
 } from "@mantine/core";
-import {
-  IconAtom,
-  IconBook,
-  IconBookmarkFilled,
-  IconFlask,
-  IconMathFunction,
-  IconMicroscope,
-} from "@tabler/icons-react";
-import type { SubjectKey, Difficulty, SavedProblem } from "../types";
-import { INK, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
+import { IconBookmarkFilled } from "@tabler/icons-react";
+import type { Difficulty, SavedQuestion } from "../types";
+import { INK, PRIMARY, CREAM } from "@/constants/colors";
+import { SUBJECT_META } from "../../data";
 
 export const DIFFICULTY_STYLE: Record<Difficulty, { bg: string; color: string }> = {
-  Easy: { bg: "#DCFCE7", color: "#16A34A" },
-  Medium: { bg: CREAM, color: PRIMARY },
-  Hard: { bg: "#FEE2E2", color: "#DC2626" },
+  easy: { bg: "#DCFCE7", color: "#16A34A" },
+  medium: { bg: CREAM, color: PRIMARY },
+  hard: { bg: "#FEE2E2", color: "#DC2626" },
 };
 
-export const SUBJECT_META: Record<SubjectKey, { icon: React.ElementType; iconBg: string; iconColor: string }> = {
-  Mathematics: { icon: IconMathFunction, iconBg: CREAM, iconColor: PRIMARY },
-  Physics: { icon: IconAtom, iconBg: "#EEF0FF", iconColor: INDIGO },
-  Chemistry: { icon: IconFlask, iconBg: "#FDF0EC", iconColor: PANDA },
-  "Liberal Arts Chinese": { icon: IconBook,        iconBg: "#F5F3FF", iconColor: VIOLET  },
-  "Science Chinese":      { icon: IconMicroscope,  iconBg: "#ECFDF5", iconColor: EMERALD },
+export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
+  easy: "Easy",
+  medium: "Medium",
+  hard: "Hard",
 };
 
 export function ProblemRow({
@@ -39,19 +31,19 @@ export function ProblemRow({
   onRemove,
   onView,
 }: {
-  problem: SavedProblem;
+  problem: SavedQuestion;
   onRemove: (id: string) => void;
   onView: (id: string) => void;
 }) {
-  const meta = SUBJECT_META[problem.subject];
+  const meta = SUBJECT_META[problem.subject_code ?? ""] ?? SUBJECT_META["MT"];
   const Icon = meta.icon;
   const diff = DIFFICULTY_STYLE[problem.difficulty];
-  const date = new Date(problem.dateAdded).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const date = new Date(problem.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   return (
     <Box
       className="hover-zoom"
-      onClick={() => onView(problem.id)}
+      onClick={() => onView(problem.question_id)}
       style={{
         display: "flex",
         alignItems: "flex-start",
@@ -92,22 +84,24 @@ export function ProblemRow({
             overflow: "hidden",
           }}
         >
-          {problem.question}
+          {problem.question_text}
         </Text>
         <Group gap={6} align="center">
-          <Badge
-            size="xs"
-            radius="sm"
-            style={{ backgroundColor: meta.iconBg, color: meta.iconColor, fontWeight: 600 }}
-          >
-            {problem.subject}
-          </Badge>
+          {problem.subject_name && (
+            <Badge
+              size="xs"
+              radius="sm"
+              style={{ backgroundColor: meta.iconBg, color: meta.iconColor, fontWeight: 600 }}
+            >
+              {problem.subject_name}
+            </Badge>
+          )}
           <Badge
             size="xs"
             radius="sm"
             style={{ backgroundColor: diff.bg, color: diff.color, fontWeight: 600 }}
           >
-            {problem.difficulty}
+            {DIFFICULTY_LABEL[problem.difficulty]}
           </Badge>
           <Text size="xs" c="dimmed">
             · Saved {date}
@@ -118,7 +112,7 @@ export function ProblemRow({
       {/* Remove */}
       <Tooltip label="Remove bookmark" position="left" withArrow>
         <UnstyledButton
-          onClick={(e) => { e.stopPropagation(); onRemove(problem.id); }}
+          onClick={(e) => { e.stopPropagation(); onRemove(problem.question_id); }}
           style={{
             width: rem(32),
             height: rem(32),
