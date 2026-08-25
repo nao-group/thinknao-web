@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Group, Stack, Text, TextInput, Tooltip, UnstyledButton, rem } from "@mantine/core";
+import { Box, Group, Stack, Text, Textarea, TextInput, Tooltip, UnstyledButton, rem } from "@mantine/core";
 import {
   IconArrowLeft,
   IconHistory,
@@ -12,7 +12,7 @@ import {
   IconPinFilled,
   IconPlus,
   IconSearch,
-  IconSend,
+  IconSend2,
   IconSparkles,
   IconTrash,
   IconX,
@@ -25,6 +25,7 @@ interface Message {
   role: "user" | "assistant";
   text: string;
   type?: "text" | "practice_set";
+  timestamp?: Date;
 }
 
 interface FloatingChatbotProps {
@@ -35,8 +36,6 @@ interface FloatingChatbotProps {
 }
 
 const GREETING = "Hi! I'm here to help you understand this problem. Feel free to ask anything about it.";
-const THINKING = "Thinking about the best answer…";
-const PANEL_WIDTH = 400;
 
 interface HistoryMessage {
   role: string;
@@ -54,8 +53,6 @@ interface ConversationSummary {
   preview: string;
 }
 
-// Same ordering the backend uses (pinned first, then most recently active) — applied
-// client-side too so a pin/unpin re-sorts the list immediately, no refetch needed.
 function sortConversations(list: ConversationSummary[]): ConversationSummary[] {
   return [...list].sort((a, b) => {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
@@ -75,6 +72,10 @@ interface PracticeQuestion {
 function authHeaders(): Record<string, string> {
   const token = useAuthStore.getState().accessToken;
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
 // ─── /practice command rendering ───────────────────────────────────────────
@@ -146,14 +147,38 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"chat" | "history">("chat");
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", text: GREETING },
+    { role: "assistant", text: GREETING, timestamp: new Date() },
   ]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const historyLoadedForSession = useRef<string | null>(null);
+
+  const [panelWidth, setPanelWidth] = useState(400);
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(400);
+
+  useEffect(() => {
+    function onMouseMove(e: MouseEvent) {
+      if (!isDragging.current) return;
+      const next = dragStartWidth.current + (dragStartX.current - e.clientX);
+      setPanelWidth(Math.min(Math.max(next, 320), window.innerWidth * 0.85));
+    }
+    function onMouseUp() {
+      isDragging.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, []);
 
   const [historyList, setHistoryList] = useState<ConversationSummary[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -163,12 +188,6 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
   const [renameValue, setRenameValue] = useState("");
   const [starterPrompts, setStarterPrompts] = useState<string[]>([]);
 
-  // Suggested prompts come from the API only (Redis-cached per question_id server-side —
-  // see routers/chatbot.py). Deliberately NOT duplicated as a local constant: the server
-  // is the single source of truth, so changing the list there takes effect everywhere
-  // without a frontend deploy, and there's no stale copy to flash on first paint.
-  // On failure the list stays empty and the chips simply don't render — they're a
-  // convenience affordance, and the student can always just type instead.
   useEffect(() => {
     if (!questionId) return;
     let cancelled = false;
@@ -181,14 +200,10 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
       .then((data: { prompts: string[] } | null) => {
         if (!cancelled && data?.prompts?.length) setStarterPrompts(data.prompts);
       })
-      .catch(() => {
-        // no chips this time — not worth surfacing an error for
-      });
+      .catch(() => {});
     return () => { cancelled = true; };
   }, [questionId]);
 
-  // Fetch one specific conversation's thread (or "most recent for this session" if
-  // conversationId is omitted) and load it into view.
   async function loadConversation(targetConversationId?: string) {
     try {
       const params = targetConversationId ? `?conversation_id=${targetConversationId}` : "";
@@ -206,23 +221,19 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
               text: m.content,
               type: m.type === "practice_set" ? "practice_set" : "text",
             }))
-          : [{ role: "assistant", text: GREETING }]
+          : [{ role: "assistant", text: GREETING, timestamp: new Date() }]
       );
     } catch {
       // Keep whatever's already showing if this fails.
     }
   }
 
-  // Reset the visible thread when the session changes (not on every question navigation —
-  // the conversation is scoped to the whole practice session, per the technical plan).
   useEffect(() => {
-    setMessages([{ role: "assistant", text: GREETING }]);
+    setMessages([{ role: "assistant", text: GREETING, timestamp: new Date() }]);
     setConversationId(null);
     historyLoadedForSession.current = null;
   }, [sessionId]);
 
-  // Restore the most recent thread the first time the panel is opened for this session —
-  // unless a specific conversation was requested via history navigation (see openConversation).
   useEffect(() => {
     if (!open || !sessionId || historyLoadedForSession.current === sessionId) return;
     historyLoadedForSession.current = sessionId;
@@ -243,7 +254,6 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
     loadConversation();
   }, [open, sessionId]);
 
-  // Auto-open the panel if we just navigated here to jump into a specific past conversation.
   useEffect(() => {
     const pendingRaw = sessionStorage.getItem("chatbot_open_conversation");
     if (!pendingRaw) return;
@@ -255,7 +265,6 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
     }
   }, [sessionId]);
 
-  // Load the conversation-history list whenever the history view is opened, and on search.
   useEffect(() => {
     if (!open || view !== "history") return;
     let cancelled = false;
@@ -285,22 +294,18 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
     };
   }, [open, view, historySearch]);
 
-  // Scroll to bottom whenever messages update
   useEffect(() => {
     if (open && view === "chat") {
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     }
   }, [messages, open, view]);
 
-  // Focus input when panel opens
   useEffect(() => {
     if (open && view === "chat") setTimeout(() => inputRef.current?.focus(), 100);
   }, [open, view]);
 
   async function togglePin(conv: ConversationSummary) {
     const nextPinned = !conv.pinned;
-    // Re-sort immediately (not just flip the flag in place) so a newly-pinned chat
-    // jumps to the top of the list right away, without waiting on a refetch.
     setHistoryList((prev) =>
       sortConversations(prev.map((c) => (c.conversation_id === conv.conversation_id ? { ...c, pinned: nextPinned } : c)))
     );
@@ -314,7 +319,6 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
         }
       );
     } catch {
-      // revert on failure
       setHistoryList((prev) =>
         sortConversations(prev.map((c) => (c.conversation_id === conv.conversation_id ? { ...c, pinned: conv.pinned } : c)))
       );
@@ -345,7 +349,6 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
         }
       );
     } catch {
-      // revert on failure
       setHistoryList((prev) =>
         prev.map((c) => (c.conversation_id === conv.conversation_id ? { ...c, title: previousTitle } : c))
       );
@@ -364,10 +367,9 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
       );
       if (!res.ok) throw new Error("delete failed");
 
-      // If we just deleted the thread currently on screen, don't leave it displayed.
       if (conv.conversation_id === conversationId) {
         setConversationId(null);
-        setMessages([{ role: "assistant", text: GREETING }]);
+        setMessages([{ role: "assistant", text: GREETING, timestamp: new Date() }]);
       }
     } catch {
       setHistoryList(previousList);
@@ -376,15 +378,10 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
 
   function openConversation(conv: ConversationSummary) {
     if (conv.session_id === sessionId) {
-      // Already on the right session — just switch back to the chat view and load
-      // that specific thread. No navigation, no closing the panel.
       setView("chat");
       loadConversation(conv.conversation_id);
       return;
     }
-    // Different session — the bot's context is grounded in whatever session page
-    // we're on, so we do need to navigate. Stash the target conversation so the
-    // destination page's FloatingChatbot instance auto-opens straight into it.
     sessionStorage.setItem(
       "chatbot_open_conversation",
       JSON.stringify({ sessionId: conv.session_id, conversationId: conv.conversation_id })
@@ -402,7 +399,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
       if (!res.ok) return;
       const data: { conversation_id: string } = await res.json();
       setConversationId(data.conversation_id);
-      setMessages([{ role: "assistant", text: GREETING }]);
+      setMessages([{ role: "assistant", text: GREETING, timestamp: new Date() }]);
       setView("chat");
     } catch {
       // leave the current thread showing if this fails
@@ -414,7 +411,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
     if (!text || loading || !questionId) return;
     if (!overrideText) setInput("");
     const isPracticeCmd = text.toLowerCase().startsWith("/practice");
-    setMessages((prev) => [...prev, { role: "user", text }]);
+    setMessages((prev) => [...prev, { role: "user", text, timestamp: new Date() }]);
     setLoading(true);
 
     let started = false;
@@ -432,7 +429,6 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
       });
 
       if (!res.ok || !res.body) {
-        // Surface the backend's actual reason (e.g. a hard-cap message) instead of a generic error.
         let detail = "Sorry, I couldn't connect right now. Please try again.";
         try {
           const errBody = await res.json();
@@ -445,6 +441,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
+      const replyTimestamp = new Date();
 
       while (true) {
         const { done, value } = await reader.read();
@@ -457,7 +454,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
           setLoading(false);
           setMessages((prev) => [
             ...prev,
-            { role: "assistant", text: chunk, type: isPracticeCmd ? "practice_set" : "text" },
+            { role: "assistant", text: chunk, type: isPracticeCmd ? "practice_set" : "text", timestamp: replyTimestamp },
           ]);
         } else {
           setMessages((prev) => {
@@ -472,7 +469,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
       const errorText = err instanceof Error && err.message
         ? err.message
         : "Sorry, I couldn't connect right now. Please try again.";
-      setMessages((prev) => [...prev, { role: "assistant", text: errorText }]);
+      setMessages((prev) => [...prev, { role: "assistant", text: errorText, timestamp: new Date() }]);
     } finally {
       setLoading(false);
     }
@@ -488,6 +485,8 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
     return `${Math.floor(hours / 24)}d ago`;
   }
 
+  const canSend = !!input.trim() && !loading;
+
   return (
     <>
       {/* ── Sliding panel ── */}
@@ -497,23 +496,43 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
           top: 0,
           right: 0,
           bottom: 0,
-          width: rem(PANEL_WIDTH),
+          width: rem(panelWidth),
           maxWidth: "92vw",
           backgroundColor: "white",
-          boxShadow: "-8px 0 32px rgba(0,0,0,0.14)",
+          boxShadow: "-4px 0 24px rgba(0,0,0,0.10)",
           display: "flex",
           flexDirection: "column",
           zIndex: 9998,
-          transform: open ? "translateX(0)" : `translateX(${PANEL_WIDTH}px)`,
-          transition: "transform 220ms ease",
+          transform: open ? "translateX(0)" : `translateX(${panelWidth}px)`,
+          transition: isDragging.current ? "none" : "transform 220ms ease",
         }}
       >
-        {/* Header */}
+        {/* Drag-to-resize handle */}
+        <Box
+          onMouseDown={(e) => {
+            isDragging.current = true;
+            dragStartX.current = e.clientX;
+            dragStartWidth.current = panelWidth;
+            document.body.style.cursor = "ew-resize";
+            document.body.style.userSelect = "none";
+          }}
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: rem(6),
+            cursor: "ew-resize",
+            zIndex: 1,
+          }}
+        />
+        {/* ── Header ── */}
         <Box
           px="md"
-          py="sm"
+          py="md"
           style={{
-            background: `linear-gradient(135deg, ${INK} 0%, #252060 100%)`,
+            backgroundColor: "white",
+            borderBottom: "1px solid #F1F5F9",
             flexShrink: 0,
           }}
         >
@@ -522,58 +541,64 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
               <Group gap={8}>
                 <UnstyledButton
                   onClick={() => { setView("chat"); setPendingDeleteId(null); }}
-                  style={{ width: rem(28), height: rem(28), display: "flex", alignItems: "center", justifyContent: "center" }}
+                  style={{
+                    width: rem(30), height: rem(30), borderRadius: rem(8),
+                    border: "1px solid #E2E8F0",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}
                 >
-                  <IconArrowLeft size={16} stroke={1.8} color="white" />
+                  <IconArrowLeft size={15} stroke={1.8} color={INK} />
                 </UnstyledButton>
-                <Text fw={700} size="sm" c="white" lh={1.2}>Chat history</Text>
+                <Text fw={700} size="sm" c={INK}>Chat history</Text>
               </Group>
             ) : (
-              <Group gap={8}>
+              <Group gap={10}>
                 <Box
                   style={{
-                    width: rem(28),
-                    height: rem(28),
-                    borderRadius: rem(8),
-                    backgroundColor: "rgba(255,255,255,0.12)",
+                    width: rem(34),
+                    height: rem(34),
+                    borderRadius: rem(9),
+                    backgroundColor: SURFACE,
+                    border: "1px solid #E2E8F0",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <IconSparkles size={15} stroke={1.5} color={PRIMARY} />
+                  <IconSparkles size={16} stroke={1.5} color={PRIMARY} />
                 </Box>
                 <Box>
-                  <Text fw={700} size="sm" c="white" lh={1.2}>AI Tutor</Text>
-                  <Text size="xs" c="rgba(255,255,255,0.5)" lh={1.2}>Ask about this problem</Text>
+                  <Text fw={700} size="sm" c={INK} lh={1.25}>AI Tutor</Text>
+                  <Text size="xs" c={MUTED} lh={1.25}>Unlimited chat access</Text>
                 </Box>
               </Group>
             )}
-            <Group gap={4}>
+
+            <Group gap={6}>
               {view === "chat" && (
                 <>
                   <Tooltip label="New chat" position="bottom" withArrow>
                     <UnstyledButton
                       onClick={startNewChat}
                       style={{
-                        width: rem(28), height: rem(28), borderRadius: "50%",
-                        backgroundColor: "rgba(255,255,255,0.1)",
+                        width: rem(30), height: rem(30), borderRadius: rem(8),
+                        border: "1px solid #E2E8F0",
                         display: "flex", alignItems: "center", justifyContent: "center",
                       }}
                     >
-                      <IconPlus size={15} stroke={1.8} color="rgba(255,255,255,0.85)" />
+                      <IconPlus size={15} stroke={2} color={INK} />
                     </UnstyledButton>
                   </Tooltip>
                   <Tooltip label="Chat history" position="bottom" withArrow>
                     <UnstyledButton
                       onClick={() => setView("history")}
                       style={{
-                        width: rem(28), height: rem(28), borderRadius: "50%",
-                        backgroundColor: "rgba(255,255,255,0.1)",
+                        width: rem(30), height: rem(30), borderRadius: rem(8),
+                        border: "1px solid #E2E8F0",
                         display: "flex", alignItems: "center", justifyContent: "center",
                       }}
                     >
-                      <IconHistory size={15} stroke={1.6} color="rgba(255,255,255,0.85)" />
+                      <IconHistory size={15} stroke={1.6} color={INK} />
                     </UnstyledButton>
                   </Tooltip>
                 </>
@@ -581,12 +606,12 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
               <UnstyledButton
                 onClick={() => setOpen(false)}
                 style={{
-                  width: rem(28), height: rem(28), borderRadius: "50%",
-                  backgroundColor: "rgba(255,255,255,0.1)",
+                  width: rem(30), height: rem(30), borderRadius: rem(8),
+                  border: "1px solid #E2E8F0",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}
               >
-                <IconX size={14} stroke={2} color="rgba(255,255,255,0.8)" />
+                <IconX size={14} stroke={2} color={INK} />
               </UnstyledButton>
             </Group>
           </Group>
@@ -713,44 +738,91 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
           </>
         ) : (
           <>
-            {/* Messages */}
-            <Box style={{ flex: 1, overflowY: "auto", padding: rem(12), backgroundColor: "#FAFBFC" }}>
-              <Stack gap={8}>
-                {messages.map((m, i) => (
-                  <Box
-                    key={i}
-                    style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}
-                  >
-                    <Box
-                      px="sm"
-                      py="xs"
-                      style={{
-                        backgroundColor: m.role === "user" ? INK : "white",
-                        borderRadius: m.role === "user"
-                          ? `${rem(12)} ${rem(12)} ${rem(4)} ${rem(12)}`
-                          : `${rem(12)} ${rem(12)} ${rem(12)} ${rem(4)}`,
-                        maxWidth: m.type === "practice_set" ? "96%" : "82%",
-                        boxShadow: m.role === "assistant" ? "0 1px 4px rgba(0,0,0,0.06)" : "none",
-                        border: m.role === "assistant" ? "1px solid #F1F5F9" : "none",
-                      }}
-                    >
-                      {m.role === "assistant" ? (
-                        m.type === "practice_set" ? (
+            {/* ── Messages ── */}
+            <Box style={{ flex: 1, overflowY: "auto", padding: rem(16), backgroundColor: "white" }}>
+              <Stack gap={20}>
+                {messages.map((m, i) =>
+                  m.role === "user" ? (
+                    /* User message — right aligned */
+                    <Box key={i} style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: rem(10) }}>
+                      <Box style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", maxWidth: m.type === "practice_set" ? "94%" : "78%" }}>
+                        <Group gap={6} mb={5} align="center">
+                          {m.timestamp && (
+                            <Text size="xs" c={MUTED} lh={1}>{formatTime(m.timestamp)}</Text>
+                          )}
+                          <Text size="xs" fw={700} c={INK} lh={1}>You</Text>
+                        </Group>
+                        <Box
+                          px="md"
+                          py="sm"
+                          style={{
+                            backgroundColor: INK,
+                            borderRadius: `${rem(14)} ${rem(14)} ${rem(4)} ${rem(14)}`,
+                          }}
+                        >
+                          <Text size="sm" c="white" lh={1.6}>{m.text}</Text>
+                        </Box>
+                      </Box>
+                      {/* User avatar */}
+                      <Box
+                        style={{
+                          width: rem(30),
+                          height: rem(30),
+                          borderRadius: "50%",
+                          backgroundColor: INK,
+                          border: "2px solid #E2E8F0",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          marginBottom: rem(2),
+                        }}
+                      >
+                        <Text size="xs" fw={800} c="white" style={{ fontSize: rem(11) }}>Y</Text>
+                      </Box>
+                    </Box>
+                  ) : (
+                    /* AI message — left aligned */
+                    <Box key={i} style={{ display: "flex", justifyContent: "flex-start", alignItems: "flex-start", gap: rem(10) }}>
+                      {/* AI avatar */}
+                      <Box
+                        style={{
+                          width: rem(30),
+                          height: rem(30),
+                          borderRadius: rem(8),
+                          backgroundColor: SURFACE,
+                          border: "1px solid #E2E8F0",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          marginTop: rem(22),
+                        }}
+                      >
+                        <IconSparkles size={14} stroke={1.5} color={PRIMARY} />
+                      </Box>
+                      <Box style={{ maxWidth: m.type === "practice_set" ? "94%" : "82%" }}>
+                        <Group gap={6} mb={5} align="center">
+                          <Text size="xs" fw={700} c={INK} lh={1}>AI Tutor</Text>
+                          {m.timestamp && (
+                            <Text size="xs" c={MUTED} lh={1}>{formatTime(m.timestamp)}</Text>
+                          )}
+                        </Group>
+                        {m.type === "practice_set" ? (
                           <PracticeSetMessage text={m.text} />
                         ) : (
-                          <Box fz="sm">
+                          <Box fz="sm" style={{ lineHeight: 1.65, color: INK }}>
                             <MarkdownLatexText>{m.text}</MarkdownLatexText>
                           </Box>
-                        )
-                      ) : (
-                        <Text size="sm" c="white" lh={1.55}>{m.text}</Text>
-                      )}
+                        )}
+                      </Box>
                     </Box>
-                  </Box>
-                ))}
+                  )
+                )}
 
+                {/* Starter prompt chips */}
                 {messages.length === 1 && !loading && starterPrompts.length > 0 && (
-                  <Group gap={6} wrap="wrap" style={{ paddingLeft: rem(4) }}>
+                  <Group gap={6} wrap="wrap" style={{ paddingLeft: rem(40) }}>
                     {starterPrompts.map((p) => (
                       <UnstyledButton
                         key={p}
@@ -760,7 +832,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                           padding: `${rem(6)} ${rem(10)}`,
                           borderRadius: rem(999),
                           border: "1px solid #E2E8F0",
-                          backgroundColor: "white",
+                          backgroundColor: SURFACE,
                           color: INK,
                           lineHeight: 1.3,
                         }}
@@ -771,32 +843,32 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                   </Group>
                 )}
 
+                {/* Thinking indicator */}
                 {loading && (
-                  <Box style={{ display: "flex", justifyContent: "flex-start" }}>
+                  <Box style={{ display: "flex", alignItems: "flex-start", gap: rem(10) }}>
                     <Box
-                      px="sm"
-                      py="xs"
                       style={{
-                        backgroundColor: "white",
-                        borderRadius: `${rem(12)} ${rem(12)} ${rem(12)} ${rem(4)}`,
-                        border: "1px solid #F1F5F9",
-                        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                        width: rem(30), height: rem(30), borderRadius: rem(8),
+                        backgroundColor: SURFACE, border: "1px solid #E2E8F0",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        flexShrink: 0, marginTop: rem(22),
                       }}
                     >
-                      <Group gap={8} wrap="nowrap">
-                        <Text size="sm" c={INK} lh={1.55} style={{ opacity: 0.65 }}>{THINKING}</Text>
-                        <Group gap={4}>
-                          {[0, 1, 2].map((d) => (
-                            <Box
-                              key={d}
-                              style={{
-                                width: rem(6), height: rem(6), borderRadius: "50%",
-                                backgroundColor: "#CBD5E1",
-                                animation: `pulse 1.2s ease-in-out ${d * 0.2}s infinite`,
-                              }}
-                            />
-                          ))}
-                        </Group>
+                      <IconSparkles size={14} stroke={1.5} color={PRIMARY} />
+                    </Box>
+                    <Box>
+                      <Text size="xs" fw={700} c={INK} mb={6} lh={1}>AI Tutor</Text>
+                      <Group gap={5} align="center">
+                        {[0, 1, 2].map((d) => (
+                          <Box
+                            key={d}
+                            style={{
+                              width: rem(7), height: rem(7), borderRadius: "50%",
+                              backgroundColor: "#CBD5E1",
+                              animation: `pulse 1.2s ease-in-out ${d * 0.2}s infinite`,
+                            }}
+                          />
+                        ))}
                       </Group>
                     </Box>
                   </Box>
@@ -806,33 +878,65 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
               </Stack>
             </Box>
 
-            {/* Input */}
-            <Box px="sm" py="sm" style={{ borderTop: "1px solid #F1F5F9", backgroundColor: "white", flexShrink: 0 }}>
-              <Group gap="xs" align="center" wrap="nowrap">
-                <TextInput
+            {/* ── Input composer ── */}
+            <Box px="md" py="md" style={{ borderTop: "1px solid #F1F5F9", backgroundColor: "white", flexShrink: 0 }}>
+              <Box
+                style={{
+                  border: `1.5px solid ${input.trim() ? "#CBD5E1" : "#E2E8F0"}`,
+                  borderRadius: rem(16),
+                  backgroundColor: SURFACE,
+                  overflow: "hidden",
+                  transition: "border-color 150ms ease",
+                }}
+              >
+                <Textarea
                   ref={inputRef}
-                  placeholder="Ask about this problem, or type /practice…"
+                  placeholder="Ask something..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
-                  style={{ flex: 1 }}
-                  size="sm"
-                  styles={{ input: { borderRadius: rem(10), fontSize: rem(13), border: "1.5px solid #E2E8F0", backgroundColor: SURFACE } }}
-                />
-                <UnstyledButton
-                  onClick={() => handleSend()}
-                  disabled={!input.trim() || loading}
-                  style={{
-                    width: rem(34), height: rem(34), borderRadius: rem(10),
-                    backgroundColor: input.trim() && !loading ? PRIMARY : "#E2E8F0",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    flexShrink: 0, transition: "background-color 150ms ease",
-                    cursor: input.trim() && !loading ? "pointer" : "default",
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
                   }}
-                >
-                  <IconSend size={16} stroke={1.5} color={input.trim() && !loading ? "white" : "#94A3B8"} />
-                </UnstyledButton>
-              </Group>
+                  autosize
+                  minRows={1}
+                  maxRows={5}
+                  styles={{
+                    input: {
+                      border: "none",
+                      background: "transparent",
+                      borderRadius: 0,
+                      fontSize: rem(13.5),
+                      padding: `${rem(12)} ${rem(14)}`,
+                      boxShadow: "none",
+                      color: INK,
+                      resize: "none",
+                    },
+                  }}
+                />
+                <Group justify="flex-end" px="sm" pb="sm" pt={2}>
+                  <UnstyledButton
+                    onClick={() => handleSend()}
+                    disabled={!canSend}
+                    style={{
+                      display: "flex", alignItems: "center", gap: rem(5),
+                      padding: `${rem(6)} ${rem(12)}`,
+                      borderRadius: rem(999),
+                      backgroundColor: canSend ? INK : "#E2E8F0",
+                      color: canSend ? "white" : MUTED,
+                      fontSize: rem(13),
+                      fontWeight: 600,
+                      cursor: canSend ? "pointer" : "default",
+                      transition: "background-color 150ms ease, color 150ms ease",
+                    }}
+                  >
+                    Send
+                    <IconSend2 size={13} stroke={2} />
+                  </UnstyledButton>
+                </Group>
+              </Box>
             </Box>
           </>
         )}

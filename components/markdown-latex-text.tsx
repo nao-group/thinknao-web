@@ -94,6 +94,23 @@ function parseMath(text: string, keyPrefix: string, circleNums: boolean): React.
         />,
       ];
     }
+    if (part.startsWith("\\[") && part.endsWith("\\]")) {
+      return [
+        <span
+          key={key}
+          style={{ display: "block", textAlign: "center", margin: "0.3em 0" }}
+          dangerouslySetInnerHTML={{ __html: renderMath(part.slice(2, -2), true) }}
+        />,
+      ];
+    }
+    if (part.startsWith("\\(") && part.endsWith("\\)")) {
+      return [
+        <span
+          key={key}
+          dangerouslySetInnerHTML={{ __html: renderMath(part.slice(2, -2), false) }}
+        />,
+      ];
+    }
     if (part.startsWith("$") && part.endsWith("$")) {
       return [
         <span
@@ -206,7 +223,10 @@ export function MarkdownLatexText({ children, circleNums = false }: { children: 
 
         const lines = trimmed.split("\n");
         const bulletMatches = lines.map((line) => line.match(BULLET_RE));
-        if (lines.length > 0 && bulletMatches.every(Boolean)) {
+        const hasMixed = bulletMatches.some(Boolean) && !bulletMatches.every(Boolean);
+
+        // Pure bullet block — fast path
+        if (!hasMixed && bulletMatches.every(Boolean)) {
           return (
             <ul key={bi} style={{ margin: "0 0 0.6em 0", paddingLeft: rem(22) }}>
               {lines.map((line, li) => (
@@ -215,6 +235,53 @@ export function MarkdownLatexText({ children, circleNums = false }: { children: 
                 </li>
               ))}
             </ul>
+          );
+        }
+
+        // Mixed block (e.g. intro text followed by bullet lines) — group into segments
+        if (hasMixed) {
+          type Seg = { type: "text" | "bullet"; lines: string[] };
+          const segments: Seg[] = [];
+          lines.forEach((line, li) => {
+            const isBullet = !!bulletMatches[li];
+            const last = segments[segments.length - 1];
+            if (last && last.type === (isBullet ? "bullet" : "text")) {
+              last.lines.push(line);
+            } else {
+              segments.push({ type: isBullet ? "bullet" : "text", lines: [line] });
+            }
+          });
+          return (
+            <div key={bi}>
+              {segments.map((seg, si) => {
+                if (seg.type === "bullet") {
+                  const segMatches = seg.lines.map((l) => l.match(BULLET_RE));
+                  return (
+                    <ul key={si} style={{ margin: "0.2em 0 0.4em 0", paddingLeft: rem(22) }}>
+                      {seg.lines.map((line, li) => (
+                        <li key={li} style={{ marginBottom: rem(2) }}>
+                          {parseBold(segMatches[li]![1], `p${bi}s${si}l${li}`, circleNums)}
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                }
+                return (
+                  <p key={si} style={{ margin: "0 0 0.3em 0" }}>
+                    {seg.lines.map((line, li) => {
+                      const heading = line.match(HEADING_RE);
+                      const parsed = parseBold(heading ? heading[1] : line, `p${bi}s${si}l${li}`, circleNums);
+                      return (
+                        <span key={li} style={{ display: "contents" }}>
+                          {li > 0 && <br />}
+                          {heading ? <strong>{parsed}</strong> : parsed}
+                        </span>
+                      );
+                    })}
+                  </p>
+                );
+              })}
+            </div>
           );
         }
 
