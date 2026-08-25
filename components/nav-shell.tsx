@@ -172,9 +172,6 @@ const BREADCRUMBS: Record<string, { label: string; href: string }[]> = {
   ],
 };
 
-function slugToLabel(slug: string) {
-  return slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 function getBreadcrumbs(pathname: string, sessionName?: string | null, problemCode?: string | null) {
   if (BREADCRUMBS[pathname]) return BREADCRUMBS[pathname];
@@ -193,7 +190,7 @@ function getBreadcrumbs(pathname: string, sessionName?: string | null, problemCo
   if (practiceMatch) {
     return [
       { label: "Practice", href: "/practice" },
-      { label: sessionName || slugToLabel(practiceMatch[1]), href: "" },
+      { label: sessionName || "Loading…", href: "" },
     ];
   }
   return null;

@@ -50,3 +50,7 @@ export async function generatePracticeSet(topicId: string, n: number): Promise<{
 export async function renameSession(sessionId: string, name: string): Promise<void> {
   await api.patch(`/api/sessions/${sessionId}/name`, { name });
 }
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  await api.delete(`/api/sessions/${sessionId}`);
+}
