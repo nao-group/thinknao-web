@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Group, UnstyledButton, rem } from "@mantine/core";
 import { INK, MUTED } from "@/constants/colors";
 
-export const SUBJECTS = ["All", "Mathematics", "Physics", "Chemistry", "Liberal Arts Chinese", "Science Chinese"] as const;
+export const SUBJECTS = ["All", "Mathematics", "Physics", "Chemistry", "Humanities Chinese", "STEM Chinese"] as const;
 export type SubjectFilter = (typeof SUBJECTS)[number];
 
 function SubjectChip({

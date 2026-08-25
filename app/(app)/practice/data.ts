@@ -13,8 +13,8 @@ export const SUBJECTS = [
   { key: "math",    label: "Mathematics",         icon: IconMathFunction, iconBg: CREAM,     iconColor: PRIMARY, subjectCode: "MT" },
   { key: "physics", label: "Physics",              icon: IconAtom,         iconBg: "#EEF0FF", iconColor: INDIGO,  subjectCode: "PH" },
   { key: "chem",    label: "Chemistry",            icon: IconFlask,        iconBg: "#FDF0EC", iconColor: PANDA,   subjectCode: "CM" },
-  { key: "lac",     label: "Liberal Arts Chinese", icon: IconBook,         iconBg: "#F5F3FF", iconColor: VIOLET,  subjectCode: "WH" },
-  { key: "sc",      label: "Science Chinese",      icon: IconMicroscope,   iconBg: "#ECFDF5", iconColor: EMERALD, subjectCode: "LH" },
+  { key: "lac",     label: "Humanities Chinese", icon: IconBook,         iconBg: "#F5F3FF", iconColor: VIOLET,  subjectCode: "WH" },
+  { key: "sc",      label: "STEM Chinese",      icon: IconMicroscope,   iconBg: "#ECFDF5", iconColor: EMERALD, subjectCode: "LH" },
 ] as const;
 
 export type SubjectKey = (typeof SUBJECTS)[number]["key"];
