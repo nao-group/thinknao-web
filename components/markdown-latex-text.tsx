@@ -5,8 +5,18 @@ import { rem } from "@mantine/core";
 import { MATH_RE, renderMath } from "@/lib/latex";
 
 const BOLD_RE = /(\*\*(?:[^*]|\*(?!\*))+\*\*)/g;
+// Runs after BOLD_RE has already consumed every `**...**` span, so a lone `*` or `_`
+// pair left over is safe to treat as italics.
+const ITALIC_RE = /(\*[^*\n]+\*|_[^_\n]+_)/g;
+const LINK_RE = /(\[[^\]\n]+\]\([^)\s]+\))/g;
 const CODE_RE = /(`[^`]+`)/g;
 const CIRCLE_RE = /(\{\d+\})/g;
+// Defense-in-depth: models are told never to use markdown headings, but a stray
+// "#### Step 1" shouldn't render as literal hash characters if one slips through.
+const HEADING_RE = /^#{1,6}\s+(.*)$/;
+// Defense-in-depth: models are told to write "1. " as plain text, but a stray
+// "- item" / "* item" bullet list shouldn't render as literal dashes/asterisks.
+const BULLET_RE = /^[-*]\s+(.*)$/;
 
 /** Leaf: plain text only — no further parsing */
 function plainText(text: string, key: string): React.ReactElement {
@@ -41,17 +51,32 @@ function CircleBadge({ n, keyStr }: { n: string; keyStr: string }) {
 
 /**
  * Parsing order (outermost → innermost):
- *   Bold → Math → Code → CircleNum → plain text
+ *   Bold → Italic → Math → Link → Code → CircleNum → plain text
  *
- * Bold must be outermost so **...$formula$...** works correctly —
- * math delimiters are processed within each bold/plain segment separately,
- * preventing math splits from breaking incomplete ** pairs.
+ * Bold and Italic must both run before Math — models routinely wrap inline
+ * math in emphasis, e.g. "**$45^\circ$**" or "*(hint: $\tan(45^\circ)$...)*",
+ * and matching the emphasis markers first (before Math splits the string
+ * apart) is the only way that whole span is recognized as one emphasis run,
+ * rather than two orphaned, unmatched markers on either side of the math.
+ * Math still runs before CircleNum beneath it, so {N} inside LaTeX (e.g.
+ * \frac{0.5}{4}) is still never seen by the circle parser.
  */
-function parseSegment(text: string, keyPrefix: string, circleNums: boolean): React.ReactElement[] {
+function parseBold(text: string, keyPrefix: string, circleNums: boolean): React.ReactElement[] {
   return text.split(BOLD_RE).flatMap((part, i): React.ReactElement[] => {
     const key = `${keyPrefix}-b${i}`;
     if (part.startsWith("**") && part.endsWith("**")) {
-      return [<strong key={key}>{parseMath(part.slice(2, -2), key, circleNums)}</strong>];
+      return [<strong key={key}>{parseItalic(part.slice(2, -2), key, circleNums)}</strong>];
+    }
+    return parseItalic(part, key, circleNums);
+  });
+}
+
+function parseItalic(text: string, keyPrefix: string, circleNums: boolean): React.ReactElement[] {
+  return text.split(ITALIC_RE).flatMap((part, i): React.ReactElement[] => {
+    const key = `${keyPrefix}-i${i}`;
+    const isItalic = (part.startsWith("*") && part.endsWith("*")) || (part.startsWith("_") && part.endsWith("_"));
+    if (isItalic) {
+      return [<em key={key}>{parseMath(part.slice(1, -1), key, circleNums)}</em>];
     }
     return parseMath(part, key, circleNums);
   });
@@ -60,26 +85,45 @@ function parseSegment(text: string, keyPrefix: string, circleNums: boolean): Rea
 function parseMath(text: string, keyPrefix: string, circleNums: boolean): React.ReactElement[] {
   return text.split(MATH_RE).flatMap((part, i): React.ReactElement[] => {
     const key = `${keyPrefix}-m${i}`;
-    if ((part.startsWith("$$") && part.endsWith("$$")) || (part.startsWith("\\[") && part.endsWith("\\]"))) {
-      const inner = part.startsWith("$$") ? part.slice(2, -2) : part.slice(2, -2);
+    if (part.startsWith("$$") && part.endsWith("$$")) {
       return [
         <span
           key={key}
           style={{ display: "block", textAlign: "center", margin: "0.3em 0" }}
-          dangerouslySetInnerHTML={{ __html: renderMath(inner, true) }}
+          dangerouslySetInnerHTML={{ __html: renderMath(part.slice(2, -2), true) }}
         />,
       ];
     }
-    if ((part.startsWith("$") && part.endsWith("$")) || (part.startsWith("\\(") && part.endsWith("\\)"))) {
-      const inner = part.startsWith("$") ? part.slice(1, -1) : part.slice(2, -2);
+    if (part.startsWith("$") && part.endsWith("$")) {
       return [
         <span
           key={key}
-          dangerouslySetInnerHTML={{ __html: renderMath(inner, false) }}
+          dangerouslySetInnerHTML={{ __html: renderMath(part.slice(1, -1), false) }}
         />,
       ];
     }
     // Non-math segment — continue parsing
+    return parseLink(part, key, circleNums);
+  });
+}
+
+function parseLink(text: string, keyPrefix: string, circleNums: boolean): React.ReactElement[] {
+  return text.split(LINK_RE).flatMap((part, i): React.ReactElement[] => {
+    const key = `${keyPrefix}-a${i}`;
+    const m = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (m) {
+      return [
+        <a
+          key={key}
+          href={m[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: PRIMARY, textDecoration: "underline" }}
+        >
+          {parseCode(m[1], key, circleNums)}
+        </a>,
+      ];
+    }
     return parseCode(part, key, circleNums);
   });
 }
@@ -122,11 +166,12 @@ function parseCircleNum(text: string, keyPrefix: string): React.ReactElement[] {
 
 /**
  * Renders a markdown-style string with support for:
- * - **bold** text
+ * - **bold** and italic (single asterisk or underscore) text
  * - `inline code` (rendered as amber highlight chip)
+ * - [link text](url)
  * - $inline$ and $$display$$ LaTeX math
- * - \(...\) inline and \[...\] display LaTeX math
  * - > blockquote lines (rendered as highlighted answer box)
+ * - "- " / "* " bullet list blocks
  * - Paragraphs separated by blank lines
  * - Line breaks within paragraphs
  * - {N} circle number badges (opt-in via circleNums prop)
@@ -154,20 +199,37 @@ export function MarkdownLatexText({ children, circleNums = false }: { children: 
                 color: CORRECT_DARK,
               }}
             >
-              {parseSegment(content, `bq${bi}`, circleNums)}
+              {parseBold(content, `bq${bi}`, circleNums)}
             </div>
           );
         }
 
         const lines = trimmed.split("\n");
+        const bulletMatches = lines.map((line) => line.match(BULLET_RE));
+        if (lines.length > 0 && bulletMatches.every(Boolean)) {
+          return (
+            <ul key={bi} style={{ margin: "0 0 0.6em 0", paddingLeft: rem(22) }}>
+              {lines.map((line, li) => (
+                <li key={li} style={{ marginBottom: rem(2) }}>
+                  {parseBold(bulletMatches[li]![1], `p${bi}l${li}`, circleNums)}
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
         return (
           <p key={bi} style={{ margin: "0 0 0.6em 0" }}>
-            {lines.map((line, li) => (
-              <span key={li} style={{ display: "contents" }}>
-                {li > 0 && <br />}
-                {parseSegment(line, `p${bi}l${li}`, circleNums)}
-              </span>
-            ))}
+            {lines.map((line, li) => {
+              const heading = line.match(HEADING_RE);
+              const parsed = parseBold(heading ? heading[1] : line, `p${bi}l${li}`, circleNums);
+              return (
+                <span key={li} style={{ display: "contents" }}>
+                  {li > 0 && <br />}
+                  {heading ? <strong>{parsed}</strong> : parsed}
+                </span>
+              );
+            })}
           </p>
         );
       })}

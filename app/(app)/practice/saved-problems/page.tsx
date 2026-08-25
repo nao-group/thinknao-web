@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Badge,
@@ -19,40 +19,32 @@ import {
 } from "@mantine/core";
 import {
   IconAdjustmentsHorizontal,
-  IconAtom,
-  IconBook,
+  IconAlertCircle,
   IconChevronLeft,
   IconChevronRight,
-  IconFlask,
-  IconMathFunction,
-  IconMicroscope,
   IconSearch,
 } from "@tabler/icons-react";
-import { SAVED_PROBLEMS } from "./data";
-import type { SubjectKey, Difficulty } from "./types";
-import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
+import type { Difficulty } from "./types";
+import { SUBJECTS, SUBJECT_META, PAGE_SIZE } from "../data";
+import { INK, SURFACE, PRIMARY, CREAM } from "@/constants/colors";
 import { PaginationBtn } from "@/components/ui/pagination-btn";
 import { Card } from "@/components/ui/card";
-import { ProblemRow, SUBJECT_META, DIFFICULTY_STYLE } from "./components/ProblemRow";
+import { ProblemRow, DIFFICULTY_STYLE, DIFFICULTY_LABEL } from "./components/ProblemRow";
+import { fetchSavedQuestions, removeBookmark } from "./api";
+import type { SavedQuestion } from "./types";
 
-const PAGE_SIZE = 6;
-
-const SUBJECTS = [
-  { key: "Mathematics" as SubjectKey, icon: IconMathFunction, iconBg: CREAM, iconColor: PRIMARY },
-  { key: "Physics" as SubjectKey, icon: IconAtom, iconBg: "#EEF0FF", iconColor: INDIGO },
-  { key: "Chemistry" as SubjectKey, icon: IconFlask, iconBg: "#FDF0EC", iconColor: PANDA },
-  { key: "Liberal Arts Chinese" as SubjectKey, icon: IconBook, iconBg: "#F5F3FF", iconColor: VIOLET },
-  { key: "Science Chinese" as SubjectKey, icon: IconMicroscope, iconBg: "#ECFDF5", iconColor: EMERALD },
-];
-
-const DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
+const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function SavedProblemsPage() {
   const router = useRouter();
-  const [problems, setProblems] = useState(SAVED_PROBLEMS);
-  const [page, setPage] = useState(0);
+  const [items, setItems] = useState<SavedQuestion[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
@@ -64,28 +56,38 @@ export default function SavedProblemsPage() {
   const [appliedSubjects, setAppliedSubjects] = useState<string[]>([]);
   const [appliedDifficulties, setAppliedDifficulties] = useState<string[]>([]);
 
-  const [sortOrder, setSortOrder] = useState<string | null>("newest");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   const activeFilters = appliedSubjects.length + appliedDifficulties.length;
 
-  const filteredProblems = useMemo(() => {
-    let list = problems
-      .filter((p) => searchQuery === "" || p.question.toLowerCase().includes(searchQuery.toLowerCase()) || p.subject.toLowerCase().includes(searchQuery.toLowerCase()))
-      .filter((p) => appliedSubjects.length === 0 || appliedSubjects.includes(p.subject))
-      .filter((p) => appliedDifficulties.length === 0 || appliedDifficulties.includes(p.difficulty));
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetchSavedQuestions({
+        page,
+        pageSize: PAGE_SIZE,
+        search: searchQuery || undefined,
+        subjectCodes: appliedSubjects,
+        difficulties: appliedDifficulties as Difficulty[],
+        sort: sortOrder,
+      });
+      setItems(result.items);
+      setTotal(result.total);
+      setTotalPages(result.totalPages);
+    } catch (err) {
+      console.error("Failed to load saved questions:", err);
+      setError("Failed to load saved questions.");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, searchQuery, appliedSubjects, appliedDifficulties, sortOrder]);
 
-    if (sortOrder === "newest") list = [...list].sort((a, b) => b.dateAdded.localeCompare(a.dateAdded));
-    if (sortOrder === "oldest") list = [...list].sort((a, b) => a.dateAdded.localeCompare(b.dateAdded));
-
-    return list;
-  }, [problems, searchQuery, appliedSubjects, appliedDifficulties, sortOrder]);
-
-  const totalPages = Math.ceil(filteredProblems.length / PAGE_SIZE);
-  const pagedProblems = filteredProblems.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  useEffect(() => { load(); }, [load]);
 
   function applySearch(query: string) {
     setSearchQuery(query);
-    setPage(0);
+    setPage(1);
     setSearchOpen(false);
   }
 
@@ -98,7 +100,7 @@ export default function SavedProblemsPage() {
   function applyFilter() {
     setAppliedSubjects(draftSubjects);
     setAppliedDifficulties(draftDifficulties);
-    setPage(0);
+    setPage(1);
     setFilterOpen(false);
   }
 
@@ -107,17 +109,31 @@ export default function SavedProblemsPage() {
     setDraftDifficulties([]);
     setAppliedSubjects([]);
     setAppliedDifficulties([]);
-    setPage(0);
+    setPage(1);
     setFilterOpen(false);
   }
 
-  function removeBookmark(id: string) {
-    setProblems((prev) => prev.filter((p) => p.id !== id));
+  async function handleRemoveBookmark(questionId: string) {
+    const previous = items;
+    setItems((prev) => prev.filter((p) => p.question_id !== questionId));
+    setTotal((t) => Math.max(0, t - 1));
+    try {
+      await removeBookmark(questionId);
+    } catch (err) {
+      console.error("Failed to remove bookmark:", err);
+      setItems(previous);
+      setTotal((t) => t + 1);
+    }
   }
 
   function toggleDraft(list: string[], set: (v: string[]) => void, value: string) {
     set(list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
   }
+
+  const searchSuggestions = useMemo(
+    () => items.filter((p) => p.question_text.toLowerCase().includes(searchInput.toLowerCase())).slice(0, 5),
+    [items, searchInput]
+  );
 
   return (
     <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
@@ -133,7 +149,7 @@ export default function SavedProblemsPage() {
                 radius="sm"
                 style={{ backgroundColor: CREAM, color: PRIMARY, fontWeight: 700 }}
               >
-                {problems.length} saved
+                {total} saved
               </Badge>
             </Group>
 
@@ -185,7 +201,7 @@ export default function SavedProblemsPage() {
               {/* Sort */}
               <Select
                 value={sortOrder}
-                onChange={(val) => { setSortOrder(val); setPage(0); }}
+                onChange={(val) => { setSortOrder((val as "newest" | "oldest") ?? "newest"); setPage(1); }}
                 data={[
                   { value: "newest", label: "Newest First" },
                   { value: "oldest", label: "Oldest First" },
@@ -209,23 +225,26 @@ export default function SavedProblemsPage() {
                   radius="sm"
                   style={{ backgroundColor: SURFACE, color: INK, cursor: "pointer", fontWeight: 500 }}
                   rightSection={<Text size="xs" c="dimmed">✕</Text>}
-                  onClick={() => { setSearchQuery(""); setPage(0); }}
+                  onClick={() => { setSearchQuery(""); setPage(1); }}
                 >
-                  "{searchQuery}"
+                  &quot;{searchQuery}&quot;
                 </Badge>
               )}
-              {appliedSubjects.map((s) => (
-                <Badge
-                  key={s}
-                  size="sm"
-                  radius="sm"
-                  style={{ backgroundColor: SURFACE, color: INK, cursor: "pointer", fontWeight: 500 }}
-                  rightSection={<Text size="xs" c="dimmed">✕</Text>}
-                  onClick={() => { setAppliedSubjects((prev) => prev.filter((x) => x !== s)); setPage(0); }}
-                >
-                  {s}
-                </Badge>
-              ))}
+              {appliedSubjects.map((code) => {
+                const s = SUBJECTS.find((sub) => sub.subjectCode === code);
+                return s ? (
+                  <Badge
+                    key={code}
+                    size="sm"
+                    radius="sm"
+                    style={{ backgroundColor: SURFACE, color: INK, cursor: "pointer", fontWeight: 500 }}
+                    rightSection={<Text size="xs" c="dimmed">✕</Text>}
+                    onClick={() => { setAppliedSubjects((prev) => prev.filter((x) => x !== code)); setPage(1); }}
+                  >
+                    {s.label}
+                  </Badge>
+                ) : null;
+              })}
               {appliedDifficulties.map((d) => (
                 <Badge
                   key={d}
@@ -233,52 +252,85 @@ export default function SavedProblemsPage() {
                   radius="sm"
                   style={{ backgroundColor: DIFFICULTY_STYLE[d as Difficulty].bg, color: DIFFICULTY_STYLE[d as Difficulty].color, cursor: "pointer", fontWeight: 500 }}
                   rightSection={<Text size="xs" c="dimmed">✕</Text>}
-                  onClick={() => { setAppliedDifficulties((prev) => prev.filter((x) => x !== d)); setPage(0); }}
+                  onClick={() => { setAppliedDifficulties((prev) => prev.filter((x) => x !== d)); setPage(1); }}
                 >
-                  {d}
+                  {DIFFICULTY_LABEL[d as Difficulty]}
                 </Badge>
               ))}
             </Group>
           )}
 
+          {/* Error banner */}
+          {error && (
+            <Group gap={rem(6)} p="sm" mb="md"
+              style={{ backgroundColor: "#FEF2F2", borderRadius: rem(8), border: "1px solid #FECACA" }}>
+              <IconAlertCircle size={16} color="#EF4444" />
+              <Text size="sm" c="#EF4444">{error}</Text>
+            </Group>
+          )}
+
           {/* Problem rows */}
-          <Stack key={`${searchQuery}-${appliedSubjects.join()}-${appliedDifficulties.join()}-${sortOrder}`} gap={0} className="tab-fade-in">
-            {pagedProblems.length > 0 ? (
-              pagedProblems.map((p) => (
-                <ProblemRow
-                    key={p.id}
+          {loading ? (
+            <Stack gap={0}>
+              {Array.from({ length: 3 }, (_, i) => (
+                <Box key={i} style={{
+                  display: "flex", alignItems: "center", gap: rem(14),
+                  padding: `${rem(16)} 0`, borderBottom: "1px solid #F1F5F9",
+                }}>
+                  <Box style={{ width: rem(40), height: rem(40), borderRadius: rem(10), backgroundColor: SURFACE, flexShrink: 0 }} />
+                  <Stack gap={rem(6)} style={{ flex: 1 }}>
+                    <Box style={{ height: rem(14), width: "60%", backgroundColor: SURFACE, borderRadius: rem(4) }} />
+                    <Box style={{ height: rem(12), width: "25%", backgroundColor: SURFACE, borderRadius: rem(4) }} />
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
+          ) : (
+            <Stack key={`${searchQuery}-${appliedSubjects.join()}-${appliedDifficulties.join()}-${sortOrder}-${page}`} gap={0} className="tab-fade-in">
+              {items.length > 0 ? (
+                items.map((p) => (
+                  <ProblemRow
+                    key={p.question_id}
                     problem={p}
-                    onRemove={removeBookmark}
-                    onView={(id) => router.push(`/practice/saved-problems/${id}`)}
+                    onRemove={handleRemoveBookmark}
+                    onView={(id) => {
+                      const ids = items.map((i) => i.question_id).join(",");
+                      router.push(`/practice/saved-problems/${id}?ids=${ids}`);
+                    }}
                   />
-              ))
-            ) : (
-              <Box py="xl" style={{ textAlign: "center" }}>
-                <Text c="dimmed" size="sm">No saved problems match your filters.</Text>
-              </Box>
-            )}
-          </Stack>
+                ))
+              ) : (
+                <Box py="xl" style={{ textAlign: "center" }}>
+                  <Text c="dimmed" size="sm">
+                    {searchQuery || activeFilters > 0
+                      ? "No saved problems match your filters."
+                      : "No saved problems yet — bookmark a question from a practice session to see it here."}
+                  </Text>
+                </Box>
+              )}
+            </Stack>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (
             <Group justify="flex-end" align="center" gap={6} mt="md">
-              <PaginationBtn onClick={() => setPage((p) => Math.max(0, p - 1))} aria-label="Previous">
+              <PaginationBtn onClick={() => setPage((p) => Math.max(1, p - 1))} aria-label="Previous">
                 <IconChevronLeft size={14} stroke={2} />
               </PaginationBtn>
 
               {Array.from({ length: totalPages }, (_, i) => (
                 <UnstyledButton
                   key={i}
-                  onClick={() => setPage(i)}
+                  onClick={() => setPage(i + 1)}
                   style={{
                     width: rem(32),
                     height: rem(32),
                     borderRadius: rem(8),
                     fontSize: rem(13),
                     fontWeight: 600,
-                    border: `1.5px solid ${i === page ? INK : "#D1D5DB"}`,
-                    backgroundColor: i === page ? INK : "white",
-                    color: i === page ? "white" : "#6B7280",
+                    border: `1.5px solid ${i + 1 === page ? INK : "#D1D5DB"}`,
+                    backgroundColor: i + 1 === page ? INK : "white",
+                    color: i + 1 === page ? "white" : "#6B7280",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -289,7 +341,7 @@ export default function SavedProblemsPage() {
                 </UnstyledButton>
               ))}
 
-              <PaginationBtn onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} aria-label="Next">
+              <PaginationBtn onClick={() => setPage((p) => Math.min(totalPages, p + 1))} aria-label="Next">
                 <IconChevronRight size={14} stroke={2} />
               </PaginationBtn>
             </Group>
@@ -338,27 +390,24 @@ export default function SavedProblemsPage() {
               </Text>
             </UnstyledButton>
 
-            {SAVED_PROBLEMS
-              .filter((p) => p.question.toLowerCase().includes(searchInput.toLowerCase()) || p.subject.toLowerCase().includes(searchInput.toLowerCase()))
-              .slice(0, 5)
-              .map((p) => {
-                const meta = SUBJECT_META[p.subject];
-                const Icon = meta.icon;
-                return (
-                  <UnstyledButton
-                    key={p.id}
-                    onClick={() => applySearch(searchInput)}
-                    style={{ width: "100%", padding: `${rem(10)} ${rem(16)}`, display: "flex", alignItems: "center", gap: rem(10), borderBottom: "1px solid #F8FAFC" }}
-                  >
-                    <Box style={{ width: rem(28), height: rem(28), borderRadius: rem(7), backgroundColor: meta.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <Icon size={13} stroke={1.5} color={meta.iconColor} />
-                    </Box>
-                    <Text size="sm" c={INK} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {p.question}
-                    </Text>
-                  </UnstyledButton>
-                );
-              })}
+            {searchSuggestions.map((p) => {
+              const meta = SUBJECT_META[p.subject_code ?? ""] ?? SUBJECT_META["MT"];
+              const Icon = meta.icon;
+              return (
+                <UnstyledButton
+                  key={p.question_id}
+                  onClick={() => applySearch(searchInput)}
+                  style={{ width: "100%", padding: `${rem(10)} ${rem(16)}`, display: "flex", alignItems: "center", gap: rem(10), borderBottom: "1px solid #F8FAFC" }}
+                >
+                  <Box style={{ width: rem(28), height: rem(28), borderRadius: rem(7), backgroundColor: meta.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon size={13} stroke={1.5} color={meta.iconColor} />
+                  </Box>
+                  <Text size="sm" c={INK} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {p.question_text}
+                  </Text>
+                </UnstyledButton>
+              );
+            })}
           </Box>
         ) : (
           <Box px="md" py="lg" style={{ textAlign: "center" }}>
@@ -386,18 +435,18 @@ export default function SavedProblemsPage() {
             </Text>
             {SUBJECTS.map((s) => {
               const Icon = s.icon;
-              const checked = draftSubjects.includes(s.key);
+              const checked = draftSubjects.includes(s.subjectCode);
               return (
                 <UnstyledButton
                   key={s.key}
-                  onClick={() => toggleDraft(draftSubjects, setDraftSubjects, s.key)}
+                  onClick={() => toggleDraft(draftSubjects, setDraftSubjects, s.subjectCode)}
                   style={{ display: "flex", alignItems: "center", gap: rem(8) }}
                 >
                   <Checkbox checked={checked} onChange={() => {}} color="dark" styles={{ input: { cursor: "pointer" } }} />
                   <Box style={{ width: rem(22), height: rem(22), borderRadius: rem(5), backgroundColor: s.iconBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Icon size={12} stroke={1.5} color={s.iconColor} />
                   </Box>
-                  <Text size="sm" fw={500} c={INK}>{s.key}</Text>
+                  <Text size="sm" fw={500} c={INK}>{s.label}</Text>
                 </UnstyledButton>
               );
             })}
@@ -419,7 +468,7 @@ export default function SavedProblemsPage() {
                 >
                   <Checkbox checked={checked} onChange={() => {}} color="dark" styles={{ input: { cursor: "pointer" } }} />
                   <Badge size="xs" radius="sm" style={{ backgroundColor: style.bg, color: style.color, fontWeight: 600 }}>
-                    {d}
+                    {DIFFICULTY_LABEL[d]}
                   </Badge>
                 </UnstyledButton>
               );
@@ -429,7 +478,7 @@ export default function SavedProblemsPage() {
 
         <Group justify="space-between">
           <Button variant="outline" color="dark" radius="md" onClick={clearFilter}>
-            Clear & Close
+            Clear &amp; Close
           </Button>
           <Button radius="md" style={{ backgroundColor: INK, color: "white", fontWeight: 600 }} onClick={applyFilter}>
             Apply Filter

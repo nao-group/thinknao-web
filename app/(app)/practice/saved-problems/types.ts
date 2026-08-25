@@ -1,34 +1,25 @@
-export type SubjectKey = "Mathematics" | "Physics" | "Chemistry" | "Liberal Arts Chinese" | "Science Chinese";
-export type Difficulty = "Easy" | "Medium" | "Hard";
+export type Difficulty = "easy" | "medium" | "hard";
 
-export interface SavedProblem {
-  id: string;
-  subject: SubjectKey;
+export interface SavedQuestion {
+  question_id: string;
+  code: string;
   difficulty: Difficulty;
-  topic: string;
-  setName: string;
-  setSlug: string;
-  question: string;
-  image?: string;
-  options: { key: string; text: string; text_zh?: string }[];
-  correctAnswer: string;
-  explanation: {
-    correctStatement: string;
-    intro: string;
-    steps: string[];
-    conclusion: string;
-    markdown?: string;
-  };
-  dateAdded: string;
-  zh?: {
-    topic: string;
-    question: string;
-    explanation: {
-      correctStatement: string;
-      intro: string;
-      steps: string[];
-      conclusion: string;
-      markdown?: string;
-    };
-  };
+  question_type: string;
+  subject_name: string | null;
+  subject_code: string | null;
+  topic_name: string | null;
+  question_text: string;
+  session_id: string | null;
+  session_name: string | null;
+  created_at: string;
+}
+
+export interface SavedQuestionDetail extends SavedQuestion {
+  content_en: { question?: string | Record<string, string>; options?: Record<string, string>; choices?: Record<string, string> };
+  content_zh: { question?: string | Record<string, string>; options?: Record<string, string>; choices?: Record<string, string> };
+  choices: { key: string; text: string }[] | null;
+  answer: string;
+  explanation_en: string;
+  explanation_zh: string;
+  image_url: string | null;
 }
