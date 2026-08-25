@@ -15,6 +15,7 @@ import {
   rem,
 } from "@mantine/core";
 import { MarkdownLatexText } from "@/components/markdown-latex-text";
+import { LatexText } from "@/components/latex-text";
 import { Card } from "@/components/ui/card";
 import {
   IconAlertCircle,
@@ -30,27 +31,36 @@ import { ReportModal } from "@/components/report-modal";
 import { SUBJECT_META } from "../../data";
 import { DIFFICULTY_STYLE, DIFFICULTY_LABEL } from "../components/ProblemRow";
 import { fetchSavedQuestion, removeBookmark } from "../api";
-import type { SavedQuestionDetail } from "../types";
+import type { QuestionContent, SavedQuestionDetail } from "../types";
 import { LanguageToggle, type Lang } from "@/components/language-toggle";
+import { useNavStore } from "@/store/nav";
 import { OptionRow } from "./components/OptionRow";
 import { ExplanationBox } from "./components/ExplanationBox";
 
 import {
   INK, SURFACE, PRIMARY, CREAM, MUTED,
+  CORRECT_BG, CORRECT_DARK, WRONG_BG, WRONG_DARK,
 } from "@/constants/colors";
 
 // ─── Content extraction — same shape/logic as practice/[id]/page.tsx's SummaryView ──
 
-function getQuestionText(content: SavedQuestionDetail["content_en"] | undefined): string {
+function getQuestionText(content: QuestionContent | undefined): string {
   const q = content?.question;
   if (!q) return "";
   if (typeof q === "string") return q;
   return Object.values(q)[0] ?? "";
 }
 
-function getOptions(content: SavedQuestionDetail["content_en"] | undefined): { key: string; text: string }[] {
-  const answer = content?.options ?? content?.choices;
-  if (answer && Object.keys(answer).length > 0) return Object.entries(answer).map(([key, text]) => ({ key, text }));
+/**
+ * `answer` is the raw-DB key holding the A/B/C/D choice map (see QuestionContent
+ * in ../types); `options`/`choices` are what the sessions endpoint renames it to.
+ * Checking all three keeps this working regardless of which shape we're handed.
+ */
+function getOptions(content: QuestionContent | undefined): { key: string; text: string }[] {
+  const choiceMap = content?.options ?? content?.choices ?? content?.answer;
+  if (choiceMap && Object.keys(choiceMap).length > 0) {
+    return Object.entries(choiceMap).map(([key, text]) => ({ key, text }));
+  }
   return [];
 }
 
@@ -88,13 +98,29 @@ export default function SavedProblemDetailPage() {
   const ZOOM_MIN = 0.5;
   const ZOOM_MAX = 3;
 
+  // Feed the question code to the breadcrumb (it only has the UUID from the URL).
+  const setProblemCode = useNavStore((s) => s.setProblemCode);
+  useEffect(() => {
+    if (problem?.code) setProblemCode(problem.code);
+  }, [problem?.code, setProblemCode]);
+  useEffect(() => () => setProblemCode(""), [setProblemCode]);
+
   useEffect(() => {
     setLoading(true);
     setLoadError(null);
     setSelectedOption(null);
     setSubmitted(false);
     fetchSavedQuestion(questionId)
-      .then(setProblem)
+      .then((data) => {
+        setProblem(data);
+        // Already answered in the session it was saved from? Open showing that
+        // result rather than as a fresh, untouched question — the student has
+        // seen the answer already, so hiding it here would just be confusing.
+        if (data.answer_state) {
+          setSelectedOption(data.answer_state.selected_key);
+          setSubmitted(true);
+        }
+      })
       .catch((err) => {
         console.error("Failed to load saved question:", err);
         setLoadError("Failed to load this saved question.");
@@ -217,6 +243,19 @@ export default function SavedProblemDetailPage() {
                 </Group>
                 <Group gap={6}>
                   <LanguageToggle lang={lang} onChange={setLang} />
+                  {problem.answer_state && (
+                    <Badge
+                      size="sm"
+                      radius="sm"
+                      style={{
+                        backgroundColor: problem.answer_state.correct ? CORRECT_BG : WRONG_BG,
+                        color: problem.answer_state.correct ? CORRECT_DARK : WRONG_DARK,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {problem.answer_state.correct ? "Answered correctly" : "Answered incorrectly"}
+                    </Badge>
+                  )}
                   <Badge size="sm" radius="sm" style={{ backgroundColor: diff.bg, color: diff.color, fontWeight: 600 }}>
                     {DIFFICULTY_LABEL[problem.difficulty]}
                   </Badge>
@@ -319,7 +358,9 @@ export default function SavedProblemDetailPage() {
                       >
                         {opt.key}
                       </Box>
-                      <Text size="sm" c={INK} fw={chosen ? 600 : 400}>{opt.text}</Text>
+                      <Box fz="sm" c={INK} fw={chosen ? 600 : 400}>
+                        <LatexText>{opt.text}</LatexText>
+                      </Box>
                     </Box>
                   );
                 })}

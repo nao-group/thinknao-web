@@ -84,7 +84,7 @@ export function ProblemRow({
             overflow: "hidden",
           }}
         >
-          {problem.question_text}
+          {problem.question_text_plain}
         </Text>
         <Group gap={6} align="center">
           {problem.subject_name && (
