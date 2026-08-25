@@ -48,6 +48,7 @@ interface RawGroup {
 interface SessionQuestionsResponse {
   session_id: string;
   name?: string;
+  subject_code?: string;
   status: string;
   total_groups: number;
   answered_count?: number;
@@ -225,6 +226,7 @@ export async function fetchSessionQuestions(sessionId: string): Promise<{
   restored: RestoredState;
   fillAnswers: Record<string, Record<string, string>>;
   sessionName: string;
+  subjectCode: string;
 }> {
   const { data } = await api.get<SessionQuestionsResponse>(
     `/api/sessions/${sessionId}/questions`
@@ -232,7 +234,7 @@ export async function fetchSessionQuestions(sessionId: string): Promise<{
   const groups = data.groups.map(adaptGroup);
   const restored = buildRestoredState(data.groups);
   const fillAnswers = buildFillAnswers(data.groups);
-  return { groups, restored, fillAnswers, sessionName: data.name ?? "" };
+  return { groups, restored, fillAnswers, sessionName: data.name ?? "", subjectCode: data.subject_code ?? "" };
 }
 
 /** Fetch completed session for review — includes correct_answer + explanation pre-populated */
@@ -242,6 +244,7 @@ export async function fetchSessionReview(sessionId: string): Promise<{
   fillAnswers: Record<string, Record<string, string>>;
   xpEarned: number;
   sessionName: string;
+  subjectCode: string;
 }> {
   const { data } = await api.get<SessionQuestionsResponse>(
     `/api/sessions/${sessionId}/review`
@@ -249,7 +252,7 @@ export async function fetchSessionReview(sessionId: string): Promise<{
   const groups = data.groups.map(adaptGroup);
   const restored = buildRestoredState(data.groups);
   const fillAnswers = buildFillAnswers(data.groups);
-  return { groups, restored, fillAnswers, xpEarned: data.xp_earned ?? 0, sessionName: data.name ?? "" };
+  return { groups, restored, fillAnswers, xpEarned: data.xp_earned ?? 0, sessionName: data.name ?? "", subjectCode: data.subject_code ?? "" };
 }
 
 export async function submitSingleQuestion(

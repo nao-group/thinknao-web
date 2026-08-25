@@ -5,24 +5,26 @@ import {
   Box,
   Button,
   Group,
+  Menu,
   Text,
   TextInput,
   Tooltip,
   UnstyledButton,
   rem,
 } from "@mantine/core";
-import { IconPencil } from "@tabler/icons-react";
-import { INK } from "@/constants/colors";
+import { IconDotsVertical, IconPencil, IconTrash } from "@tabler/icons-react";
+import { INK, MUTED } from "@/constants/colors";
 import { SUBJECT_META } from "../data";
 import type { ApiSession } from "../types";
 
 export function PracticeSetRow({
-  session, action, onContinue, onRename,
+  session, action, onContinue, onRename, onDelete,
 }: {
   session: ApiSession;
   action: string;
   onContinue: () => void;
   onRename: (id: string, name: string) => Promise<void>;
+  onDelete: (id: string, name: string) => void;
 }) {
   const meta = SUBJECT_META[session.subject_code] ?? SUBJECT_META["MT"];
   const Icon = meta.icon;
@@ -90,9 +92,38 @@ export function PracticeSetRow({
         </Text>
       </Box>
 
-      <Button size="xs" variant="default" radius="sm" style={{ flexShrink: 0 }} onClick={onContinue}>
-        {action}
-      </Button>
+      <Group gap={rem(6)} style={{ flexShrink: 0 }}>
+        <Button size="xs" variant="default" radius="sm" onClick={onContinue}>
+          {action}
+        </Button>
+
+        <Menu position="bottom-end" withArrow shadow="sm" width={160}>
+          <Menu.Target>
+            <Tooltip label="More options" withArrow position="top">
+              <UnstyledButton
+                style={{
+                  width: rem(28), height: rem(28), borderRadius: rem(6),
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: MUTED,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F1F5F9")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              >
+                <IconDotsVertical size={15} stroke={1.5} />
+              </UnstyledButton>
+            </Tooltip>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Item
+              color="red"
+              leftSection={<IconTrash size={14} stroke={1.5} />}
+              onClick={() => onDelete(session.id, editValue)}
+            >
+              Delete set
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      </Group>
     </Box>
   );
 }

@@ -37,7 +37,7 @@ import { TopicPill } from "./components/TopicPill";
 import { PracticeSetRow } from "./components/PracticeSetRow";
 import { SUBJECTS, SUBJECT_META, QUESTION_COUNTS, PAGE_SIZE, type SubjectKey } from "./data";
 import type { ApiSession, Topic } from "./types";
-import { fetchSessions, fetchTopics, generatePracticeSet, renameSession } from "./api";
+import { fetchSessions, fetchTopics, generatePracticeSet, renameSession, deleteSession } from "./api";
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
@@ -70,6 +70,10 @@ export default function PracticePage() {
   // Search modal
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
+
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // ── Load sessions ─────────────────────────────────────────────────────────
   const loadSessions = useCallback(async () => {
@@ -161,7 +165,8 @@ export default function PracticePage() {
     try {
       const { sessionId, name } = await generatePracticeSet(modalTopic.id, n);
       setGenerateOpen(false);
-      const paramObj: Record<string, string> = { topic: modalTopic.name };
+      const subject = SUBJECTS.find((s) => s.key === selectedSubject)!;
+      const paramObj: Record<string, string> = { topic: modalTopic.name, subject: subject.subjectCode };
       if (name) paramObj.name = name;
       const params = new URLSearchParams(paramObj);
       router.push(`/practice/${sessionId}?${params.toString()}`);
@@ -191,6 +196,33 @@ export default function PracticePage() {
         color: "red",
         position: "top-right",
       });
+    }
+  }
+
+  // ── Delete session ────────────────────────────────────────────────────────
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteSession(deleteTarget.id);
+      setSessions((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      notifications.show({
+        title: "Deleted",
+        message: `"${deleteTarget.name}" has been deleted.`,
+        color: "red",
+        position: "top-right",
+      });
+    } catch (err) {
+      console.error("Delete failed:", err);
+      notifications.show({
+        title: "Delete failed",
+        message: "Could not delete the practice set. Please try again.",
+        color: "red",
+        position: "top-right",
+      });
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -383,6 +415,7 @@ export default function PracticePage() {
                         const params = new URLSearchParams({
                           name: session.name,
                           topic: session.topic_name,
+                          subject: session.subject_code,
                         });
                         const base = `/practice/${session.id}`;
                         router.push(
@@ -392,6 +425,7 @@ export default function PracticePage() {
                         );
                       }}
                       onRename={handleRename}
+                      onDelete={(id, name) => setDeleteTarget({ id, name })}
                     />
                   ))}
                 </Stack>
@@ -517,7 +551,7 @@ export default function PracticePage() {
                     key={s.id}
                     onClick={() => {
                       setSearchOpen(false);
-                      const params = new URLSearchParams({ name: s.name, topic: s.topic_name });
+                      const params = new URLSearchParams({ name: s.name, topic: s.topic_name, subject: s.subject_code });
                       const base = `/practice/${s.id}`;
                       router.push(s.status === "completed" ? `${base}?review=true&${params.toString()}` : `${base}?${params.toString()}`);
                     }}
@@ -581,6 +615,36 @@ export default function PracticePage() {
           </Button>
           <Button radius="md" style={{ backgroundColor: INK, color: "white", fontWeight: 600 }} onClick={applyFilter}>
             Apply Filter
+          </Button>
+        </Group>
+      </Modal>
+
+      {/* ── Delete confirmation modal ── */}
+      <Modal
+        opened={deleteTarget !== null}
+        onClose={() => !deleting && setDeleteTarget(null)}
+        title={<Text fw={700} size="md" c={INK}>Delete Practice Set</Text>}
+        radius="md"
+        size="sm"
+        overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
+      >
+        <Text size="sm" c="dimmed" mb="xl">
+          Are you sure you want to delete{" "}
+          <Text span fw={600} c={INK}>&quot;{deleteTarget?.name}&quot;</Text>?
+          This action cannot be undone.
+        </Text>
+        <Group justify="flex-end">
+          <Button variant="outline" color="dark" radius="md" disabled={deleting} onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+          <Button
+            radius="md"
+            color="red"
+            loading={deleting}
+            onClick={handleDelete}
+            style={{ fontWeight: 600 }}
+          >
+            Delete
           </Button>
         </Group>
       </Modal>
