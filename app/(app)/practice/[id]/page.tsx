@@ -1146,12 +1146,16 @@ export default function PracticeDetailPage() {
                       return Object.values(q as Record<string, string>)[0] ?? "";
                     })()}
                     wordChoices={activeGroup.questions[0].choices ?? []}
-                    userAnswers={fillAnswers[activeGroup.questions[0].id] ?? {}}
+                    userAnswers={Object.fromEntries(
+                      activeGroup.questions.map((q, i) => [String(i + 1), fillAnswers[q.id]?.["1"] ?? ""])
+                    )}
                     submitted={submittedGroups.has(currentQ)}
                     blankResults={submitResults[activeGroup.questions[0].id]?.blank_results}
-                    onChange={(blankIdx, choiceKey) =>
-                      updateFillAnswer(activeGroup.questions[0].id, blankIdx, choiceKey)
-                    }
+                    onChange={(blankIdx, choiceKey) => {
+                      const qIdx = parseInt(blankIdx) - 1;
+                      const qId = activeGroup.questions[qIdx]?.id ?? activeGroup.questions[0].id;
+                      updateFillAnswer(qId, "1", choiceKey);
+                    }}
                   />
                   {submittedGroups.has(currentQ) && (
                     <Box mt="md" style={{
