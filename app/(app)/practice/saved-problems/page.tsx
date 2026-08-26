@@ -130,10 +130,14 @@ export default function SavedProblemsPage() {
     set(list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
   }
 
-  const searchSuggestions = useMemo(
-    () => items.filter((p) => p.question_text.toLowerCase().includes(searchInput.toLowerCase())).slice(0, 5),
-    [items, searchInput]
-  );
+  // Match the same flattened text the server matches (question_text_plain), so a
+  // suggestion that appears here is guaranteed to survive the real search too.
+  const searchSuggestions = useMemo(() => {
+    const needle = searchInput.toLowerCase();
+    return items
+      .filter((p) => p.question_text_plain.toLowerCase().includes(needle))
+      .slice(0, 5);
+  }, [items, searchInput]);
 
   return (
     <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
@@ -403,7 +407,7 @@ export default function SavedProblemsPage() {
                     <Icon size={13} stroke={1.5} color={meta.iconColor} />
                   </Box>
                   <Text size="sm" c={INK} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {p.question_text}
+                    {p.question_text_plain}
                   </Text>
                 </UnstyledButton>
               );

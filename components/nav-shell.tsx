@@ -173,14 +173,17 @@ const BREADCRUMBS: Record<string, { label: string; href: string }[]> = {
 };
 
 
-function getBreadcrumbs(pathname: string, sessionName?: string | null) {
+function getBreadcrumbs(pathname: string, sessionName?: string | null, problemCode?: string | null) {
   if (BREADCRUMBS[pathname]) return BREADCRUMBS[pathname];
   const savedProblemMatch = pathname.match(/^\/practice\/saved-problems\/([^/]+)$/);
   if (savedProblemMatch) {
+    // The URL segment is the question's UUID, which is meaningless to a reader —
+    // show the question code (e.g. "MT-EF-0005-0000") that the page publishes to
+    // the nav store once loaded, and just "Problem" until it arrives.
     return [
       { label: "Practice", href: "/practice" },
       { label: "Saved Problems", href: "/practice/saved-problems" },
-      { label: `Problem ${savedProblemMatch[1]}`, href: "" },
+      { label: problemCode ? `Problem ${problemCode}` : "Problem", href: "" },
     ];
   }
   const practiceMatch = pathname.match(/^\/practice\/([^/]+)$/);
@@ -210,6 +213,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const storeSessionName = useNavStore((s) => s.sessionName);
+  const storeProblemCode = useNavStore((s) => s.problemCode);
   const firstName = useAuthStore((s) => s.user?.full_name?.split(" ")[0] ?? "");
   const fullName = useAuthStore((s) => s.user?.full_name ?? "");
   const email = useAuthStore((s) => s.user?.email ?? "");
@@ -217,7 +221,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
   const initials = fullName ? fullName.slice(0, 1).toUpperCase() : "?";
 
   const navbarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
-  const breadcrumbs = getBreadcrumbs(pathname, storeSessionName);
+  const breadcrumbs = getBreadcrumbs(pathname, storeSessionName, storeProblemCode);
 
   const allNavItems = NAV_SECTIONS.flatMap((s) => s.items);
   const hasExactMatch = allNavItems.some((i) => i.href === pathname);
