@@ -2,7 +2,7 @@
 
 import { PRIMARY, INK, CORRECT_DARK } from "@/constants/colors";
 import { rem } from "@mantine/core";
-import { MATH_RE, renderMath } from "@/lib/latex";
+import { splitMath, renderMath } from "@/lib/latex";
 
 const BOLD_RE = /(\*\*(?:[^*]|\*(?!\*))+\*\*)/g;
 // Runs after BOLD_RE has already consumed every `**...**` span, so a lone `*` or `_`
@@ -84,7 +84,7 @@ function parseItalic(text: string, keyPrefix: string, circleNums: boolean): Reac
 }
 
 function parseMath(text: string, keyPrefix: string, circleNums: boolean): React.ReactElement[] {
-  return text.split(MATH_RE).flatMap((part, i): React.ReactElement[] => {
+  return splitMath(text).flatMap((part, i): React.ReactElement[] => {
     const key = `${keyPrefix}-m${i}`;
     if (part.startsWith("$$") && part.endsWith("$$")) {
       return [
