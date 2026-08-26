@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-// useRouter is intentionally not imported: opening a chat from another practice
-// set no longer navigates anywhere (see openConversation).
 import { Box, Group, Stack, Text, Textarea, TextInput, Tooltip, UnstyledButton, rem } from "@mantine/core";
 import {
   IconArrowLeft,
@@ -30,9 +28,7 @@ interface Message {
 }
 
 interface FloatingChatbotProps {
-  /** The active practice session — the chat thread is scoped to this, not to a single question. */
   sessionId: string;
-  /** The question currently on screen — grounds the bot's context for this turn. */
   questionId: string;
 }
 
@@ -187,9 +183,6 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [starterPrompts, setStarterPrompts] = useState<string[]>([]);
-  // Non-empty when the open thread belongs to a different practice set than this
-  // page — the bot is answering about that set, so say so rather than leaving the
-  // student to wonder why it's talking about something else.
   const [foreignSetName, setForeignSetName] = useState("");
 
   useEffect(() => {
@@ -277,10 +270,6 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
     historyLoadedForSession.current = sessionId;
     loadCurrentSessionConversation();
   }, [open, sessionId]);
-
-  // NOTE: master's "chatbot_open_conversation" sessionStorage effect is deliberately
-  // dropped here. It existed only to re-open a thread after navigating to another
-  // set's page; threads now open in place, so nothing ever writes that key.
 
   // Load the conversation-history list whenever the history view is opened, and on search.
   useEffect(() => {
