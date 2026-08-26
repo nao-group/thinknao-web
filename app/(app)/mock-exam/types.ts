@@ -1,6 +1,6 @@
 export type Subject =
-  | "Liberal Arts Chinese"
-  | "Science Chinese"
+  | "Humanities Chinese"
+  | "STEM Chinese"
   | "Mathematics"
   | "Physics"
   | "Chemistry";

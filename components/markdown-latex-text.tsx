@@ -16,7 +16,8 @@ const CIRCLE_RE = /(\{\d+\})/g;
 const HEADING_RE = /^#{1,6}\s+(.*)$/;
 // Defense-in-depth: models are told to write "1. " as plain text, but a stray
 // "- item" / "* item" bullet list shouldn't render as literal dashes/asterisks.
-const BULLET_RE = /^[-*]\s+(.*)$/;
+// Leading whitespace is allowed (indented bullets) and trailing whitespace is stripped.
+const BULLET_RE = /^[ \t]*[-*•]\s+(.*?)[ \t]*$/;
 
 /** Leaf: plain text only — no further parsing */
 function plainText(text: string, key: string): React.ReactElement {
@@ -91,6 +92,23 @@ function parseMath(text: string, keyPrefix: string, circleNums: boolean): React.
           key={key}
           style={{ display: "block", textAlign: "center", margin: "0.3em 0" }}
           dangerouslySetInnerHTML={{ __html: renderMath(part.slice(2, -2), true) }}
+        />,
+      ];
+    }
+    if (part.startsWith("\\[") && part.endsWith("\\]")) {
+      return [
+        <span
+          key={key}
+          style={{ display: "block", textAlign: "center", margin: "0.3em 0" }}
+          dangerouslySetInnerHTML={{ __html: renderMath(part.slice(2, -2), true) }}
+        />,
+      ];
+    }
+    if (part.startsWith("\\(") && part.endsWith("\\)")) {
+      return [
+        <span
+          key={key}
+          dangerouslySetInnerHTML={{ __html: renderMath(part.slice(2, -2), false) }}
         />,
       ];
     }
@@ -184,8 +202,12 @@ export function MarkdownLatexText({ children, circleNums = false }: { children: 
       {blocks.map((block, bi) => {
         const trimmed = block.trim();
 
-        if (trimmed.startsWith("> ")) {
-          const content = trimmed.slice(2);
+        if (trimmed.startsWith(">")) {
+          const bqLines = trimmed.split(/\r?\n|\r/);
+          // Strip "> " or ">" prefix from every line in the block
+          const strippedLines = bqLines.map((l) =>
+            l.startsWith("> ") ? l.slice(2) : l.startsWith(">") ? l.slice(1) : l
+          );
           return (
             <div
               key={bi}
@@ -199,38 +221,92 @@ export function MarkdownLatexText({ children, circleNums = false }: { children: 
                 color: CORRECT_DARK,
               }}
             >
-              {parseBold(content, `bq${bi}`, circleNums)}
+              {strippedLines.map((line, li) => (
+                <span key={li} style={{ display: "block" }}>
+                  {parseBold(line, `bq${bi}l${li}`, circleNums)}
+                </span>
+              ))}
             </div>
           );
         }
 
-        const lines = trimmed.split("\n");
+        // Split on all line-ending styles (\r\n, \r, \n) and trim trailing \r
+        const lines = trimmed.split(/\r?\n|\r/).map((l) => l.replace(/\r$/, ""));
         const bulletMatches = lines.map((line) => line.match(BULLET_RE));
-        if (lines.length > 0 && bulletMatches.every(Boolean)) {
+        const hasBullets = bulletMatches.some(Boolean);
+
+        // Any block containing at least one bullet line uses segment-based rendering,
+        // which correctly handles pure-bullet blocks AND mixed intro-text + bullet blocks.
+        if (hasBullets) {
+          type Seg = { type: "text" | "bullet"; lines: string[] };
+          const segments: Seg[] = [];
+          lines.forEach((line, li) => {
+            const isBullet = !!bulletMatches[li];
+            const last = segments[segments.length - 1];
+            if (last && last.type === (isBullet ? "bullet" : "text")) {
+              last.lines.push(line);
+            } else {
+              segments.push({ type: isBullet ? "bullet" : "text", lines: [line] });
+            }
+          });
           return (
-            <ul key={bi} style={{ margin: "0 0 0.6em 0", paddingLeft: rem(22) }}>
-              {lines.map((line, li) => (
-                <li key={li} style={{ marginBottom: rem(2) }}>
-                  {parseBold(bulletMatches[li]![1], `p${bi}l${li}`, circleNums)}
-                </li>
-              ))}
-            </ul>
+            <div key={bi} style={{ marginBottom: "0.5em" }}>
+              {segments.map((seg, si) => {
+                if (seg.type === "bullet") {
+                  const segMatches = seg.lines.map((l) => l.match(BULLET_RE));
+                  return (
+                    <ul key={si} style={{ margin: "0.2em 0 0.4em 0", paddingLeft: rem(22) }}>
+                      {seg.lines.map((line, li) => (
+                        <li key={li} style={{ marginBottom: rem(2) }}>
+                          {parseBold(segMatches[li]![1], `p${bi}s${si}l${li}`, circleNums)}
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                }
+                // Skip blank text segments between bullets
+                if (seg.lines.every((l) => !l.trim())) return null;
+                return (
+                  <p key={si} style={{ margin: "0 0 0.3em 0" }}>
+                    {seg.lines.map((line, li) => {
+                      const heading = line.match(HEADING_RE);
+                      const parsed = parseBold(heading ? heading[1] : line, `p${bi}s${si}l${li}`, circleNums);
+                      return (
+                        <span key={li} style={{ display: "contents" }}>
+                          {li > 0 && <br />}
+                          {heading ? <strong>{parsed}</strong> : parsed}
+                        </span>
+                      );
+                    })}
+                  </p>
+                );
+              })}
+            </div>
           );
         }
 
         return (
-          <p key={bi} style={{ margin: "0 0 0.6em 0" }}>
+          <div key={bi} style={{ margin: "0 0 0.6em 0" }}>
             {lines.map((line, li) => {
+              const bulletMatch = line.match(BULLET_RE);
+              if (bulletMatch) {
+                return (
+                  <div key={li} style={{ display: "flex", alignItems: "flex-start", gap: rem(6), marginBottom: rem(2), paddingLeft: rem(4) }}>
+                    <span style={{ flexShrink: 0, marginTop: "0.15em" }}>•</span>
+                    <span>{parseBold(bulletMatch[1], `p${bi}l${li}`, circleNums)}</span>
+                  </div>
+                );
+              }
               const heading = line.match(HEADING_RE);
               const parsed = parseBold(heading ? heading[1] : line, `p${bi}l${li}`, circleNums);
               return (
-                <span key={li} style={{ display: "contents" }}>
-                  {li > 0 && <br />}
+                <span key={li} style={{ display: "block" }}>
                   {heading ? <strong>{parsed}</strong> : parsed}
+                  {li < lines.length - 1 && !lines[li + 1]?.match(BULLET_RE) && !line.match(BULLET_RE) && <br />}
                 </span>
               );
             })}
-          </p>
+          </div>
         );
       })}
     </div>

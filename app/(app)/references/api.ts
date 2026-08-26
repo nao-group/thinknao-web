@@ -3,7 +3,7 @@ import type { Subject, WordEntry, FormulaEntry } from "./types";
 
 // ─── API response shapes (thinknao-service /api/references) ───────────────────
 
-type ApiSubject = "math" | "physics" | "chemistry" | "liberal_arts_chinese" | "science_chinese";
+type ApiSubject = "math" | "physics" | "chemistry" | "humanities_chinese" | "stem_chinese";
 
 interface ApiWordExample {
   hanzi?: string | null;
@@ -41,8 +41,8 @@ const SUBJECT_LABELS: Record<ApiSubject, Subject> = {
   math: "Mathematics",
   physics: "Physics",
   chemistry: "Chemistry",
-  liberal_arts_chinese: "Liberal Arts Chinese",
-  science_chinese: "Science Chinese",
+  humanities_chinese: "Humanities Chinese",
+  stem_chinese: "STEM Chinese",
 };
 
 function mapWord(row: ApiWord): WordEntry {

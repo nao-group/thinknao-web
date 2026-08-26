@@ -1,4 +1,4 @@
-export type Subject = "Mathematics" | "Physics" | "Chemistry" | "Liberal Arts Chinese" | "Science Chinese";
+export type Subject = "Mathematics" | "Physics" | "Chemistry" | "Humanities Chinese" | "STEM Chinese";
 
 export interface WordEntry {
   id: string;

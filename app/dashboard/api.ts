@@ -3,7 +3,7 @@ import type { Session, SessionProgress } from "./types";
 
 export async function fetchRecentSessions(): Promise<Session[]> {
   const { data } = await api.get<{ sessions: Session[] }>("/api/sessions", {
-    params: { type: "practice", page_size: 3 },
+    params: { type: "practice", status: "completed", page_size: 3 },
   });
   return data.sessions ?? [];
 }

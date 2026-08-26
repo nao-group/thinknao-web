@@ -16,24 +16,24 @@ export const SUBJECT_CONFIG: Record<
   Subject,
   { duration: number; questionCount: number; langFixed?: Lang; langLabel: string }
 > = {
-  "Liberal Arts Chinese": { duration: 90 * 60, questionCount: 80, langFixed: "zh", langLabel: "Mandarin only" },
-  "Science Chinese":      { duration: 90 * 60, questionCount: 80, langFixed: "zh", langLabel: "Mandarin only" },
+  "Humanities Chinese": { duration: 90 * 60, questionCount: 80, langFixed: "zh", langLabel: "Mandarin only" },
+  "STEM Chinese":      { duration: 90 * 60, questionCount: 80, langFixed: "zh", langLabel: "Mandarin only" },
   Mathematics:            { duration: 60 * 60, questionCount: 48, langLabel: "Mandarin or English" },
   Physics:                { duration: 60 * 60, questionCount: 48, langLabel: "Mandarin or English" },
   Chemistry:              { duration: 60 * 60, questionCount: 48, langLabel: "Mandarin or English" },
 };
 
 export const SUBJECT_META: Record<Subject, { icon: React.ElementType; iconBg: string; iconColor: string }> = {
-  "Liberal Arts Chinese": { icon: IconBook,        iconBg: "#F5F3FF", iconColor: VIOLET  },
-  "Science Chinese":      { icon: IconMicroscope,  iconBg: "#ECFDF5", iconColor: EMERALD },
+  "Humanities Chinese": { icon: IconBook,        iconBg: "#F5F3FF", iconColor: VIOLET  },
+  "STEM Chinese":      { icon: IconMicroscope,  iconBg: "#ECFDF5", iconColor: EMERALD },
   Mathematics:            { icon: IconMathFunction, iconBg: CREAM,    iconColor: PRIMARY },
   Physics:                { icon: IconAtom,         iconBg: "#EEF0FF", iconColor: INDIGO  },
   Chemistry:              { icon: IconFlask,        iconBg: "#FDF0EC", iconColor: PANDA   },
 };
 
 export const ALL_SUBJECTS: Subject[] = [
-  "Liberal Arts Chinese",
-  "Science Chinese",
+  "Humanities Chinese",
+  "STEM Chinese",
   "Mathematics",
   "Physics",
   "Chemistry",
@@ -46,8 +46,8 @@ export const PAST_EXAMS: {
   passed: boolean; duration: string; lang: string; subject: Subject;
 }[] = [
   { id: 1, date: "Jul 18, 2026", score: 5, total: 6, pct: 83, passed: true,  duration: "42:18", lang: "EN",  subject: "Mathematics" },
-  { id: 2, date: "Jul 10, 2026", score: 3, total: 6, pct: 50, passed: false, duration: "57:44", lang: "中文", subject: "Liberal Arts Chinese" },
-  { id: 3, date: "Jun 28, 2026", score: 4, total: 6, pct: 67, passed: true,  duration: "51:07", lang: "中文", subject: "Science Chinese" },
+  { id: 2, date: "Jul 10, 2026", score: 3, total: 6, pct: 50, passed: false, duration: "57:44", lang: "中文", subject: "Humanities Chinese" },
+  { id: 3, date: "Jun 28, 2026", score: 4, total: 6, pct: 67, passed: true,  duration: "51:07", lang: "中文", subject: "STEM Chinese" },
 ];
 
 export const ALL_QUESTIONS: MockQ[] = [
@@ -197,77 +197,77 @@ export const ALL_QUESTIONS: MockQ[] = [
     zh: { topic: "酸碱", text: "以下哪种是阿伦尼乌斯碱？" },
   },
 
-  // ── Liberal Arts Chinese (6) — Mandarin only ──────────────────────────────────
+  // ── Humanities Chinese (6) — Mandarin only ──────────────────────────────────
   {
-    id: 21, subject: "Liberal Arts Chinese", topic: "成语典故",
+    id: 21, subject: "Humanities Chinese", topic: "成语典故",
     text: "\"望梅止渴\"这个成语故事中的主人公是谁？",
     options: [{ key: "A", text: "刘备" }, { key: "B", text: "曹操" }, { key: "C", text: "孙权" }, { key: "D", text: "关羽" }],
     correctAnswer: "B",
   },
   {
-    id: 22, subject: "Liberal Arts Chinese", topic: "古典诗词",
+    id: 22, subject: "Humanities Chinese", topic: "古典诗词",
     text: "\"但愿人长久，千里共婵娟\"出自哪位诗人的作品？",
     options: [{ key: "A", text: "李白" }, { key: "B", text: "杜甫" }, { key: "C", text: "苏轼" }, { key: "D", text: "辛弃疾" }],
     correctAnswer: "C",
   },
   {
-    id: 23, subject: "Liberal Arts Chinese", topic: "语言知识",
+    id: 23, subject: "Humanities Chinese", topic: "语言知识",
     text: "下列词语中，哪一组是反义词？",
     options: [{ key: "A", text: "晴朗 — 明亮" }, { key: "B", text: "勤奋 — 懒惰" }, { key: "C", text: "高兴 — 快乐" }, { key: "D", text: "美丽 — 漂亮" }],
     correctAnswer: "B",
   },
   {
-    id: 24, subject: "Liberal Arts Chinese", topic: "修辞手法",
+    id: 24, subject: "Humanities Chinese", topic: "修辞手法",
     text: "\"月亮像一块银盘\"使用了哪种修辞手法？",
     options: [{ key: "A", text: "排比" }, { key: "B", text: "拟人" }, { key: "C", text: "比喻" }, { key: "D", text: "夸张" }],
     correctAnswer: "C",
   },
   {
-    id: 25, subject: "Liberal Arts Chinese", topic: "文学常识",
+    id: 25, subject: "Humanities Chinese", topic: "文学常识",
     text: "《红楼梦》的作者是谁？",
     options: [{ key: "A", text: "吴承恩" }, { key: "B", text: "施耐庵" }, { key: "C", text: "曹雪芹" }, { key: "D", text: "罗贯中" }],
     correctAnswer: "C",
   },
   {
-    id: 26, subject: "Liberal Arts Chinese", topic: "古典诗词",
+    id: 26, subject: "Humanities Chinese", topic: "古典诗词",
     text: "\"朱门酒肉臭，路有冻死骨\"是哪位诗人的名句？",
     options: [{ key: "A", text: "王维" }, { key: "B", text: "孟浩然" }, { key: "C", text: "杜甫" }, { key: "D", text: "李商隐" }],
     correctAnswer: "C",
   },
 
-  // ── Science Chinese (6) — Mandarin only ──────────────────────────────────────
+  // ── STEM Chinese (6) — Mandarin only ──────────────────────────────────────
   {
-    id: 27, subject: "Science Chinese", topic: "科学知识",
+    id: 27, subject: "STEM Chinese", topic: "科学知识",
     text: "\"光合作用\"是指植物利用什么将二氧化碳和水转化为有机物？",
     options: [{ key: "A", text: "热能" }, { key: "B", text: "光能" }, { key: "C", text: "化学能" }, { key: "D", text: "电能" }],
     correctAnswer: "B",
   },
   {
-    id: 28, subject: "Science Chinese", topic: "说明方法",
+    id: 28, subject: "STEM Chinese", topic: "说明方法",
     text: "\"细胞是生命的基本单位\"这句话属于哪种说明方法？",
     options: [{ key: "A", text: "举例子" }, { key: "B", text: "打比方" }, { key: "C", text: "下定义" }, { key: "D", text: "分类别" }],
     correctAnswer: "C",
   },
   {
-    id: 29, subject: "Science Chinese", topic: "科技词汇",
+    id: 29, subject: "STEM Chinese", topic: "科技词汇",
     text: "\"可生物降解\"对应的英文词是？",
     options: [{ key: "A", text: "Recyclable" }, { key: "B", text: "Biodegradable" }, { key: "C", text: "Renewable" }, { key: "D", text: "Combustible" }],
     correctAnswer: "B",
   },
   {
-    id: 30, subject: "Science Chinese", topic: "语言应用",
+    id: 30, subject: "STEM Chinese", topic: "语言应用",
     text: "在科技说明文中，\"综上所述\"一词通常出现在文章的哪个部分？",
     options: [{ key: "A", text: "开头" }, { key: "B", text: "中间" }, { key: "C", text: "结尾" }, { key: "D", text: "标题" }],
     correctAnswer: "C",
   },
   {
-    id: 31, subject: "Science Chinese", topic: "科技词汇",
+    id: 31, subject: "STEM Chinese", topic: "科技词汇",
     text: "\"基因编辑\"中\"编辑\"最接近下列哪个词的意思？",
     options: [{ key: "A", text: "出版" }, { key: "B", text: "阅读" }, { key: "C", text: "修改" }, { key: "D", text: "复制" }],
     correctAnswer: "C",
   },
   {
-    id: 32, subject: "Science Chinese", topic: "科技词汇",
+    id: 32, subject: "STEM Chinese", topic: "科技词汇",
     text: "\"人工智能\"的英文缩写是？",
     options: [{ key: "A", text: "IT" }, { key: "B", text: "AI" }, { key: "C", text: "AR" }, { key: "D", text: "VR" }],
     correctAnswer: "B",
