@@ -202,8 +202,12 @@ export function MarkdownLatexText({ children, circleNums = false }: { children: 
       {blocks.map((block, bi) => {
         const trimmed = block.trim();
 
-        if (trimmed.startsWith("> ")) {
-          const content = trimmed.slice(2);
+        if (trimmed.startsWith(">")) {
+          const bqLines = trimmed.split(/\r?\n|\r/);
+          // Strip "> " or ">" prefix from every line in the block
+          const strippedLines = bqLines.map((l) =>
+            l.startsWith("> ") ? l.slice(2) : l.startsWith(">") ? l.slice(1) : l
+          );
           return (
             <div
               key={bi}
@@ -217,7 +221,11 @@ export function MarkdownLatexText({ children, circleNums = false }: { children: 
                 color: CORRECT_DARK,
               }}
             >
-              {parseBold(content, `bq${bi}`, circleNums)}
+              {strippedLines.map((line, li) => (
+                <span key={li} style={{ display: "block" }}>
+                  {parseBold(line, `bq${bi}l${li}`, circleNums)}
+                </span>
+              ))}
             </div>
           );
         }
