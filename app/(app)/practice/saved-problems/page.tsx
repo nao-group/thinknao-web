@@ -297,10 +297,7 @@ export default function SavedProblemsPage() {
                     key={p.question_id}
                     problem={p}
                     onRemove={handleRemoveBookmark}
-                    onView={(id) => {
-                      const ids = items.map((i) => i.question_id).join(",");
-                      router.push(`/practice/saved-problems/${id}?ids=${ids}`);
-                    }}
+                    onView={(id) => router.push(`/practice/saved-problems/${id}`)}
                   />
                 ))
               ) : (

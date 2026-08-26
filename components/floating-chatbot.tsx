@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Box, Group, Stack, Text, Textarea, TextInput, Tooltip, UnstyledButton, rem } from "@mantine/core";
 import {
   IconArrowLeft,
@@ -29,9 +28,7 @@ interface Message {
 }
 
 interface FloatingChatbotProps {
-  /** The active practice session — the chat thread is scoped to this, not to a single question. */
   sessionId: string;
-  /** The question currently on screen — grounds the bot's context for this turn. */
   questionId: string;
 }
 
@@ -143,7 +140,6 @@ function PracticeSetMessage({ text }: { text: string }) {
 // ─── Main component ─────────────────────────────────────────────────────────
 
 export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"chat" | "history">("chat");
   const [messages, setMessages] = useState<Message[]>([
@@ -187,6 +183,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [starterPrompts, setStarterPrompts] = useState<string[]>([]);
+  const [foreignSetName, setForeignSetName] = useState("");
 
   useEffect(() => {
     if (!questionId) return;
@@ -204,25 +201,57 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
     return () => { cancelled = true; };
   }, [questionId]);
 
-  async function loadConversation(targetConversationId?: string) {
+  function renderMessages(history: HistoryMessage[] | undefined): Message[] {
+    return history?.length
+      ? history.map((m) => ({
+          role: m.role === "user" ? "user" : "assistant",
+          text: m.content,
+          type: m.type === "practice_set" ? "practice_set" : "text",
+        }))
+      : [{ role: "assistant", text: GREETING, timestamp: new Date() }];
+  }
+
+  /** Load the most recent thread for the practice set currently on screen. */
+  async function loadCurrentSessionConversation() {
     try {
-      const params = targetConversationId ? `?conversation_id=${targetConversationId}` : "";
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/chatbot/conversations/${sessionId}${params}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/chatbot/conversations/${sessionId}`,
         { headers: authHeaders() }
       );
       if (!res.ok) return;
       const data: { conversation_id: string | null; messages: HistoryMessage[] } = await res.json();
       setConversationId(data.conversation_id);
-      setMessages(
-        data.messages?.length
-          ? data.messages.map((m) => ({
-              role: m.role === "user" ? "user" : "assistant",
-              text: m.content,
-              type: m.type === "practice_set" ? "practice_set" : "text",
-            }))
-          : [{ role: "assistant", text: GREETING, timestamp: new Date() }]
+      setForeignSetName("");
+      setMessages(renderMessages(data.messages));
+    } catch {
+      // Keep whatever's already showing if this fails.
+    }
+  }
+
+  /**
+   * Load one specific thread by id, whichever practice set it belongs to. Opening
+   * a chat about a different set no longer navigates away — the thread is shown
+   * in place and keeps its own context, so replies stay grounded in the set the
+   * conversation is actually about.
+   */
+  async function loadConversationById(targetConversationId: string) {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/chatbot/conversations/by-id/${targetConversationId}`,
+        { headers: authHeaders() }
       );
+      if (!res.ok) return;
+      const data: {
+        conversation_id: string;
+        session_id: string;
+        session_name: string;
+        messages: HistoryMessage[];
+      } = await res.json();
+      setConversationId(data.conversation_id);
+      // Only flag it when the thread belongs to a different set than this page —
+      // that's when the student needs telling what the bot is answering about.
+      setForeignSetName(data.session_id === sessionId ? "" : data.session_name);
+      setMessages(renderMessages(data.messages));
     } catch {
       // Keep whatever's already showing if this fails.
     }
@@ -231,40 +260,18 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
   useEffect(() => {
     setMessages([{ role: "assistant", text: GREETING, timestamp: new Date() }]);
     setConversationId(null);
+    setForeignSetName("");
     historyLoadedForSession.current = null;
   }, [sessionId]);
 
+  // Restore the most recent thread the first time the panel is opened for this session.
   useEffect(() => {
     if (!open || !sessionId || historyLoadedForSession.current === sessionId) return;
     historyLoadedForSession.current = sessionId;
-
-    const pendingRaw = sessionStorage.getItem("chatbot_open_conversation");
-    if (pendingRaw) {
-      try {
-        const pending = JSON.parse(pendingRaw) as { sessionId: string; conversationId: string };
-        if (pending.sessionId === sessionId) {
-          sessionStorage.removeItem("chatbot_open_conversation");
-          loadConversation(pending.conversationId);
-          return;
-        }
-      } catch {
-        sessionStorage.removeItem("chatbot_open_conversation");
-      }
-    }
-    loadConversation();
+    loadCurrentSessionConversation();
   }, [open, sessionId]);
 
-  useEffect(() => {
-    const pendingRaw = sessionStorage.getItem("chatbot_open_conversation");
-    if (!pendingRaw) return;
-    try {
-      const pending = JSON.parse(pendingRaw) as { sessionId: string; conversationId: string };
-      if (pending.sessionId === sessionId) setOpen(true);
-    } catch {
-      sessionStorage.removeItem("chatbot_open_conversation");
-    }
-  }, [sessionId]);
-
+  // Load the conversation-history list whenever the history view is opened, and on search.
   useEffect(() => {
     if (!open || view !== "history") return;
     let cancelled = false;
@@ -369,6 +376,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
 
       if (conv.conversation_id === conversationId) {
         setConversationId(null);
+        setForeignSetName("");
         setMessages([{ role: "assistant", text: GREETING, timestamp: new Date() }]);
       }
     } catch {
@@ -376,18 +384,15 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
     }
   }
 
+  /**
+   * Open any past thread in place — including one about a different practice set.
+   * No navigation: the student stays on the question they're working on, and the
+   * backend keeps the thread grounded in its own set (see _resolve_question in
+   * routers/chatbot.py), so its context is unchanged by where it's opened from.
+   */
   function openConversation(conv: ConversationSummary) {
-    if (conv.session_id === sessionId) {
-      setView("chat");
-      loadConversation(conv.conversation_id);
-      return;
-    }
-    sessionStorage.setItem(
-      "chatbot_open_conversation",
-      JSON.stringify({ sessionId: conv.session_id, conversationId: conv.conversation_id })
-    );
-    setOpen(false);
-    router.push(`/practice/${conv.session_id}`);
+    setView("chat");
+    loadConversationById(conv.conversation_id);
   }
 
   async function startNewChat() {
@@ -399,6 +404,8 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
       if (!res.ok) return;
       const data: { conversation_id: string } = await res.json();
       setConversationId(data.conversation_id);
+      // A new chat is always about the set on screen — drop any foreign context.
+      setForeignSetName("");
       setMessages([{ role: "assistant", text: GREETING, timestamp: new Date() }]);
       setView("chat");
     } catch {
@@ -738,6 +745,23 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
           </>
         ) : (
           <>
+            {/* Viewing a thread from another practice set — the bot answers about
+                THAT set, so make it obvious rather than silently confusing. */}
+            {foreignSetName && (
+              <Group
+                gap={6}
+                px="sm"
+                py={8}
+                wrap="nowrap"
+                style={{ backgroundColor: "#FFF9EC", borderBottom: "1px solid #F1E3C2", flexShrink: 0 }}
+              >
+                <IconHistory size={13} stroke={1.8} color={PRIMARY} style={{ flexShrink: 0 }} />
+                <Text size="xs" c={INK} style={{ lineHeight: 1.4 }}>
+                  Continuing your chat about <strong>{foreignSetName}</strong>
+                </Text>
+              </Group>
+            )}
+
             {/* ── Messages ── */}
             <Box style={{ flex: 1, overflowY: "auto", padding: rem(16), backgroundColor: "white" }}>
               <Stack gap={20}>

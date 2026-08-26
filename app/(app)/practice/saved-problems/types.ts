@@ -1,4 +1,22 @@
+import type { Alignment } from "../[id]/types";
+
 export type Difficulty = "easy" | "medium" | "hard";
+
+export interface AnswerState {
+  selected_key: string;
+  correct: boolean;
+}
+
+/** One cell in the display-only navigator for the original practice set. */
+export interface SetQuestion {
+  question_id: string;
+  /** 1-based position across the flattened set (matches the practice navigator). */
+  number: number;
+  /** Which Problem (group) it belongs to. */
+  problem_number: number;
+  status: "correct" | "wrong" | "unanswered";
+  is_current: boolean;
+}
 
 export interface SavedQuestion {
   question_id: string;
@@ -23,19 +41,7 @@ export interface QuestionContent {
   options?: Record<string, string>;
   choices?: Record<string, string>;
   explanation?: string;
-}
-
-export interface AnswerState {
-  selected_key: string;
-  correct: boolean;
-}
-
-export interface SetQuestion {
-  question_id: string;
-  number: number;
-  problem_number: number;
-  status: "correct" | "wrong" | "unanswered";
-  is_current: boolean;
+  correct_answer?: string;
 }
 
 export interface SavedQuestionDetail extends SavedQuestion {
@@ -43,27 +49,26 @@ export interface SavedQuestionDetail extends SavedQuestion {
   content: { zh?: QuestionContent; en?: QuestionContent };
   /** Word bank / MC choices as a flat array. */
   choices: { key: string; text: string }[] | null;
-  /** Correct answer key (MC) or correct choice key for the current blank (DT/XT). */
-  answer: string;
-  /** Full markdown explanation, not split by language. */
-  explanation: string;
+  /** null when the student hasn't answered — withheld server-side otherwise. */
+  answer: string | null;
+  /** Single markdown explanation. null when the student hasn't answered. */
+  explanation: string | null;
   image_url: string | null;
-  /** Present when the student already answered this in the session it was saved from. */
+  question_number: number | null;
+  group_id: string | null;
+  /** Position in the ORIGINAL practice set. part_* only set for multi-question
+   *  Problems (e.g. one reading passage with several sub-questions). */
+  problem_number: number | null;
+  problem_total: number | null;
+  part_index: number | null;
+  part_total: number | null;
+  /** How the student did when they practised it; null = never answered. */
   answer_state: AnswerState | null;
-
-  // Cloze / set metadata
-  question_number?: number;
-  group_id?: string;
-  problem_number?: number;
-  problem_total?: number;
-  /** 1-based index of the blank this question covers (DT/XT). */
-  part_index?: number;
-  /** Total number of blanks in the group. */
-  part_total?: number;
-  set_questions?: SetQuestion[];
-
-  // Reading comprehension
-  passage?: string | null;
-  passage_alignment?: unknown;
-  alignment?: { vocab?: Record<string, unknown> };
+  /** Every question in the original set, for the display-only progress panel.
+   *  Empty array when that session has since been deleted. */
+  set_questions: SetQuestion[];
+  /** Reading passage + vocab, populated for YL (reading comprehension) questions. */
+  passage: string | null;
+  passage_alignment: Alignment | null;
+  alignment: Alignment | null;
 }
