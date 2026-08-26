@@ -1,4 +1,22 @@
+import type { Alignment } from "../[id]/types";
+
 export type Difficulty = "easy" | "medium" | "hard";
+
+export interface AnswerState {
+  selected_key: string;
+  correct: boolean;
+}
+
+/** One cell in the display-only navigator for the original practice set. */
+export interface SetQuestion {
+  question_id: string;
+  /** 1-based position across the flattened set (matches the practice navigator). */
+  number: number;
+  /** Which Problem (group) it belongs to. */
+  problem_number: number;
+  status: "correct" | "wrong" | "unanswered";
+  is_current: boolean;
+}
 
 export interface SavedQuestion {
   question_id: string;
@@ -32,19 +50,30 @@ export interface QuestionContent {
   choices?: Record<string, string>;
 }
 
-export interface AnswerState {
-  selected_key: string;
-  correct: boolean;
-}
-
 export interface SavedQuestionDetail extends SavedQuestion {
   content_en: QuestionContent;
   content_zh: QuestionContent;
   choices: { key: string; text: string }[] | null;
-  answer: string;
-  explanation_en: string;
-  explanation_zh: string;
+  /** null unless the student already answered this — withheld server-side otherwise. */
+  answer: string | null;
+  explanation_en: string | null;
+  explanation_zh: string | null;
   image_url: string | null;
-  /** Present when the student already answered this in the session it was saved from. */
+  question_number: number | null;
+  group_id: string | null;
+  /** Position in the ORIGINAL practice set. part_* only set for multi-question
+   *  Problems (e.g. one reading passage with several sub-questions). */
+  problem_number: number | null;
+  problem_total: number | null;
+  part_index: number | null;
+  part_total: number | null;
+  /** How the student did when they practised it; null = never answered. */
   answer_state: AnswerState | null;
+  /** Every question in the original set, for the display-only progress panels.
+   *  Empty when that session has since been deleted. */
+  set_questions: SetQuestion[];
+  /** Reading passage + vocab, populated for YL (reading comprehension) questions. */
+  passage: string | null;
+  passage_alignment: Alignment | null;
+  alignment: Alignment | null;
 }

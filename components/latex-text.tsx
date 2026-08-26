@@ -1,13 +1,13 @@
 "use client";
 
-import { MATH_RE, renderMath } from "@/lib/latex";
+import { splitMath, renderMath } from "@/lib/latex";
 
 /**
  * Renders a string that may contain LaTeX math delimited by $...$ (inline)
  * or $$...$$ (display/block). Plain text segments are rendered as-is.
  */
 export function LatexText({ children }: { children: string }) {
-  const segments = children.split(MATH_RE);
+  const segments = splitMath(children);
 
   return (
     <>

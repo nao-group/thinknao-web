@@ -12,7 +12,7 @@
 
 import { useState } from "react";
 import { rem } from "@mantine/core";
-import { MATH_RE, renderMath } from "@/lib/latex";
+import { splitMath, renderMath } from "@/lib/latex";
 import { INK } from "@/constants/colors";
 import type { Vocab, VocabEntry } from "../types";
 
@@ -84,7 +84,7 @@ function annotate(
 // ─── Inline segment renderer (handles LaTeX, preserves plain text) ─────────────
 
 function renderInlineSegment(text: string, keyPrefix: string): React.ReactElement[] {
-  return text.split(MATH_RE).map((part, i) => {
+  return splitMath(text).map((part, i) => {
     const k = `${keyPrefix}-m${i}`;
     if (part.startsWith("$$") && part.endsWith("$$")) {
       return (
