@@ -352,15 +352,12 @@ export function WordBankSet({
             <IconNotes size={18} stroke={1.5} color={PRIMARY} />
             <Text size="sm" fw={700} c={PRIMARY}>Answer Key &amp; Explanation</Text>
           </Group>
-          <Stack gap={rem(16)}>
-            {questions.map((q) => {
-              const explanation = q.content_zh?.explanation as string | undefined;
-              if (!explanation) return null;
-              return (
-                <MarkdownLatexText key={q.id} circleNums>{explanation}</MarkdownLatexText>
-              );
-            })}
-          </Stack>
+          {(() => {
+            const explanation = questions
+              .map((q) => q.content_zh?.explanation as string | undefined)
+              .find(Boolean);
+            return explanation ? <MarkdownLatexText circleNums>{explanation}</MarkdownLatexText> : null;
+          })()}
         </Box>
       )}
     </Stack>
