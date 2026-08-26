@@ -5,7 +5,7 @@ import { MarkdownLatexText } from "@/components/markdown-latex-text";
 import { IconNotes } from "@tabler/icons-react";
 import { PRIMARY } from "@/constants/colors";
 
-export function ExplanationBox({ explanation }: { explanation: string }) {
+export function ExplanationBox({ explanation, circleNums = false }: { explanation: string; circleNums?: boolean }) {
   return (
     <Box
       p="lg"
@@ -19,7 +19,7 @@ export function ExplanationBox({ explanation }: { explanation: string }) {
         <IconNotes size={16} stroke={1.5} color={PRIMARY} />
         <Text size="sm" fw={700} c={PRIMARY}>Answer Key &amp; Explanation</Text>
       </Group>
-      <MarkdownLatexText>{explanation}</MarkdownLatexText>
+      <MarkdownLatexText circleNums={circleNums}>{explanation}</MarkdownLatexText>
     </Box>
   );
 }

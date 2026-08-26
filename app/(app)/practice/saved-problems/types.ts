@@ -10,26 +10,19 @@ export interface SavedQuestion {
   topic_name: string | null;
   /** Raw markdown + LaTeX source — render with MarkdownLatexText. */
   question_text: string;
-  /** Server-flattened readable text for compact rows/suggestions, and what the
-   *  server matches search against. See to_plain_text in services/bookmarks.py. */
+  /** Server-flattened readable text for compact rows/suggestions. */
   question_text_plain: string;
   session_id: string | null;
   session_name: string | null;
   created_at: string;
 }
 
-/**
- * The bookmarks endpoint returns question content straight from the DB, unlike
- * the sessions endpoint which passes it through build_content() first. In the
- * raw shape the A/B/C/D choice map lives under `answer` (a confusing name — it
- * is the options, not the correct one); `options`/`choices` only appear on
- * content that has been through that transform. Read all three.
- */
 export interface QuestionContent {
   question?: string | Record<string, string>;
   answer?: Record<string, string>;
   options?: Record<string, string>;
   choices?: Record<string, string>;
+  explanation?: string;
 }
 
 export interface AnswerState {
@@ -37,14 +30,40 @@ export interface AnswerState {
   correct: boolean;
 }
 
+export interface SetQuestion {
+  question_id: string;
+  number: number;
+  problem_number: number;
+  status: "correct" | "wrong" | "unanswered";
+  is_current: boolean;
+}
+
 export interface SavedQuestionDetail extends SavedQuestion {
-  content_en: QuestionContent;
-  content_zh: QuestionContent;
+  /** Nested content object matching the practice page API format. */
+  content: { zh?: QuestionContent; en?: QuestionContent };
+  /** Word bank / MC choices as a flat array. */
   choices: { key: string; text: string }[] | null;
+  /** Correct answer key (MC) or correct choice key for the current blank (DT/XT). */
   answer: string;
-  explanation_en: string;
-  explanation_zh: string;
+  /** Full markdown explanation, not split by language. */
+  explanation: string;
   image_url: string | null;
   /** Present when the student already answered this in the session it was saved from. */
   answer_state: AnswerState | null;
+
+  // Cloze / set metadata
+  question_number?: number;
+  group_id?: string;
+  problem_number?: number;
+  problem_total?: number;
+  /** 1-based index of the blank this question covers (DT/XT). */
+  part_index?: number;
+  /** Total number of blanks in the group. */
+  part_total?: number;
+  set_questions?: SetQuestion[];
+
+  // Reading comprehension
+  passage?: string | null;
+  passage_alignment?: unknown;
+  alignment?: { vocab?: Record<string, unknown> };
 }

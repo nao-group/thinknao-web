@@ -14,7 +14,7 @@ import {
   UnstyledButton,
   rem,
 } from "@mantine/core";
-import { MarkdownLatexText } from "@/components/markdown-latex-text";
+import { MarkdownLatexText, CircleBadge } from "@/components/markdown-latex-text";
 import { LatexText } from "@/components/latex-text";
 import { Card } from "@/components/ui/card";
 import {
@@ -31,7 +31,7 @@ import { ReportModal } from "@/components/report-modal";
 import { SUBJECT_META } from "../../data";
 import { DIFFICULTY_STYLE, DIFFICULTY_LABEL } from "../components/ProblemRow";
 import { fetchSavedQuestion, removeBookmark } from "../api";
-import type { QuestionContent, SavedQuestionDetail } from "../types";
+import type { SavedQuestionDetail } from "../types";
 import { LanguageToggle, type Lang } from "@/components/language-toggle";
 import { useNavStore } from "@/store/nav";
 import { OptionRow } from "./components/OptionRow";
@@ -39,29 +39,422 @@ import { ExplanationBox } from "./components/ExplanationBox";
 
 import {
   INK, SURFACE, PRIMARY, CREAM, MUTED,
-  CORRECT_BG, CORRECT_DARK, WRONG_BG, WRONG_DARK,
+  CORRECT_BG, CORRECT_BORDER, CORRECT_GREEN,
+  WRONG_BG, WRONG_BORDER, WRONG_RED,
 } from "@/constants/colors";
 
-// ─── Content extraction — same shape/logic as practice/[id]/page.tsx's SummaryView ──
+// ─── Cloze segment parser ──────────────────────────────────────────────────────
 
-function getQuestionText(content: QuestionContent | undefined): string {
-  const q = content?.question;
-  if (!q) return "";
-  if (typeof q === "string") return q;
-  return Object.values(q)[0] ?? "";
+function parseClozeSegments(text: string): Array<{ type: "text" | "blank"; value: string }> {
+  if (/\{\d+\}/.test(text)) {
+    return text.split(/(\{\d+\})/g).map((part) => {
+      const m = part.match(/^\{(\d+)\}$/);
+      return m ? { type: "blank" as const, value: m[1] } : { type: "text" as const, value: part };
+    });
+  }
+  // ____ format — one blank per sentence
+  const parts = text.split("____");
+  const result: Array<{ type: "text" | "blank"; value: string }> = [];
+  parts.forEach((p, i) => {
+    result.push({ type: "text" as const, value: p });
+    if (i < parts.length - 1) result.push({ type: "blank" as const, value: "1" });
+  });
+  return result;
 }
 
-/**
- * `answer` is the raw-DB key holding the A/B/C/D choice map (see QuestionContent
- * in ../types); `options`/`choices` are what the sessions endpoint renames it to.
- * Checking all three keeps this working regardless of which shape we're handed.
- */
-function getOptions(content: QuestionContent | undefined): { key: string; text: string }[] {
-  const choiceMap = content?.options ?? content?.choices ?? content?.answer;
-  if (choiceMap && Object.keys(choiceMap).length > 0) {
-    return Object.entries(choiceMap).map(([key, text]) => ({ key, text }));
+// ─── Shared word bank (DT / XT pre-submit) ────────────────────────────────────
+
+function WordBank({
+  choices,
+  selectedKey,
+  label,
+  onSelect,
+}: {
+  choices: { key: string; text: string }[];
+  selectedKey: string | null;
+  label: string;
+  onSelect: (key: string) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: rem(8),
+        padding: rem(16),
+        borderRadius: rem(12),
+        border: "1px solid #E2E8F0",
+        backgroundColor: SURFACE,
+      }}
+    >
+      <Text size="xs" c={MUTED} style={{ width: "100%", marginBottom: rem(4) }}>
+        {label}
+      </Text>
+      {choices.map((choice) => {
+        const isSelected = choice.key === selectedKey;
+        return (
+          <span
+            key={choice.key}
+            onClick={() => onSelect(isSelected ? "" : choice.key)}
+            style={{
+              padding: `${rem(6)} ${rem(14)}`,
+              borderRadius: rem(20),
+              border: `1.5px solid ${isSelected ? PRIMARY : "#93C5FD"}`,
+              backgroundColor: isSelected ? CREAM : "#EFF6FF",
+              color: INK,
+              fontSize: rem(14),
+              fontWeight: 500,
+              cursor: "pointer",
+              userSelect: "none",
+              transition: "all 150ms ease",
+            }}
+          >
+            {choice.key}. {choice.text}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Inline blank renderer (used by both DT and XT) ───────────────────────────
+
+function ClozeBlank({
+  idx,
+  partIndex,
+  selectedKey,
+  correctKey,
+  submitted,
+  choices,
+  onClear,
+}: {
+  idx: string;
+  partIndex: number;
+  selectedKey: string | null;
+  correctKey: string;
+  submitted: boolean;
+  choices: { key: string; text: string }[];
+  onClear: () => void;
+}) {
+  const isCurrentBlank = Number(idx) === partIndex;
+
+  function getChoiceText(key: string) {
+    return choices.find((c) => c.key === key)?.text ?? key;
   }
-  return [];
+
+  // Non-active blanks — show a numbered neutral placeholder
+  if (!isCurrentBlank) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minWidth: rem(36),
+          minHeight: rem(28),
+          padding: `${rem(3)} ${rem(8)}`,
+          borderRadius: rem(8),
+          border: `1.5px dashed ${MUTED}`,
+          backgroundColor: SURFACE,
+          verticalAlign: "middle",
+          margin: `0 ${rem(3)}`,
+        }}
+      >
+        <CircleBadge n={idx} />
+      </span>
+    );
+  }
+
+  // Current blank — pre-submit
+  if (!submitted) {
+    const filledText = selectedKey ? getChoiceText(selectedKey) : null;
+    return (
+      <span
+        onClick={selectedKey ? onClear : undefined}
+        title={selectedKey ? "Click to clear" : undefined}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minWidth: rem(72),
+          minHeight: rem(32),
+          padding: `${rem(4)} ${rem(10)}`,
+          borderRadius: rem(8),
+          border: `1.5px dashed ${selectedKey ? "#93C5FD" : PRIMARY}`,
+          backgroundColor: selectedKey ? "#EFF6FF" : "#FFF9EC",
+          verticalAlign: "middle",
+          margin: `0 ${rem(3)}`,
+          fontSize: rem(14),
+          fontWeight: 500,
+          color: INK,
+          cursor: selectedKey ? "pointer" : "default",
+          transition: "all 150ms ease",
+        }}
+      >
+        {filledText ?? <CircleBadge n={idx} />}
+      </span>
+    );
+  }
+
+  // Current blank — submitted
+  const isCorrect = selectedKey === correctKey;
+  const selectedText = selectedKey ? getChoiceText(selectedKey) : null;
+  const correctText = getChoiceText(correctKey);
+
+  return (
+    <span
+      style={{
+        display: "inline",
+        verticalAlign: "middle",
+        margin: `0 ${rem(3)}`,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minWidth: rem(72),
+          minHeight: rem(32),
+          padding: `${rem(4)} ${rem(10)}`,
+          borderRadius: rem(8),
+          border: `1.5px solid ${isCorrect ? CORRECT_BORDER : WRONG_BORDER}`,
+          backgroundColor: isCorrect ? CORRECT_BG : WRONG_BG,
+          fontSize: rem(14),
+          fontWeight: 600,
+          color: isCorrect ? CORRECT_GREEN : WRONG_RED,
+        }}
+      >
+        {selectedText ?? "—"}
+      </span>
+      {!isCorrect && (
+        <span
+          style={{
+            fontSize: rem(12),
+            color: CORRECT_GREEN,
+            fontWeight: 600,
+            marginLeft: rem(4),
+          }}
+        >
+          → {correctText}
+        </span>
+      )}
+    </span>
+  );
+}
+
+// ─── DT: Paragraph cloze ──────────────────────────────────────────────────────
+
+function ParagraphClozeView({
+  text,
+  choices,
+  partIndex,
+  selectedKey,
+  correctKey,
+  submitted,
+  onSelect,
+}: {
+  text: string;
+  choices: { key: string; text: string }[];
+  partIndex: number;
+  selectedKey: string | null;
+  correctKey: string;
+  submitted: boolean;
+  onSelect: (key: string) => void;
+}) {
+  const segments = parseClozeSegments(text);
+
+  return (
+    <Stack gap={rem(16)}>
+      {!submitted && (
+        <WordBank
+          choices={choices}
+          selectedKey={selectedKey}
+          label={`备选词 / Word bank — click to fill blank ${partIndex}`}
+          onSelect={onSelect}
+        />
+      )}
+
+      {/* Paragraph with inline blanks */}
+      <div style={{ fontSize: rem(16), lineHeight: 2.2, color: INK }}>
+        {segments.map((seg, i) =>
+          seg.type === "text" ? (
+            <span key={i}>{seg.value}</span>
+          ) : (
+            <ClozeBlank
+              key={i}
+              idx={seg.value}
+              partIndex={partIndex}
+              selectedKey={selectedKey}
+              correctKey={correctKey}
+              submitted={submitted}
+              choices={choices}
+              onClear={() => onSelect("")}
+            />
+          )
+        )}
+      </div>
+    </Stack>
+  );
+}
+
+// ─── XT: Vocabulary / sentence cloze ──────────────────────────────────────────
+
+function SentenceClozeView({
+  text,
+  questionNumber,
+  choices,
+  selectedKey,
+  correctKey,
+  submitted,
+  onSelect,
+}: {
+  text: string;
+  questionNumber: number;
+  choices: { key: string; text: string }[];
+  selectedKey: string | null;
+  correctKey: string;
+  submitted: boolean;
+  onSelect: (key: string) => void;
+}) {
+  const segments = parseClozeSegments(text);
+
+  function getChoiceText(key: string) {
+    return choices.find((c) => c.key === key)?.text ?? key;
+  }
+
+  return (
+    <Stack gap={rem(16)}>
+      {!submitted && (
+        <WordBank
+          choices={choices}
+          selectedKey={selectedKey}
+          label="备选词 / Word bank — click to fill blank"
+          onSelect={onSelect}
+        />
+      )}
+
+      {/* Single sentence row */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          gap: rem(8),
+          padding: `${rem(12)} ${rem(16)}`,
+          borderRadius: rem(10),
+          border: "1px solid #E2E8F0",
+          backgroundColor: "white",
+          lineHeight: 2,
+        }}
+      >
+        {/* Question number circle */}
+        <span
+          style={{
+            minWidth: rem(28),
+            height: rem(28),
+            borderRadius: "50%",
+            backgroundColor: SURFACE,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: rem(12),
+            fontWeight: 700,
+            color: MUTED,
+            flexShrink: 0,
+          }}
+        >
+          {questionNumber}
+        </span>
+
+        <span style={{ fontSize: rem(15), color: INK, flex: 1 }}>
+          {segments.map((seg, i) => {
+            if (seg.type === "text") return <span key={i}>{seg.value}</span>;
+
+            if (!submitted) {
+              const filledText = selectedKey ? getChoiceText(selectedKey) : null;
+              return (
+                <span
+                  key={i}
+                  onClick={selectedKey ? () => onSelect("") : undefined}
+                  title={selectedKey ? "Click to clear" : undefined}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: rem(68),
+                    minHeight: rem(28),
+                    padding: `${rem(3)} ${rem(10)}`,
+                    borderRadius: rem(8),
+                    border: `1.5px dashed ${selectedKey ? "#93C5FD" : MUTED}`,
+                    backgroundColor: selectedKey ? "#EFF6FF" : SURFACE,
+                    verticalAlign: "middle",
+                    margin: `0 ${rem(4)}`,
+                    fontSize: rem(14),
+                    fontWeight: 500,
+                    color: INK,
+                    cursor: selectedKey ? "pointer" : "default",
+                    transition: "all 150ms ease",
+                  }}
+                >
+                  {filledText ?? (
+                    <span style={{ color: MUTED, fontSize: rem(12) }}>____</span>
+                  )}
+                </span>
+              );
+            }
+
+            const isCorrect = selectedKey === correctKey;
+            const selectedText = selectedKey ? getChoiceText(selectedKey) : null;
+            const correctText = getChoiceText(correctKey);
+
+            return (
+              <span
+                key={i}
+                style={{
+                  display: "inline",
+                  verticalAlign: "middle",
+                  margin: `0 ${rem(4)}`,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: rem(68),
+                    minHeight: rem(28),
+                    padding: `${rem(3)} ${rem(10)}`,
+                    borderRadius: rem(8),
+                    border: `1.5px solid ${isCorrect ? CORRECT_BORDER : WRONG_BORDER}`,
+                    backgroundColor: isCorrect ? CORRECT_BG : WRONG_BG,
+                    fontSize: rem(14),
+                    fontWeight: 600,
+                    color: isCorrect ? CORRECT_GREEN : WRONG_RED,
+                  }}
+                >
+                  {selectedText ?? "—"}
+                </span>
+                {!isCorrect && (
+                  <span
+                    style={{
+                      fontSize: rem(12),
+                      color: CORRECT_GREEN,
+                      fontWeight: 600,
+                      marginLeft: rem(4),
+                    }}
+                  >
+                    → {correctText}
+                  </span>
+                )}
+              </span>
+            );
+          })}
+        </span>
+      </div>
+    </Stack>
+  );
 }
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
@@ -72,9 +465,6 @@ export default function SavedProblemDetailPage() {
   const searchParams = useSearchParams();
   const questionId = params.id as string;
 
-  // The list of ids currently shown on the Saved Problems list (whatever page/filter
-  // was active there) — passed through so Prev/Next can walk that same set without
-  // a dedicated "ordered saved questions" endpoint.
   const idList = (searchParams.get("ids") ?? questionId).split(",").filter(Boolean);
   const currentIndex = idList.indexOf(questionId);
   const idsParam = idList.length > 0 ? `?ids=${idList.join(",")}` : "";
@@ -98,7 +488,6 @@ export default function SavedProblemDetailPage() {
   const ZOOM_MIN = 0.5;
   const ZOOM_MAX = 3;
 
-  // Feed the question code to the breadcrumb (it only has the UUID from the URL).
   const setProblemCode = useNavStore((s) => s.setProblemCode);
   useEffect(() => {
     if (problem?.code) setProblemCode(problem.code);
@@ -113,9 +502,6 @@ export default function SavedProblemDetailPage() {
     fetchSavedQuestion(questionId)
       .then((data) => {
         setProblem(data);
-        // Already answered in the session it was saved from? Open showing that
-        // result rather than as a fresh, untouched question — the student has
-        // seen the answer already, so hiding it here would just be confusing.
         if (data.answer_state) {
           setSelectedOption(data.answer_state.selected_key);
           setSubmitted(true);
@@ -201,10 +587,29 @@ export default function SavedProblemDetailPage() {
   const diff = DIFFICULTY_STYLE[problem.difficulty];
   const date = new Date(problem.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  const content = lang === "zh" ? problem.content_zh : problem.content_en;
-  const question = getQuestionText(content) || getQuestionText(problem.content_zh);
-  const options = getOptions(content).length > 0 ? getOptions(content) : getOptions(problem.content_zh);
-  const explanation = lang === "zh" ? problem.explanation_zh : problem.explanation_en;
+  // ── Data extraction ──────────────────────────────────────────────────────────
+
+  const contentZh = problem.content?.zh;
+  const contentEn = problem.content?.en;
+  const langContent = lang === "zh" ? contentZh : contentEn;
+
+  const rawQText = problem.question_text;
+  /** For non-cloze types, get the question stem (respects lang). */
+  function getQuestionStem(): string {
+    const q = langContent?.question ?? contentZh?.question;
+    if (!q) return rawQText;
+    if (typeof q === "string") return q;
+    return Object.values(q)[0] ?? rawQText;
+  }
+
+  const choices = problem.choices ?? [];
+  const correctAnswer = problem.answer;
+  const explanation = problem.explanation;
+  const partIndex = problem.part_index ?? 1;
+
+  const isDT = problem.question_type === "DT";
+  const isXT = problem.question_type === "XT";
+  const isCloze = isDT || isXT;
 
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex >= 0 && currentIndex < idList.length - 1;
@@ -248,8 +653,8 @@ export default function SavedProblemDetailPage() {
                       size="sm"
                       radius="sm"
                       style={{
-                        backgroundColor: problem.answer_state.correct ? CORRECT_BG : WRONG_BG,
-                        color: problem.answer_state.correct ? CORRECT_DARK : WRONG_DARK,
+                        backgroundColor: problem.answer_state.correct ? "#DCFCE7" : "#FEE2E2",
+                        color: problem.answer_state.correct ? "#15803D" : "#B91C1C",
                         fontWeight: 600,
                       }}
                     >
@@ -279,95 +684,185 @@ export default function SavedProblemDetailPage() {
                 </Group>
               </Group>
 
-              {/* Question text */}
-              <Box p="md" mb="lg" style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}>
-                <Box fz="md" c={INK} lh={1.7}>
-                  <MarkdownLatexText>{question}</MarkdownLatexText>
-                </Box>
-              </Box>
+              {/* ── Question body ── */}
 
-              {/* Question image */}
-              {problem.image_url && (
-                <Box mb="lg" style={{ display: "flex", justifyContent: "center" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={problem.image_url}
-                    alt="Question figure"
-                    onClick={openLightbox}
-                    style={{
-                      maxWidth: "100%",
-                      maxHeight: rem(280),
-                      borderRadius: rem(8),
-                      objectFit: "contain",
-                      cursor: "zoom-in",
-                    }}
+              {/* DT: Paragraph cloze */}
+              {isDT && (
+                <Box mb="lg">
+                  <ParagraphClozeView
+                    text={problem.question_text}
+                    choices={choices}
+                    partIndex={partIndex}
+                    selectedKey={selectedOption}
+                    correctKey={correctAnswer}
+                    submitted={submitted}
+                    onSelect={(key) => { if (!submitted) setSelectedOption(key || null); }}
                   />
                 </Box>
               )}
 
-              {/* Options */}
-              <Stack gap="sm" mb="lg">
-                {options.map((opt) => {
-                  const isCorrect = opt.key === problem.answer;
-                  const isSelected = submitted && opt.key === selectedOption && !isCorrect;
-                  const showResult = submitted;
+              {/* XT: Vocabulary / sentence cloze */}
+              {isXT && (
+                <Box mb="lg">
+                  <SentenceClozeView
+                    text={problem.question_text}
+                    questionNumber={problem.question_number ?? 1}
+                    choices={choices}
+                    selectedKey={selectedOption}
+                    correctKey={correctAnswer}
+                    submitted={submitted}
+                    onSelect={(key) => { if (!submitted) setSelectedOption(key || null); }}
+                  />
+                </Box>
+              )}
 
-                  if (showResult) {
-                    return (
-                      <OptionRow
-                        key={opt.key}
-                        optKey={opt.key}
-                        text={opt.text}
-                        isCorrect={isCorrect}
-                        isSelected={isSelected}
-                      />
-                    );
-                  }
-
-                  const chosen = opt.key === selectedOption;
-                  return (
+              {/* Reading comprehension / standard MC */}
+              {!isCloze && (
+                <>
+                  {/* Passage — shown for YL questions */}
+                  {problem.passage && (
                     <Box
-                      key={opt.key}
-                      onClick={() => setSelectedOption(opt.key)}
+                      p="md"
+                      mb="md"
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: rem(12),
-                        padding: `${rem(14)} ${rem(16)}`,
+                        backgroundColor: SURFACE,
                         borderRadius: rem(10),
-                        border: `${chosen ? "2px" : "1.5px"} solid ${chosen ? PRIMARY : "#E2E8F0"}`,
-                        backgroundColor: chosen ? CREAM : "white",
-                        cursor: "pointer",
-                        transition: "all 150ms ease",
+                        border: "1.5px solid #E2E8F0",
+                        lineHeight: 1.9,
+                        fontSize: rem(15),
+                        color: INK,
                       }}
                     >
-                      <Box
-                        style={{
-                          width: rem(32),
-                          height: rem(32),
-                          borderRadius: "50%",
-                          backgroundColor: chosen ? PRIMARY : SURFACE,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                          fontSize: rem(13),
-                          fontWeight: 700,
-                          color: chosen ? INK : MUTED,
-                        }}
+                      <Text
+                        size="xs"
+                        fw={700}
+                        c={MUTED}
+                        mb={rem(6)}
+                        style={{ letterSpacing: "0.05em", textTransform: "uppercase" }}
                       >
-                        {opt.key}
-                      </Box>
-                      <Box fz="sm" c={INK} fw={chosen ? 600 : 400}>
-                        <LatexText>{opt.text}</LatexText>
-                      </Box>
+                        Passage / 阅读材料
+                      </Text>
+                      <div style={{ whiteSpace: "pre-wrap" }}>
+                        <MarkdownLatexText>{problem.passage}</MarkdownLatexText>
+                      </div>
                     </Box>
-                  );
-                })}
-              </Stack>
+                  )}
+
+                  {/* Question text with number badge */}
+                  <Box p="md" mb="lg" style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}>
+                    {problem.question_number ? (
+                      <Group gap={rem(10)} align="flex-start">
+                        <Box
+                          style={{
+                            minWidth: rem(28),
+                            height: rem(28),
+                            borderRadius: "50%",
+                            backgroundColor: "#F0F4FF",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: rem(13),
+                            fontWeight: 700,
+                            color: "#6670B0",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {problem.question_number}
+                        </Box>
+                        <Box fz="md" c={INK} lh={1.7} style={{ flex: 1 }}>
+                          <MarkdownLatexText>{getQuestionStem()}</MarkdownLatexText>
+                        </Box>
+                      </Group>
+                    ) : (
+                      <Box fz="md" c={INK} lh={1.7}>
+                        <MarkdownLatexText>{getQuestionStem()}</MarkdownLatexText>
+                      </Box>
+                    )}
+                  </Box>
+
+                  {/* Question image */}
+                  {problem.image_url && (
+                    <Box mb="lg" style={{ display: "flex", justifyContent: "center" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={problem.image_url}
+                        alt="Question figure"
+                        onClick={openLightbox}
+                        style={{
+                          maxWidth: "100%",
+                          maxHeight: rem(280),
+                          borderRadius: rem(8),
+                          objectFit: "contain",
+                          cursor: "zoom-in",
+                        }}
+                      />
+                    </Box>
+                  )}
+
+                  {/* Options */}
+                  <Stack gap="sm" mb="lg">
+                    {choices.map((opt) => {
+                      const isCorrect = opt.key === correctAnswer;
+                      const isSelected = submitted && opt.key === selectedOption && !isCorrect;
+
+                      if (submitted) {
+                        return (
+                          <OptionRow
+                            key={opt.key}
+                            optKey={opt.key}
+                            text={opt.text}
+                            isCorrect={isCorrect}
+                            isSelected={isSelected}
+                          />
+                        );
+                      }
+
+                      const chosen = opt.key === selectedOption;
+                      return (
+                        <Box
+                          key={opt.key}
+                          onClick={() => setSelectedOption(opt.key)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: rem(12),
+                            padding: `${rem(14)} ${rem(16)}`,
+                            borderRadius: rem(10),
+                            border: `${chosen ? "2px" : "1.5px"} solid ${chosen ? PRIMARY : "#E2E8F0"}`,
+                            backgroundColor: chosen ? CREAM : "white",
+                            cursor: "pointer",
+                            transition: "all 150ms ease",
+                          }}
+                        >
+                          <Box
+                            style={{
+                              width: rem(32),
+                              height: rem(32),
+                              borderRadius: "50%",
+                              backgroundColor: chosen ? PRIMARY : SURFACE,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                              fontSize: rem(13),
+                              fontWeight: 700,
+                              color: chosen ? INK : MUTED,
+                            }}
+                          >
+                            {opt.key}
+                          </Box>
+                          <Box fz="sm" c={INK} fw={chosen ? 600 : 400}>
+                            <LatexText>{opt.text}</LatexText>
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </Stack>
+                </>
+              )}
 
               {/* Explanation — shown after submit */}
-              {submitted && explanation && <ExplanationBox explanation={explanation} />}
+              {submitted && explanation && <ExplanationBox explanation={explanation} circleNums={isCloze} />}
             </Card>
 
             {/* Navigation row */}
@@ -435,6 +930,13 @@ export default function SavedProblemDetailPage() {
                     <Group justify="space-between">
                       <Text size="sm" c="dimmed">Topic</Text>
                       <Text size="sm" fw={600} c={INK}>{problem.topic_name}</Text>
+                    </Group>
+                  )}
+                  {/* Part info for cloze questions */}
+                  {isCloze && problem.part_index != null && problem.part_total != null && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Blank</Text>
+                      <Text size="sm" fw={600} c={INK}>{problem.part_index} of {problem.part_total}</Text>
                     </Group>
                   )}
                   {problem.session_name && problem.session_id && (
@@ -652,14 +1154,6 @@ export default function SavedProblemDetailPage() {
       )}
 
       <ReportModal opened={reportOpen} onClose={() => setReportOpen(false)} />
-
-      {/*
-        No FloatingChatbot on this page — each saved question can come from a
-        different session, and the chatbot's context (mastery summary, sibling
-        Problems in the session, etc.) is grounded in one specific session, not
-        a cross-session shortlist like this. Ask about a saved question from
-        its own practice session instead.
-      */}
     </Box>
   );
 }

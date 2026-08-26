@@ -25,7 +25,7 @@ function plainText(text: string, key: string): React.ReactElement {
 }
 
 /** Circle badge for {N} */
-function CircleBadge({ n, keyStr }: { n: string; keyStr: string }) {
+export function CircleBadge({ n, keyStr }: { n: string; keyStr?: string }) {
   return (
     <span
       key={keyStr}

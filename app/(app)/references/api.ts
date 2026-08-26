@@ -49,7 +49,7 @@ function mapWord(row: ApiWord): WordEntry {
   const example = row.example;
   return {
     id: row.id,
-    subject: SUBJECT_LABELS[row.subject],
+    subject: SUBJECT_LABELS[row.subject] ?? "Mathematics",
     term: row.english_word,
     zh: row.hanzi,
     pinyin: row.pinyin,
@@ -65,7 +65,7 @@ function mapWord(row: ApiWord): WordEntry {
 function mapFormula(row: ApiFormula): FormulaEntry {
   return {
     id: row.id,
-    subject: SUBJECT_LABELS[row.subject],
+    subject: SUBJECT_LABELS[row.subject] ?? "Mathematics",
     name: row.english_name,
     zhName: row.name_hanzi,
     pinyin: row.pinyin,
