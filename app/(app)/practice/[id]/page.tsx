@@ -546,10 +546,10 @@ function SummaryView({
                     })}
                   </Stack>
                   {submitted && explanation && (
-                    <Box style={{ backgroundColor: "#FFF9EC", borderLeft: `4px solid ${PRIMARY}`, borderRadius: rem(10), padding: rem(16) }}>
+                    <Box className="answer-explanation-panel">
                       <Group gap={8} mb={rem(8)}>
-                        <IconNotes size={18} stroke={1.5} color={PRIMARY} />
-                        <Text size="sm" fw={700} c={PRIMARY}>Explanation</Text>
+                        <IconNotes size={18} stroke={1.5} color="#5F7D59" />
+                        <Text className="answer-explanation-header" size="sm" fw={700}>Explanation</Text>
                       </Group>
                       <MarkdownLatexText>{explanation}</MarkdownLatexText>
                     </Box>
@@ -645,10 +645,10 @@ function SummaryView({
                     .find(Boolean);
                   if (!explanation) return null;
                   return (
-                    <Box style={{ backgroundColor: "#FFF9EC", borderLeft: `4px solid ${PRIMARY}`, borderRadius: rem(10), padding: rem(16) }}>
+                    <Box className="answer-explanation-panel">
                       <Group gap={8} mb={rem(8)}>
-                        <IconNotes size={18} stroke={1.5} color={PRIMARY} />
-                        <Text size="sm" fw={700} c={PRIMARY}>Explanation</Text>
+                        <IconNotes size={18} stroke={1.5} color="#5F7D59" />
+                        <Text className="answer-explanation-header" size="sm" fw={700}>Explanation</Text>
                       </Group>
                       <MarkdownLatexText circleNums>{explanation}</MarkdownLatexText>
                     </Box>
@@ -1158,15 +1158,10 @@ export default function PracticeDetailPage() {
                     }}
                   />
                   {submittedGroups.has(currentQ) && (
-                    <Box mt="md" style={{
-                      backgroundColor: "#FFF9EC",
-                      borderLeft: `4px solid ${PRIMARY}`,
-                      borderRadius: rem(10),
-                      padding: rem(20),
-                    }}>
+                    <Box mt="md" className="answer-explanation-panel">
                       <Group gap={8} mb={rem(10)}>
-                        <IconNotes size={18} stroke={1.5} color={PRIMARY} />
-                        <Text size="sm" fw={700} c={PRIMARY}>Answer Key &amp; Explanation</Text>
+                        <IconNotes size={18} stroke={1.5} color="#5F7D59" />
+                        <Text className="answer-explanation-header" size="sm" fw={700}>Answer Key &amp; Explanation</Text>
                       </Group>
                       {(activeGroup.questions[0].content_zh.explanation as string | undefined) && (
                         <MarkdownLatexText circleNums>

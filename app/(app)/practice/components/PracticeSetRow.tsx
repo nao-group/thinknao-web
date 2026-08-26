@@ -12,7 +12,7 @@ import {
   UnstyledButton,
   rem,
 } from "@mantine/core";
-import { IconDotsVertical, IconPencil, IconTrash } from "@tabler/icons-react";
+import { IconArrowRight, IconDotsVertical, IconPencil, IconTrash } from "@tabler/icons-react";
 import { INK, MUTED } from "@/constants/colors";
 import { SUBJECT_META } from "../data";
 import type { ApiSession } from "../types";
@@ -93,7 +93,13 @@ export function PracticeSetRow({
       </Box>
 
       <Group gap={rem(6)} style={{ flexShrink: 0 }}>
-        <Button size="xs" variant="default" radius="sm" onClick={onContinue}>
+        <Button
+          className="landing-action-button"
+          size="xs"
+          variant="filled"
+          rightSection={<IconArrowRight size={14} stroke={2.2} />}
+          onClick={onContinue}
+        >
           {action}
         </Button>
 

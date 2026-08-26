@@ -263,7 +263,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+    <Box className="editorial-page" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <input
         ref={avatarInputRef}
         type="file"
@@ -391,7 +391,7 @@ export default function ProfilePage() {
               <Skeleton height={20} width={160} mb={8} />
             ) : (
               <Group gap={8} mb={4} align="center">
-                <Text fw={700} size="xl" c={INK}>{profile?.full_name}</Text>
+                <Text className="editorial-page-title">{profile?.full_name}</Text>
                 <Badge size="sm" color="dark" variant="filled" radius="sm">PRO</Badge>
               </Group>
             )}

@@ -228,7 +228,7 @@ export default function PracticePage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+    <Box className="editorial-page" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <Box p={{ base: "md", sm: "xl" }} style={{ flex: 1 }}>
         <Group align="flex-start" gap="xl" wrap="nowrap" style={{ alignItems: "stretch" }}>
 
@@ -236,10 +236,10 @@ export default function PracticePage() {
           <Stack style={{ flex: 1, minWidth: 0 }} gap="md">
 
             {/* Generate Practice Set */}
-            <Card p="xl">
+            <Card p="xl" className="warm-surface">
               <Group justify="space-between" align="flex-start" mb={rem(6)}>
                 <Box>
-                  <Text fw={700} size="lg" c={INK} mb={4}>Generate Practice Set</Text>
+                  <Text className="editorial-section-title" size="lg" c={INK} mb={4}>Generate Practice Set</Text>
                   <Text size="sm" c="dimmed">Choose a subject and let AI build your set instantly</Text>
                 </Box>
                 <Group gap={6} px="sm" py={rem(6)} style={{ borderRadius: rem(999), border: `1px solid ${PRIMARY}`, flexShrink: 0 }}>
@@ -261,9 +261,10 @@ export default function PracticePage() {
 
               <Group justify="flex-end">
                 <Button
-                  leftSection={<IconPlus size={15} stroke={2} />}
-                  size="md" radius="lg" onClick={openGenerateModal}
-                  style={{ backgroundColor: INK, color: "white", fontWeight: 600, paddingLeft: rem(15) }}
+                  className="landing-action-button"
+                  rightSection={<IconPlus size={15} stroke={2.2} />}
+                  size="md"
+                  onClick={openGenerateModal}
                 >
                   Generate Practice Set
                 </Button>
@@ -271,9 +272,9 @@ export default function PracticePage() {
             </Card>
 
             {/* My Practice Sets */}
-            <Card p="xl">
+            <Card p="xl" className="warm-surface">
               <Group justify="space-between" align="center" mb="lg">
-                <Text fw={700} size="lg" c={INK}>My Practice Sets</Text>
+                <Text className="editorial-section-title" size="lg" c={INK}>My Practice Sets</Text>
                 <Group gap="sm" align="center">
                   <Tooltip label="Search practice sets" position="bottom" withArrow>
                     <UnstyledButton
@@ -740,15 +741,11 @@ export default function PracticePage() {
                 Cancel
               </Button>
               <Button
-                leftSection={<IconPlus size={15} stroke={2} />}
-                radius="md"
+                className="landing-action-button"
+                rightSection={<IconPlus size={15} stroke={2.2} />}
                 loading={generating}
                 disabled={!modalTopic || topicsLoading}
                 onClick={handleGenerate}
-                style={{
-                  backgroundColor: !modalTopic || topicsLoading ? "#94A3B8" : INK,
-                  color: "white", fontWeight: 600, opacity: 1,
-                }}
               >
                 Generate Practice Set
               </Button>

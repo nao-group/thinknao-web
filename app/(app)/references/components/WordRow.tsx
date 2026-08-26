@@ -13,7 +13,7 @@ export function WordRow({ entry, onClick }: { entry: WordEntry; onClick: () => v
       className="hover-zoom"
       onClick={onClick}
       style={{
-        backgroundColor: "white",
+        backgroundColor: "#FFFDF8",
         borderRadius: rem(10),
         border: "1.5px solid #F1F5F9",
         display: "flex",

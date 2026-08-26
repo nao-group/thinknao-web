@@ -150,12 +150,12 @@ export default function ReferencesPage() {
   }
 
   return (
-    <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+    <Box className="editorial-page" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <Box p={{ base: "md", sm: "xl" }} style={{ flex: 1 }}>
         {/* Page header */}
         <Group justify="space-between" align="flex-start" mb="lg" wrap="nowrap">
           <Box>
-            <Text fw={800} size="xl" c={INK} mb={4}>References</Text>
+            <Text className="editorial-page-title" mb={4}>References</Text>
             <Text size="sm" c="dimmed">Study key vocabulary and formulas with flashcards.</Text>
           </Box>
           <Tooltip
@@ -180,7 +180,7 @@ export default function ReferencesPage() {
         </Group>
 
         {/* Main card */}
-        <Box style={{ backgroundColor: "white", borderRadius: rem(16) }}>
+        <Box className="warm-surface">
           {/* Tab bar */}
           <Box px="lg" pt="md">
             <TabBar

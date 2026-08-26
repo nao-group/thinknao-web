@@ -17,12 +17,13 @@ export function SubjectCard({
   return (
     <UnstyledButton
       onClick={onSelect}
-      className="hover-zoom"
+      className="landing-filter-card"
+      data-active={selected}
       style={{
         width: "100%", height: "100%", padding: rem(20),
         borderRadius: rem(12),
         border: `2px solid ${selected ? PRIMARY : "#E2E8F0"}`,
-        backgroundColor: selected ? CREAM : "white",
+        backgroundColor: selected ? CREAM : "#FFFDF8",
         display: "flex", flexDirection: "column", alignItems: "center",
         gap: rem(10), transition: "border-color 150ms ease, background-color 150ms ease",
         cursor: "pointer",

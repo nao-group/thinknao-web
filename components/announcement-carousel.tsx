@@ -122,7 +122,13 @@ export function AnnouncementCarousel() {
                       order={3}
                       c="white"
                       mb={8}
-                      style={{ fontSize: rem(18), lineHeight: 1.35, fontWeight: 700 }}
+                      style={{
+                        fontFamily: 'Georgia, "Times New Roman", serif',
+                        fontSize: rem(22),
+                        lineHeight: 1.25,
+                        fontWeight: 600,
+                        letterSpacing: "-0.025em",
+                      }}
                     >
                       {slide.title}
                     </Title>

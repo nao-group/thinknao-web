@@ -4,7 +4,7 @@ import { Box, Group, rem, Stack, Text } from "@mantine/core";
 import { IconNotes } from "@tabler/icons-react";
 import { MarkdownLatexText } from "@/components/markdown-latex-text";
 import {
-  INK, SURFACE, MUTED, PRIMARY,
+  INK, SURFACE, MUTED,
   CORRECT_BG, CORRECT_BORDER, CORRECT_GREEN,
   WRONG_BG, WRONG_BORDER, WRONG_RED,
 } from "@/constants/colors";
@@ -341,16 +341,11 @@ export function WordBankSet({
       {/* Post-submit answer key & explanation */}
       {submitted && (
         <Box
-          style={{
-            backgroundColor: "#FFF9EC",
-            borderLeft: `4px solid ${PRIMARY}`,
-            borderRadius: rem(10),
-            padding: rem(20),
-          }}
+          className="answer-explanation-panel"
         >
           <Group gap={8} mb={rem(12)}>
-            <IconNotes size={18} stroke={1.5} color={PRIMARY} />
-            <Text size="sm" fw={700} c={PRIMARY}>Answer Key &amp; Explanation</Text>
+            <IconNotes size={18} stroke={1.5} color="#5F7D59" />
+            <Text className="answer-explanation-header" size="sm" fw={700}>Answer Key &amp; Explanation</Text>
           </Group>
           {(() => {
             const explanation = questions

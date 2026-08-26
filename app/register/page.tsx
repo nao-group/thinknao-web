@@ -131,7 +131,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <AuthSplitLayout>
+    <AuthSplitLayout mode="register">
       <AuthHeader
         eyebrow="Get started"
         title="Create your account"

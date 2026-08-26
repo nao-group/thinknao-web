@@ -13,7 +13,7 @@ export function RecentAttempts() {
         const meta = SUBJECT_META[exam.subject];
         const Icon = meta.icon;
         return (
-          <Box key={exam.id} p="md" style={{ backgroundColor: "white", borderRadius: rem(12) }}>
+          <Box key={exam.id} p="md" className="warm-surface" style={{ borderRadius: rem(14) }}>
             <Group justify="space-between" mb={6}>
               <Badge
                 size="sm"

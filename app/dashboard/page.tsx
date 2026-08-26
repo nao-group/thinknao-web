@@ -30,6 +30,7 @@ import { AnnouncementCarousel } from "@/components/announcement-carousel";
 import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
 import type { Session, SessionProgress } from "./types";
 import { fetchRecentSessions, fetchInProgressSessions, fetchSessionProgress } from "./api";
+import styles from "./dashboard.module.css";
 
 // ─── Subject meta ──────────────────────────────────────────────────────────────
 
@@ -60,7 +61,7 @@ function ProblemSetCard({ session, onClick }: { session: Session; onClick: () =>
   return (
     <Card
       p="lg"
-      className="hover-zoom"
+      className={styles.practiceCard}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -84,7 +85,7 @@ function ProblemSetCard({ session, onClick }: { session: Session; onClick: () =>
       </Box>
 
       <Box style={{ flex: 1 }}>
-        <Text fw={700} size="sm" c={INK} mb={4}>
+        <Text className={styles.cardTitle} fw={700} size="sm" c={INK} mb={4}>
           {session.name}
         </Text>
         <Text size="xs" c="dimmed">
@@ -143,7 +144,7 @@ function InProgressItem({
   return (
     <Card
       p="md"
-      className="hover-zoom"
+      className={styles.progressCard}
       style={{
         display: "flex",
         alignItems: "center",
@@ -169,7 +170,7 @@ function InProgressItem({
 
       <Box style={{ flex: 1, minWidth: 0 }}>
         <Group justify="space-between" mb={6}>
-          <Text size="sm" fw={600} c={INK} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <Text className={styles.cardTitle} size="sm" fw={600} c={INK} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {session.name}
           </Text>
           <Text size="sm" fw={700} c={color} style={{ flexShrink: 0 }}>
@@ -233,13 +234,13 @@ function LearningActivity() {
   return (
     <Card
       p="lg"
+      className={styles.activityCard}
       style={{ height: "100%" }}
     >
       <Text
+        className={styles.sectionTitle}
         size="xs"
         fw={700}
-        tt="uppercase"
-        style={{ letterSpacing: "0.06em" }}
         c="dimmed"
         mb={16}
       >
@@ -305,9 +306,9 @@ function LearningActivity() {
 
 function SubscriptionCard() {
   return (
-    <Box p="lg" style={{ backgroundColor: INK, borderRadius: rem(14) }}>
+    <Box p="lg" className={styles.subscriptionCard} style={{ backgroundColor: INK }}>
       <Group justify="space-between" mb="md">
-        <Text fw={700} size="sm" c="white">Subscription</Text>
+        <Text className={styles.darkCardTitle} fw={700} size="sm" c="white">Subscription</Text>
         <Box
           px={8}
           py={2}
@@ -406,14 +407,14 @@ export default function DashboardPage() {
   }
 
   return (
-    <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-      <Box p={{ base: "md", sm: "xl" }} style={{ flex: 1 }}>
+    <Box className={styles.page} style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+      <Box className={styles.pageInner} p={{ base: "md", sm: "xl" }} style={{ flex: 1 }}>
         <Group align="flex-start" gap="xl" wrap="nowrap" style={{ alignItems: "stretch" }}>
           {/* Main column */}
-          <Stack style={{ flex: 1, minWidth: 0 }}>
+          <Stack className={styles.mainColumn} style={{ flex: 1, minWidth: 0 }}>
             {/* Announcements */}
             <Box>
-              <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mb={12}>
+              <Text className={styles.sectionTitle} c={INK} mb={12}>
                 Announcements
               </Text>
               <AnnouncementCarousel />
@@ -422,10 +423,10 @@ export default function DashboardPage() {
             {/* Your Last Practice Sets */}
             <Box>
               <Group justify="space-between" mb={12}>
-                <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed">
+                <Text className={styles.sectionTitle} c={INK}>
                   Your Last Practice Sets
                 </Text>
-                <Link href="/practice" style={{ display: "flex", alignItems: "center", gap: rem(4), color: PRIMARY, fontWeight: 600, fontSize: rem(13), textDecoration: "none" }}>
+                <Link className={styles.viewAll} href="/practice">
                   View all <IconChevronRight size={14} />
                 </Link>
               </Group>
@@ -449,10 +450,10 @@ export default function DashboardPage() {
             {/* In Progress */}
             <Box>
               <Group justify="space-between" mb={12}>
-                <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed">
+                <Text className={styles.sectionTitle} c={INK}>
                   In Progress
                 </Text>
-                <Link href="/practice" style={{ display: "flex", alignItems: "center", gap: rem(4), color: PRIMARY, fontWeight: 600, fontSize: rem(13), textDecoration: "none" }}>
+                <Link className={styles.viewAll} href="/practice">
                   View all <IconChevronRight size={14} />
                 </Link>
               </Group>
@@ -480,7 +481,7 @@ export default function DashboardPage() {
           </Stack>
 
           {/* Right panel */}
-          <Box visibleFrom="lg" style={{ width: rem(280), flexShrink: 0 }}>
+          <Box className={styles.rightRail} visibleFrom="lg" style={{ width: rem(292), flexShrink: 0 }}>
             <Stack gap="md">
               <LearningActivity />
               <SubscriptionCard />

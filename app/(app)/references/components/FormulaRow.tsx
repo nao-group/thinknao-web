@@ -16,7 +16,7 @@ export function FormulaRow({ entry, onClick }: { entry: FormulaEntry; onClick: (
       className="hover-zoom"
       onClick={onClick}
       style={{
-        backgroundColor: "white",
+        backgroundColor: "#FFFDF8",
         borderRadius: rem(10),
         border: "1.5px solid #F1F5F9",
         display: "flex",

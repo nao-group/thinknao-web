@@ -18,7 +18,6 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import {
   IconAlignJustified,
-  IconBell,
   IconBook,
   IconChartBar,
   IconChevronLeft,
@@ -31,8 +30,8 @@ import { ProfileMenu } from "@/components/profile-menu";
 import { useAuthStore } from "@/store/auth";
 import { useNavStore } from "@/store/nav";
 import { INK, MUTED } from "@/constants/colors";
+import styles from "./nav-shell.module.css";
 
-const ACTIVE_BG = "#374151";
 const HEADER_HEIGHT = 80;
 const SIDEBAR_EXPANDED = 240;
 const SIDEBAR_COLLAPSED = 72;
@@ -92,34 +91,17 @@ function NavItem({
   onClick: () => void;
 }) {
   const Icon = item.icon;
-  const [hovered, setHovered] = useState(false);
 
   const button = (
     <UnstyledButton
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: collapsed ? "center" : "flex-start",
-        gap: rem(10),
-        padding: collapsed ? `${rem(9)} 0` : `${rem(9)} ${rem(12)}`,
-        borderRadius: rem(10),
-        width: "100%",
-        fontSize: rem(14),
-        fontWeight: active ? 600 : 400,
-        color: active ? "white" : hovered ? INK : MUTED,
-        backgroundColor: active ? ACTIVE_BG : hovered ? "rgba(245, 158, 11, 0.08)" : "transparent",
-        transition: "background-color 150ms ease, color 150ms ease",
-      }}
+      className={styles.navItem}
+      data-active={active || undefined}
+      data-collapsed={collapsed || undefined}
+      aria-current={active ? "page" : undefined}
     >
-      <Icon
-        size={17}
-        stroke={1.5}
-        style={hovered ? { animation: "icon-spin 400ms ease forwards" } : undefined}
-      />
-      {!collapsed && item.label}
+      <Icon size={18} stroke={1.65} aria-hidden="true" />
+      {!collapsed && <span>{item.label}</span>}
     </UnstyledButton>
   );
 
@@ -201,7 +183,10 @@ export function NavShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    setCollapsed(localStorage.getItem("nav-collapsed") === "true");
+    const frame = requestAnimationFrame(() => {
+      setCollapsed(localStorage.getItem("nav-collapsed") === "true");
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   const toggleCollapsed = () =>
@@ -240,7 +225,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
       padding={0}
     >
       {/* ── Full-width header ── */}
-      <AppShell.Header style={{ borderBottom: "1px solid #E2E8F0" }}>
+      <AppShell.Header className={styles.header}>
         <Group h="100%" wrap="nowrap" gap={0}>
           {/* Logo section — width tracks sidebar */}
           <UnstyledButton
@@ -254,7 +239,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
               alignItems: "center",
               paddingInline: collapsed ? 0 : rem(20),
               justifyContent: collapsed ? "center" : "flex-start",
-              borderRight: "1px solid #E2E8F0",
+              borderRight: "1px solid rgba(15, 23, 42, 0.08)",
               transition: "width 200ms ease, padding 200ms ease",
               cursor: "pointer",
             }}
@@ -271,7 +256,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
           {/* Welcome + actions */}
           <Group flex={1} px={{ base: "md", sm: "xl" }} justify="space-between" align="center" wrap="nowrap">
             <Box visibleFrom="sm">
-              <Text fw={700} size="xl" c={INK} lh={1.5}>
+              <Text className={styles.greeting} c={INK} lh={1.2}>
                 {getGreeting(pathname)}, {firstName}!
               </Text>
               {breadcrumbs ? (
@@ -312,22 +297,21 @@ export function NavShell({ children }: { children: React.ReactNode }) {
 
       {/* ── Sidebar ── */}
       <AppShell.Navbar
+        className={styles.navbar}
         style={{
-          backgroundColor: "white",
-          borderRight: "1px solid #E2E8F0",
           display: "flex",
           flexDirection: "column",
         }}
       >
-        <ScrollArea flex={1} px={collapsed ? rem(8) : "xs"} py="sm">
+        <ScrollArea flex={1} px={collapsed ? 0 : "xs"} py="md">
           <Stack gap={0}>
             {NAV_SECTIONS.map((section, si) => (
               <Box key={section.label} mb={si < NAV_SECTIONS.length - 1 ? 4 : 0}>
                 {/* Section label — hidden when collapsed */}
                 {!collapsed && (
                   <Text
+                    className={styles.sectionLabel}
                     size="xs"
-                    fw={600}
                     c="dimmed"
                     tt="uppercase"
                     style={{ letterSpacing: "0.07em", paddingInline: rem(12) }}
@@ -367,6 +351,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
           style={{ borderTop: "1px solid #E2E8F0" }}
         >
           <UnstyledButton
+            className={styles.profileButton}
             onClick={() => router.push("/profile")}
             style={{
               display: "flex",
@@ -374,12 +359,8 @@ export function NavShell({ children }: { children: React.ReactNode }) {
               justifyContent: collapsed ? "center" : "flex-start",
               gap: rem(10),
               padding: collapsed ? `${rem(9)} 0` : `${rem(9)} ${rem(12)}`,
-              borderRadius: rem(10),
               width: "100%",
-              transition: "background-color 150ms ease",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(245, 158, 11, 0.08)")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
           >
             <Avatar src={avatarUrl} size={28} radius="xl" style={{ backgroundColor: INK, flexShrink: 0 }}>
               <Text size="xs" fw={700} c="white" style={{ lineHeight: 1 }}>
@@ -407,6 +388,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
           style={{ borderTop: "1px solid #E2E8F0" }}
         >
           <UnstyledButton
+            className={styles.collapseButton}
             onClick={toggleCollapsed}
             style={{
               display: "flex",
@@ -433,8 +415,8 @@ export function NavShell({ children }: { children: React.ReactNode }) {
 
       {/* ── Main content ── */}
       <AppShell.Main
+        className={styles.main}
         style={{
-          backgroundColor: "#F3F5F7",
           display: "flex",
           flexDirection: "column",
         }}

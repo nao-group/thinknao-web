@@ -28,10 +28,11 @@ export function LanguageToggle({
     >
       {(["en", "zh"] as const).map((l) => (
         <UnstyledButton
+          className="ui-pill"
           key={l}
           onClick={() => onChange(l)}
           style={{
-            padding: `${rem(4)} ${rem(12)}`,
+            padding: `${rem(7)} ${rem(14)}`,
             backgroundColor: lang === l ? (l === "zh" ? PRIMARY : INK) : "transparent",
             transition: "background-color 150ms ease",
           }}

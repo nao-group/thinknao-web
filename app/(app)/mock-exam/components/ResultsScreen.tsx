@@ -80,7 +80,7 @@ export function ResultsScreen({
             { label: "Skipped",    value: String(skipped),               color: MUTED         },
             { label: "Time Taken", value: formatDuration(result.timeTaken), color: INK           },
           ].map((stat) => (
-            <Box key={stat.label} p="md" style={{ backgroundColor: "white", borderRadius: rem(12), textAlign: "center" }}>
+            <Box key={stat.label} p="md" className="warm-surface" style={{ borderRadius: rem(14), textAlign: "center" }}>
               <Text fw={700} size="lg" c={stat.color}>{stat.value}</Text>
               <Text size="xs" c="dimmed" mt={2}>{stat.label}</Text>
             </Box>

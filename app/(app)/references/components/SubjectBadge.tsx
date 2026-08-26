@@ -8,21 +8,31 @@ export function SubjectBadge({ subject }: { subject: Subject }) {
   const meta = SUBJECT_META[subject];
   const Icon = meta.icon;
   return (
-    <Group gap={5} style={{ flexShrink: 0 }}>
+    <Group
+      className="ui-pill reference-subject-badge"
+      gap={4}
+      wrap="nowrap"
+      style={{
+        flexShrink: 0,
+        backgroundColor: meta.iconBg,
+        borderColor: `${meta.iconColor}26`,
+        color: meta.iconColor,
+      }}
+    >
       <Box
         style={{
-          width: rem(20),
-          height: rem(20),
-          borderRadius: rem(5),
-          backgroundColor: meta.iconBg,
+          width: rem(16),
+          height: rem(16),
+          borderRadius: rem(4),
+          backgroundColor: "rgba(255,255,255,0.58)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <Icon size={11} stroke={1.5} color={meta.iconColor} />
+        <Icon size={9} stroke={1.7} color={meta.iconColor} />
       </Box>
-      <Text size="xs" fw={600} c={meta.iconColor}>{subject}</Text>
+      <Text fz={11} lh={1} fw={650} c={meta.iconColor} style={{ whiteSpace: "nowrap" }}>{subject}</Text>
     </Group>
   );
 }

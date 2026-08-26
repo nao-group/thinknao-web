@@ -21,7 +21,7 @@ export function RankRow({ entry, index, isMe, onClick }: { entry: LeaderboardEnt
         display: "flex",
         alignItems: "center",
         gap: rem(14),
-        backgroundColor: isMe ? CREAM : "white",
+        backgroundColor: isMe ? CREAM : "#FFFDF8",
         borderRadius: rem(12),
         border: isMe ? `2px solid ${PRIMARY}` : isTop10 ? `1.5px solid ${CREAM}` : "1.5px solid #F1F5F9",
         cursor: "pointer",

@@ -168,12 +168,12 @@ export default function LeaderboardPage() {
   const meIsInList = myRankInList !== -1;
 
   return (
-    <Box p={{ base: "md", sm: "xl" }} style={{ maxWidth: rem(760), margin: "0 auto" }}>
+    <Box className="editorial-page" p={{ base: "md", sm: "xl" }} style={{ maxWidth: rem(860), margin: "0 auto" }}>
       {/* Header */}
       <Stack gap={rem(4)} mb="xl">
         <Group gap={rem(10)}>
           <IconTrophy size={24} color={PRIMARY} />
-          <Text fw={800} size="xl" c={INK}>Leaderboard</Text>
+          <Text className="editorial-page-title">Leaderboard</Text>
         </Group>
         <Text size="sm" c={MUTED}>Top 50 students ranked by total XP earned</Text>
       </Stack>

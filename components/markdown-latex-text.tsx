@@ -90,6 +90,7 @@ function parseMath(text: string, keyPrefix: string, circleNums: boolean): React.
       return [
         <span
           key={key}
+          className="markdown-display-math"
           style={{ display: "block", textAlign: "center", margin: "0.3em 0" }}
           dangerouslySetInnerHTML={{ __html: renderMath(part.slice(2, -2), true) }}
         />,
@@ -99,6 +100,7 @@ function parseMath(text: string, keyPrefix: string, circleNums: boolean): React.
       return [
         <span
           key={key}
+          className="markdown-display-math"
           style={{ display: "block", textAlign: "center", margin: "0.3em 0" }}
           dangerouslySetInnerHTML={{ __html: renderMath(part.slice(2, -2), true) }}
         />,
@@ -108,6 +110,7 @@ function parseMath(text: string, keyPrefix: string, circleNums: boolean): React.
       return [
         <span
           key={key}
+          className="markdown-inline-code"
           dangerouslySetInnerHTML={{ __html: renderMath(part.slice(2, -2), false) }}
         />,
       ];
@@ -198,7 +201,7 @@ export function MarkdownLatexText({ children, circleNums = false }: { children: 
   const blocks = children.split(/\n\n+/);
 
   return (
-    <div style={{ lineHeight: 1.8, color: INK }}>
+    <div className="markdown-rich-text" style={{ lineHeight: 1.8, color: INK }}>
       {blocks.map((block, bi) => {
         const trimmed = block.trim();
 
@@ -211,6 +214,7 @@ export function MarkdownLatexText({ children, circleNums = false }: { children: 
           return (
             <div
               key={bi}
+              className="markdown-blockquote"
               style={{
                 margin: "0.75em 0",
                 padding: `${rem(10)} ${rem(14)}`,

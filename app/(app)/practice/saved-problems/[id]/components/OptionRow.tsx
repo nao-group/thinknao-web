@@ -53,7 +53,7 @@ export function OptionRow({
     circleStyle = { ...circleStyle, backgroundColor: CORRECT_GREEN, color: "white" };
     textColor = CORRECT_DARK;
     rightBadge = (
-      <Box style={{ marginLeft: "auto", padding: `${rem(2)} ${rem(8)}`, borderRadius: rem(999), backgroundColor: "#DCFCE7", flexShrink: 0 }}>
+      <Box className="ui-pill" style={{ marginLeft: "auto", backgroundColor: "#EAF4E6", flexShrink: 0 }}>
         <Text size="xs" fw={700} style={{ color: CORRECT_DARK, letterSpacing: "0.04em" }}>CORRECT</Text>
       </Box>
     );
@@ -62,7 +62,7 @@ export function OptionRow({
     circleStyle = { ...circleStyle, backgroundColor: WRONG_RED, color: "white" };
     textColor = WRONG_DARK;
     rightBadge = (
-      <Box style={{ marginLeft: "auto", padding: `${rem(2)} ${rem(8)}`, borderRadius: rem(999), backgroundColor: "#FEE2E2", flexShrink: 0 }}>
+      <Box className="ui-pill" style={{ marginLeft: "auto", backgroundColor: "#FBE9E5", flexShrink: 0 }}>
         <Text size="xs" fw={700} style={{ color: WRONG_DARK, letterSpacing: "0.04em" }}>YOUR ANSWER</Text>
       </Box>
     );

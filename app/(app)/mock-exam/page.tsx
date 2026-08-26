@@ -18,6 +18,7 @@ import {
   IconAlertCircle,
   IconChevronLeft,
   IconChevronRight,
+  IconPlus,
 } from "@tabler/icons-react";
 import { ReportModal } from "@/components/report-modal";
 import type { Lang } from "@/components/language-toggle";
@@ -132,24 +133,25 @@ export default function MockExamPage() {
 
   if (phase === "landing") {
     return (
-      <Box p={{ base: "md", sm: "xl" }}>
+      <Box className="editorial-page" p={{ base: "md", sm: "xl" }}>
         <style>{`@keyframes exam-spin { to { transform: rotate(360deg) } }`}</style>
 
         {/* Header */}
         <Group justify="space-between" mb="xl" wrap="nowrap" align="flex-start">
           <Box>
-            <Text fw={700} size="xl" c={INK} mb={4}>Mock Exam</Text>
+            <Text className="editorial-page-title" mb={4}>Mock Exam</Text>
             <Text size="sm" c="dimmed" style={{ maxWidth: rem(480) }}>
               AI-generated exam simulating the CSCA format. No hints, no saves — just like the real thing.
             </Text>
           </Box>
           <Button
-            radius="xl"
+            className="landing-action-button"
             size="md"
-            style={{ backgroundColor: INK, color: "white", fontWeight: 600, flexShrink: 0 }}
+            rightSection={<IconPlus size={15} stroke={2.2} />}
+            style={{ flexShrink: 0 }}
             onClick={() => setSetupOpen(true)}
           >
-            + Start New Exam
+            Start New Exam
           </Button>
         </Group>
 
@@ -289,7 +291,7 @@ export default function MockExamPage() {
                           display: "flex", alignItems: "center", gap: rem(12),
                           padding: `${rem(14)} ${rem(16)}`, borderRadius: rem(10),
                           border: `${chosen ? "2px" : "1.5px"} solid ${chosen ? PRIMARY : "#E2E8F0"}`,
-                          backgroundColor: chosen ? CREAM : "white",
+                          backgroundColor: chosen ? CREAM : "#FFFDF8",
                           cursor: "pointer", transition: "all 150ms ease",
                         }}
                       >

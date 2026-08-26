@@ -7,7 +7,8 @@ export function SkeletonRow() {
     <Box
       px={{ base: "md", sm: "xl" }}
       py="sm"
-      style={{ display: "flex", alignItems: "center", gap: rem(14), backgroundColor: "white", borderRadius: rem(12), border: "1.5px solid #F1F5F9" }}
+      className="warm-surface"
+      style={{ display: "flex", alignItems: "center", gap: rem(14), borderRadius: rem(14) }}
     >
       <Skeleton width={rem(28)} height={rem(16)} radius="sm" />
       <Skeleton width={rem(40)} height={rem(40)} circle />

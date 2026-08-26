@@ -39,9 +39,8 @@ export function TabBar({
         >
           {tab.label}
           <Box
+            className="ui-pill"
             style={{
-              padding: `${rem(1)} ${rem(7)}`,
-              borderRadius: rem(999),
               backgroundColor: active === tab.key ? CREAM : SURFACE,
               fontSize: rem(11),
               fontWeight: 700,
