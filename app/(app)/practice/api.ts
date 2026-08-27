@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import type { ApiSession, Topic } from "./types";
+import type { ApiSession, SubjectScoreOverview, Topic } from "./types";
 
 export interface SessionsPage {
   sessions: ApiSession[];
@@ -53,4 +53,42 @@ export async function renameSession(sessionId: string, name: string): Promise<vo
 
 export async function deleteSession(sessionId: string): Promise<void> {
   await api.delete(`/api/sessions/${sessionId}`);
+}
+
+function stablePreviewNumber(seed: string, min: number, max: number) {
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+  }
+  return min + (hash % (max - min + 1));
+}
+
+/** Fetch every subject's curriculum topics and attach stable preview scores. */
+export async function fetchAverageScoreOverview(
+  subjects: readonly { subjectCode: string; label: string }[]
+): Promise<SubjectScoreOverview[]> {
+  const topicResults = await Promise.allSettled(
+    subjects.map((subject) => fetchTopics(subject.subjectCode))
+  );
+
+  return subjects.map((subject, index) => {
+    const result = topicResults[index];
+    const topics = result.status === "fulfilled" ? result.value : [];
+    const topicScores = topics.map((topic) => ({
+      name: topic.name,
+      averageScore: stablePreviewNumber(`${subject.subjectCode}:${topic.code}`, 58, 92),
+      completedSets: stablePreviewNumber(`${topic.code}:sets`, 2, 8),
+    }));
+    const averageScore = topicScores.length
+      ? Math.round(topicScores.reduce((sum, topic) => sum + topic.averageScore, 0) / topicScores.length)
+      : stablePreviewNumber(`${subject.subjectCode}:average`, 62, 86);
+
+    return {
+      code: subject.subjectCode,
+      name: subject.label,
+      averageScore,
+      completedSets: topicScores.reduce((sum, topic) => sum + topic.completedSets, 0),
+      topics: topicScores,
+    };
+  });
 }

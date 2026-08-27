@@ -18,3 +18,17 @@ export interface Topic {
   name: string;
   code: string;
 }
+
+export interface TopicScoreOverview {
+  name: string;
+  averageScore: number;
+  completedSets: number;
+}
+
+export interface SubjectScoreOverview {
+  code: string;
+  name: string;
+  averageScore: number;
+  completedSets: number;
+  topics: TopicScoreOverview[];
+}

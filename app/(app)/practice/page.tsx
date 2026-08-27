@@ -35,9 +35,10 @@ import { SubjectCard } from "./components/SubjectCard";
 import { QuestionCountPill } from "./components/QuestionCountPill";
 import { TopicPill } from "./components/TopicPill";
 import { PracticeSetRow } from "./components/PracticeSetRow";
+import { AverageScoreOverview } from "./components/AverageScoreOverview";
 import { SUBJECTS, SUBJECT_META, QUESTION_COUNTS, PAGE_SIZE, type SubjectKey } from "./data";
-import type { ApiSession, Topic } from "./types";
-import { fetchSessions, fetchTopics, generatePracticeSet, renameSession, deleteSession } from "./api";
+import type { ApiSession, SubjectScoreOverview, Topic } from "./types";
+import { fetchAverageScoreOverview, fetchSessions, fetchTopics, generatePracticeSet, renameSession, deleteSession } from "./api";
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
@@ -75,6 +76,11 @@ export default function PracticePage() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Score overview
+  const [scoreOverview, setScoreOverview] = useState<SubjectScoreOverview[]>([]);
+  const [scoresLoading, setScoresLoading] = useState(true);
+  const [scoresError, setScoresError] = useState<string | null>(null);
+
   // ── Load sessions ─────────────────────────────────────────────────────────
   const loadSessions = useCallback(async () => {
     setSessionsLoading(true);
@@ -99,6 +105,21 @@ export default function PracticePage() {
   }, [activeTab, page, searchQuery, appliedSubjectCodes]);
 
   useEffect(() => { loadSessions(); }, [loadSessions]);
+
+  const loadScoreOverview = useCallback(async () => {
+    setScoresLoading(true);
+    setScoresError(null);
+    try {
+      setScoreOverview(await fetchAverageScoreOverview(SUBJECTS));
+    } catch (err) {
+      console.error("Failed to load score overview:", err);
+      setScoresError("Score overview is temporarily unavailable.");
+    } finally {
+      setScoresLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadScoreOverview(); }, [loadScoreOverview]);
 
   // ── Tab / pagination helpers ───────────────────────────────────────────────
   function handleTabChange(tab: "in-progress" | "completed") {
@@ -206,6 +227,7 @@ export default function PracticePage() {
     try {
       await deleteSession(deleteTarget.id);
       setSessions((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+      if (activeTab === "completed") void loadScoreOverview();
       setDeleteTarget(null);
       notifications.show({
         title: "Deleted",
@@ -230,7 +252,7 @@ export default function PracticePage() {
   return (
     <Box className="editorial-page" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <Box p={{ base: "md", sm: "xl" }} style={{ flex: 1 }}>
-        <Group align="flex-start" gap="xl" wrap="nowrap" style={{ alignItems: "stretch" }}>
+        <Group className="practice-page-layout" align="flex-start" gap="xl" wrap="nowrap" style={{ alignItems: "stretch" }}>
 
           {/* ── Main column ── */}
           <Stack style={{ flex: 1, minWidth: 0 }} gap="md">
@@ -472,7 +494,7 @@ export default function PracticePage() {
           </Stack>
 
           {/* ── Right panel ── */}
-          <Box visibleFrom="lg" style={{ width: rem(300), flexShrink: 0 }}>
+          <Stack className="practice-insights-sidebar" gap="md">
             <Box p="xl" style={{ backgroundColor: INK, borderRadius: rem(14) }}>
               <Group justify="space-between" align="flex-start" mb={rem(12)}>
                 <Box style={{
@@ -496,7 +518,13 @@ export default function PracticePage() {
                 View Saved Problems
               </Button>
             </Box>
-          </Box>
+
+            <AverageScoreOverview
+              data={scoreOverview}
+              loading={scoresLoading}
+              error={scoresError}
+            />
+          </Stack>
         </Group>
       </Box>
 
