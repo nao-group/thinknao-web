@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   Anchor,
   Box,
-  Button,
   Checkbox,
   Group,
   PasswordInput,
@@ -16,6 +15,7 @@ import {
 } from "@mantine/core";
 import {
   IconAt,
+  IconArrowRight,
   IconLock,
   IconSend,
   IconShield,
@@ -24,6 +24,7 @@ import {
 import { notifications } from "@mantine/notifications";
 import { AuthSplitLayout } from "@/components/auth-split-layout";
 import { AuthHeader } from "@/components/auth-header";
+import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { getApiErrorMessage } from "@/lib/errors";
 import { AUTH_INPUT_STYLES as inputStyles } from "@/lib/auth-form-styles";
 import axios from "axios";
@@ -175,27 +176,21 @@ export default function RegisterPage() {
               flex={1}
               styles={{ input: inputStyles.input }}
             />
-            <Button
+            <LandingActionButton
+              presentation="otp"
               size="md"
-              radius="sm"
               loading={sendingOtp}
               disabled={countdown > 0}
               onClick={handleSendOtp}
-              leftSection={!sendingOtp && <IconSend size={15} stroke={1.5} />}
-              style={{
-                backgroundColor: countdown > 0 ? "#667080" : INK,
-                color: "white",
-                fontWeight: 600,
-                fontSize: rem(13),
-                flexShrink: 0,
-              }}
+              rightSection={!sendingOtp && <IconSend size={14} stroke={1.8} />}
+              style={{ flexShrink: 0 }}
             >
               {otpSent
                 ? countdown > 0
                   ? `Resend (${countdown}s)`
                   : "Resend"
                 : "Send OTP"}
-            </Button>
+            </LandingActionButton>
           </Group>
           {otpError && (
             <Text size="xs" c="red" mt={4}>
@@ -267,25 +262,17 @@ export default function RegisterPage() {
           </Text>
         )}
 
-        <Button
+        <LandingActionButton
+          presentation="auth"
           type="submit"
           fullWidth
           size="md"
-          radius="md"
           loading={submitting}
           disabled={!fullName.trim() || !email.trim() || !otpSent || !otp.trim() || !password.trim() || !agreed}
-          rightSection={!submitting && <span>→</span>}
-          style={{
-            backgroundColor: !fullName.trim() || !email.trim() || !otpSent || !otp.trim() || !password.trim() || !agreed ? "#94A3B8" : INK,
-            color: "white",
-            fontWeight: 600,
-            fontSize: rem(15),
-            height: rem(52),
-            opacity: 1,
-          }}
+          rightSection={!submitting && <IconArrowRight size={16} stroke={2.2} />}
         >
           Create account
-        </Button>
+        </LandingActionButton>
       </Box>
 
       <Text size="sm" c="dimmed" ta="center" mt={24}>

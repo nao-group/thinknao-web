@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   Box,
-  Button,
   Group,
   Menu,
   Text,
@@ -16,6 +15,7 @@ import { IconArrowRight, IconDotsVertical, IconPencil, IconTrash } from "@tabler
 import { INK, MUTED } from "@/constants/colors";
 import { SUBJECT_META } from "../data";
 import type { ApiSession } from "../types";
+import { LandingActionButton } from "@/components/ui/landing-action-button";
 
 export function PracticeSetRow({
   session, action, onContinue, onRename, onDelete,
@@ -93,15 +93,14 @@ export function PracticeSetRow({
       </Box>
 
       <Group gap={rem(6)} style={{ flexShrink: 0 }}>
-        <Button
-          className="landing-action-button"
+        <LandingActionButton
           size="xs"
           variant="filled"
           rightSection={<IconArrowRight size={14} stroke={2.2} />}
           onClick={onContinue}
         >
           {action}
-        </Button>
+        </LandingActionButton>
 
         <Menu position="bottom-end" withArrow shadow="sm" width={160}>
           <Menu.Target>

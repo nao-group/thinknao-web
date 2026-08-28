@@ -14,6 +14,7 @@ import {
   rem,
 } from "@mantine/core";
 import { Card } from "@/components/ui/card";
+import { LandingActionButton } from "@/components/ui/landing-action-button";
 import {
   IconAtom,
   IconBook,
@@ -97,14 +98,13 @@ function ProblemSetCard({ session, onClick }: { session: Session; onClick: () =>
         <Text size="xs" c="dimmed">
           Created {date}
         </Text>
-        <Button
+        <LandingActionButton
           size="xs"
-          radius="sm"
-          style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
+          rightSection={<IconChevronRight size={14} stroke={2.2} />}
           onClick={(e) => { e.stopPropagation(); onClick(); }}
         >
           {session.status === "in_progress" ? "Continue" : "Review"}
-        </Button>
+        </LandingActionButton>
       </Group>
     </Card>
   );
@@ -189,15 +189,14 @@ function InProgressItem({
         </Text>
       </Box>
 
-      <Button
+      <LandingActionButton
         size="xs"
-        variant="default"
-        radius="sm"
+        rightSection={<IconChevronRight size={14} stroke={2.2} />}
         style={{ flexShrink: 0 }}
         onClick={(e) => { e.stopPropagation(); onClick(); }}
       >
         Continue
-      </Button>
+      </LandingActionButton>
     </Card>
   );
 }

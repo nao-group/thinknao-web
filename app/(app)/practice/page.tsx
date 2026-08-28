@@ -31,6 +31,7 @@ import { INK, SURFACE, PRIMARY, CREAM, MUTED } from "@/constants/colors";
 import { notifications } from "@mantine/notifications";
 import { Card } from "@/components/ui/card";
 import { PaginationBtn } from "@/components/ui/pagination-btn";
+import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { SubjectCard } from "./components/SubjectCard";
 import { QuestionCountPill } from "./components/QuestionCountPill";
 import { TopicPill } from "./components/TopicPill";
@@ -282,14 +283,13 @@ export default function PracticePage() {
               </Box>
 
               <Group justify="flex-end">
-                <Button
-                  className="landing-action-button"
+                <LandingActionButton
                   rightSection={<IconPlus size={15} stroke={2.2} />}
                   size="md"
                   onClick={openGenerateModal}
                 >
                   Generate Practice Set
-                </Button>
+                </LandingActionButton>
               </Group>
             </Card>
 
@@ -768,15 +768,14 @@ export default function PracticePage() {
               <Button variant="outline" color="dark" radius="md" onClick={() => setGenerateOpen(false)}>
                 Cancel
               </Button>
-              <Button
-                className="landing-action-button"
+              <LandingActionButton
                 rightSection={<IconPlus size={15} stroke={2.2} />}
                 loading={generating}
                 disabled={!modalTopic || topicsLoading}
                 onClick={handleGenerate}
               >
                 Generate Practice Set
-              </Button>
+              </LandingActionButton>
             </Group>
           </Modal>
         );

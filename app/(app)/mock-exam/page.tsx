@@ -14,6 +14,7 @@ import {
 } from "@mantine/core";
 import { LatexText } from "@/components/latex-text";
 import { Card } from "@/components/ui/card";
+import { LandingActionButton } from "@/components/ui/landing-action-button";
 import {
   IconAlertCircle,
   IconChevronLeft,
@@ -144,15 +145,14 @@ export default function MockExamPage() {
               AI-generated exam simulating the CSCA format. No hints, no saves — just like the real thing.
             </Text>
           </Box>
-          <Button
-            className="landing-action-button"
+          <LandingActionButton
             size="md"
             rightSection={<IconPlus size={15} stroke={2.2} />}
             style={{ flexShrink: 0 }}
             onClick={() => setSetupOpen(true)}
           >
             Start New Exam
-          </Button>
+          </LandingActionButton>
         </Group>
 
         <Group align="flex-start" gap="xl" wrap="nowrap">

@@ -18,10 +18,11 @@ import {
   TextInput,
   rem,
 } from "@mantine/core";
-import { IconAt, IconDeviceDesktop, IconLock, IconMail } from "@tabler/icons-react";
+import { IconArrowRight, IconAt, IconDeviceDesktop, IconLock, IconMail } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { AuthSplitLayout } from "@/components/auth-split-layout";
 import { AuthHeader } from "@/components/auth-header";
+import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { useAuthStore } from "@/store/auth";
 import { getApiErrorMessage } from "@/lib/errors";
 import { AUTH_INPUT_STYLES as inputStyles } from "@/lib/auth-form-styles";
@@ -224,26 +225,18 @@ export default function LoginPage() {
           </Text>
         )}
 
-        <Button
+        <LandingActionButton
+          presentation="auth"
           type="submit"
           fullWidth
           size="md"
-          radius="md"
           loading={loading}
           disabled={!email.trim() || !password.trim()}
-          rightSection={!loading && <span>→</span>}
-          style={{
-            backgroundColor: !email.trim() || !password.trim() ? "#94A3B8" : INK,
-            color: "white",
-            fontWeight: 600,
-            fontSize: rem(15),
-            height: rem(52),
-            marginTop: rem(4),
-            opacity: 1,
-          }}
+          rightSection={!loading && <IconArrowRight size={16} stroke={2.2} />}
+          style={{ marginTop: rem(4) }}
         >
           Log in
-        </Button>
+        </LandingActionButton>
       </Box>
 
       <Text size="sm" c="dimmed" ta="center" mt={24}>

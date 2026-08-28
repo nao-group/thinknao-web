@@ -303,6 +303,22 @@
   box-shadow: 0 2px 0 rgba(11, 18, 31, 0.14), 0 5px 12px rgba(15, 23, 42, 0.12);
 }
 
+.auth-primary-action {
+  min-height: 52px;
+  font-size: 15px;
+}
+
+.auth-primary-action .mantine-Button-section[data-position="right"] {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+
+.auth-otp-action {
+  min-height: 42px;
+  font-size: 13px;
+}
+
 .landing-filter-pill {
   border: 1px solid #e5dccd !important;
   color: #536070 !important;
