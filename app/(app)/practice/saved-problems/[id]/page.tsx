@@ -666,7 +666,12 @@ export default function SavedProblemDetailPage() {
         </Group>
       </Box>
 
-      <ReportModal opened={reportOpen} onClose={() => setReportOpen(false)} />
+      <ReportModal
+        opened={reportOpen}
+        onClose={() => setReportOpen(false)}
+        questionId={problem.question_id}
+        sessionId={problem.session_id ?? undefined}
+      />
 
       {/*
         No FloatingChatbot here: its context (mastery summary, sibling Problems in

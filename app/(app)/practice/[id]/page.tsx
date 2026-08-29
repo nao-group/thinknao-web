@@ -451,7 +451,9 @@ function SummaryView({
               const userKey = answers[q.id] ?? "";
               const correctKey = qResult?.correct_answer ?? "";
               const options = getOptions(q);
-              const explanation = (q.content_zh?.explanation ?? q.content_en?.explanation) as string | undefined;
+              const explanation = (lang === "zh"
+                ? (q.content_zh?.explanation ?? q.content_en?.explanation)
+                : (q.content_en?.explanation ?? q.content_zh?.explanation)) as string | undefined;
               const passage = group.passage;
 
               return (
@@ -641,7 +643,9 @@ function SummaryView({
                 {/* Explanation — shown once (all questions share the same text) */}
                 {submitted && (() => {
                   const explanation = group.questions
-                    .map((q) => (q.content_zh?.explanation ?? q.content_en?.explanation) as string | undefined)
+                    .map((q) => (lang === "zh"
+                      ? (q.content_zh?.explanation ?? q.content_en?.explanation)
+                      : (q.content_en?.explanation ?? q.content_zh?.explanation)) as string | undefined)
                     .find(Boolean);
                   if (!explanation) return null;
                   return (
@@ -840,14 +844,18 @@ export default function PracticeDetailPage() {
 
     setSubmitting(true);
     try {
-      const { results, explanation } = await submitQuestionGroup(sessionId, groupId, answersMap);
-      if (explanation) {
+      const { results, explanation, explanation_en } = await submitQuestionGroup(sessionId, groupId, answersMap);
+      if (explanation || explanation_en) {
         setQuestionGroups((prev) => prev.map((g, gi) => {
           if (gi !== groupIdx) return g;
           return {
             ...g,
             questions: g.questions.map((q, qi) =>
-              qi === 0 ? { ...q, content_zh: { ...q.content_zh, explanation } } : q
+              qi === 0
+                ? { ...q,
+                    content_zh: { ...q.content_zh, explanation },
+                    content_en: { ...q.content_en, explanation: explanation_en } }
+                : q
             ),
           };
         }));
@@ -875,14 +883,18 @@ export default function PracticeDetailPage() {
 
     setSubmitting(true);
     try {
-      const { results, explanation } = await submitQuestionGroup(sessionId, groupId, answersMap);
-      if (explanation) {
+      const { results, explanation, explanation_en } = await submitQuestionGroup(sessionId, groupId, answersMap);
+      if (explanation || explanation_en) {
         setQuestionGroups((prev) => prev.map((g, gi) => {
           if (gi !== groupIdx) return g;
           return {
             ...g,
             questions: g.questions.map((aq, qi) =>
-              qi === 0 ? { ...aq, content_zh: { ...aq.content_zh, explanation } } : aq
+              qi === 0
+                ? { ...aq,
+                    content_zh: { ...aq.content_zh, explanation },
+                    content_en: { ...aq.content_en, explanation: explanation_en } }
+                : aq
             ),
           };
         }));
@@ -911,12 +923,14 @@ export default function PracticeDetailPage() {
 
     try {
       const result = await submitSingleQuestion(sessionId, questionId, selectedKey);
-      if (result.explanation) {
+      if (result.explanation || result.explanation_en) {
         setQuestionGroups((prev) => prev.map((g) => ({
           ...g,
           questions: g.questions.map((q) =>
             q.id === questionId
-              ? { ...q, content_zh: { ...q.content_zh, explanation: result.explanation } }
+              ? { ...q,
+                  content_zh: { ...q.content_zh, explanation: result.explanation },
+                  content_en: { ...q.content_en, explanation: result.explanation_en } }
               : q
           ),
         })));
@@ -1157,19 +1171,25 @@ export default function PracticeDetailPage() {
                       updateFillAnswer(qId, "1", choiceKey);
                     }}
                   />
-                  {submittedGroups.has(currentQ) && (
-                    <Box mt="md" className="answer-explanation-panel">
-                      <Group gap={8} mb={rem(10)}>
-                        <IconNotes size={18} stroke={1.5} color="#5F7D59" />
-                        <Text className="answer-explanation-header" size="sm" fw={700}>Answer Key &amp; Explanation</Text>
-                      </Group>
-                      {(activeGroup.questions[0].content_zh.explanation as string | undefined) && (
-                        <MarkdownLatexText circleNums>
-                          {activeGroup.questions[0].content_zh.explanation as string}
-                        </MarkdownLatexText>
-                      )}
-                    </Box>
-                  )}
+                  {submittedGroups.has(currentQ) && (() => {
+                    const q0 = activeGroup.questions[0];
+                    const dtExplanation = (lang === "zh"
+                      ? (q0.content_zh?.explanation ?? q0.content_en?.explanation)
+                      : (q0.content_en?.explanation ?? q0.content_zh?.explanation)) as string | undefined;
+                    return (
+                      <Box mt="md" className="answer-explanation-panel">
+                        <Group gap={8} mb={rem(10)}>
+                          <IconNotes size={18} stroke={1.5} color="#5F7D59" />
+                          <Text className="answer-explanation-header" size="sm" fw={700}>Answer Key &amp; Explanation</Text>
+                        </Group>
+                        {dtExplanation && (
+                          <MarkdownLatexText circleNums>
+                            {dtExplanation}
+                          </MarkdownLatexText>
+                        )}
+                      </Box>
+                    );
+                  })()}
                 </>
               ) : activeType === "XT" && activeGroup ? (
                 <WordBankSet
@@ -1344,7 +1364,12 @@ export default function PracticeDetailPage() {
         </Group>
       </Box>
 
-      <ReportModal opened={reportOpen} onClose={() => setReportOpen(false)} />
+      <ReportModal
+        opened={reportOpen}
+        onClose={() => setReportOpen(false)}
+        questionId={activeGroup?.questions[currentSubQ]?.id ?? activeGroup?.questions[0]?.id}
+        sessionId={sessionId}
+      />
 
       <FloatingChatbot
         sessionId={sessionId}

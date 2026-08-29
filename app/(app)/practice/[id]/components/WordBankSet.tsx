@@ -349,7 +349,9 @@ export function WordBankSet({
           </Group>
           {(() => {
             const explanation = questions
-              .map((q) => q.content_zh?.explanation as string | undefined)
+              .map((q) => (lang === "zh"
+                ? (q.content_zh?.explanation ?? q.content_en?.explanation)
+                : (q.content_en?.explanation ?? q.content_zh?.explanation)) as string | undefined)
               .find(Boolean);
             return explanation ? <MarkdownLatexText circleNums>{explanation}</MarkdownLatexText> : null;
           })()}

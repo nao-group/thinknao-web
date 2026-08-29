@@ -241,7 +241,11 @@ export function PassageQuestionGroup({
   }
 
   function getExplanation(q: ApiQuestion): string | undefined {
-    return (q.content_zh.explanation ?? q.content_en.explanation) as string | undefined;
+    // Follow the language toggle, falling back to the other language when one
+    // side has no explanation stored.
+    return (lang === "zh"
+      ? (q.content_zh.explanation ?? q.content_en.explanation)
+      : (q.content_en.explanation ?? q.content_zh.explanation)) as string | undefined;
   }
 
   return (
