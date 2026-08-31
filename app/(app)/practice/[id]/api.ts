@@ -6,7 +6,7 @@
 import api from "@/lib/api";
 import type {
   ApiQuestion, QuestionGroup, WordChoice,
-  BlankResult, SubmitResult, Alignment,
+  BlankResult, SubmitResult, Alignment, ExplanationAlignment,
 } from "./types";
 
 // ─── Raw API shapes ───────────────────────────────────────────────────────────
@@ -32,6 +32,8 @@ interface RawQuestion {
   correct_answer?: string;
   explanation?: string;
   alignment?: Alignment | null;
+  /** Structured annotated explanation — present only after question is answered */
+  explanation_alignment?: ExplanationAlignment | null;
 }
 
 interface RawGroup {
@@ -65,6 +67,7 @@ interface SingleSubmitResponse {
   difficulty: string;
   xp_awarded: number;
   explanation?: string;
+  explanation_alignment?: ExplanationAlignment;
 }
 
 interface GroupSubmitResponse {
@@ -79,6 +82,8 @@ interface GroupSubmitResponse {
     user_answer: string;
   }[];
   explanation?: string;
+  /** Per-question annotated explanation — keyed by question_id (DT/XT) */
+  explanation_alignment?: Record<string, ExplanationAlignment>;
 }
 
 // ─── Adapter: raw API → internal types ───────────────────────────────────────
@@ -97,11 +102,13 @@ function adaptQuestion(raw: RawQuestion, wordBank: WordChoice[] | null, passage:
     group_id: null, // filled by caller
     passage,
     choices: wordBank,
+    explanation: raw.explanation ?? undefined,
     alignment: raw.alignment ?? undefined,
+    explanation_alignment:
+      raw.explanation_alignment ?? raw.alignment?.explanation ?? undefined,
     content_zh: {
       question: zhRaw.question,
       answer: zhRaw.options ?? zhRaw.choices,  // API uses "options" (JF/YL) or "choices" (standard)
-      explanation: raw.explanation ?? undefined,
       correct_answer: raw.correct_answer,
       ...zhRaw,
     },
@@ -271,6 +278,7 @@ export async function submitSingleQuestion(
     difficulty: data.difficulty,
     xp_awarded: data.xp_awarded,
     explanation: data.explanation,
+    explanation_alignment: data.explanation_alignment,
   };
 }
 
@@ -281,6 +289,7 @@ export async function submitQuestionGroup(
 ): Promise<{
   results: Record<string, SubmitResult>;
   explanation?: string;
+  explanation_alignment?: Record<string, ExplanationAlignment>;
 }> {
   const { data } = await api.post<GroupSubmitResponse>(
     `/api/question-groups/${groupId}/submit`,
@@ -316,7 +325,11 @@ export async function submitQuestionGroup(
     resultMap[qid].xp_awarded = data.xp_awarded / Object.keys(resultMap).length;
   }
 
-  return { results: resultMap, explanation: data.explanation };
+  return {
+    results: resultMap,
+    explanation: data.explanation,
+    explanation_alignment: data.explanation_alignment,
+  };
 }
 
 export async function completeSession(sessionId: string): Promise<void> {

@@ -8,10 +8,10 @@ import {
   CORRECT_BG, CORRECT_BORDER, CORRECT_GREEN, CORRECT_DARK,
   WRONG_BG, WRONG_BORDER, WRONG_RED, WRONG_DARK,
 } from "@/constants/colors";
-import { MarkdownLatexText } from "@/components/markdown-latex-text";
 import { ImageLightbox } from "@/components/image-lightbox";
 import { AlignedText } from "./AlignedText";
 import type { ApiQuestion, SubmitResult, Vocab } from "../types";
+import { vocabEnToVocab } from "../types";
 
 interface PassageQuestionGroupProps {
   passage: string;
@@ -161,12 +161,19 @@ function PassageBox({ passage, vocab, mode }: {
 
 // ─── Explanation box — same amber design as standard ExplanationBox ───────────
 
-function PassageExplanationBox({ explanation, loading }: { explanation?: string; loading?: boolean }) {
+function PassageExplanationBox({
+  explanation,
+  vocab,
+  lang,
+  loading,
+}: {
+  explanation?: string;
+  vocab: Vocab;
+  lang: "zh" | "en";
+  loading?: boolean;
+}) {
   return (
-    <Box
-      mt="md"
-      className="answer-explanation-panel"
-    >
+    <Box mt="md" className="answer-explanation-panel">
       <Group gap={8} mb={rem(10)}>
         <IconNotes size={18} stroke={1.5} color="#5F7D59" />
         <Text className="answer-explanation-header" size="sm" fw={700}>Answer Key &amp; Explanation</Text>
@@ -194,7 +201,7 @@ function PassageExplanationBox({ explanation, loading }: { explanation?: string;
           `}</style>
         </Box>
       ) : explanation ? (
-        <MarkdownLatexText>{explanation}</MarkdownLatexText>
+        <AlignedText text={explanation} vocab={vocab} mode={lang} block />
       ) : null}
     </Box>
   );
@@ -241,7 +248,7 @@ export function PassageQuestionGroup({
   }
 
   function getExplanation(q: ApiQuestion): string | undefined {
-    return (q.content_zh.explanation ?? q.content_en.explanation) as string | undefined;
+    return q.explanation;
   }
 
   return (
@@ -335,6 +342,10 @@ export function PassageQuestionGroup({
               {submitted && (explanation || (submitting && !explanation)) && (
                 <PassageExplanationBox
                   explanation={explanation}
+                  vocab={lang === "zh"
+                    ? (q.explanation_alignment?.vocab_zh ?? qVocab)
+                    : vocabEnToVocab(q.explanation_alignment?.vocab_en ?? {})}
+                  lang={lang}
                   loading={submitting && !explanation}
                 />
               )}

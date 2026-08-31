@@ -348,9 +348,7 @@ export function WordBankSet({
             <Text className="answer-explanation-header" size="sm" fw={700}>Answer Key &amp; Explanation</Text>
           </Group>
           {(() => {
-            const explanation = questions
-              .map((q) => q.content_zh?.explanation as string | undefined)
-              .find(Boolean);
+            const explanation = questions.map((q) => q.explanation).find(Boolean);
             return explanation ? <MarkdownLatexText circleNums>{explanation}</MarkdownLatexText> : null;
           })()}
         </Box>

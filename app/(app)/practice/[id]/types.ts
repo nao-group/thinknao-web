@@ -16,8 +16,40 @@ export interface VocabEntry {
 /** key = Chinese word/phrase → vocab entry */
 export type Vocab = Record<string, VocabEntry>;
 
+/** Vocab entry for EN→ZH hover (keyed by English word in vocab_en) */
+export interface EnVocabEntry {
+  /** Chinese equivalent */
+  zh: string;
+  /** Tone-marked pinyin of the Chinese word */
+  pinyin: string;
+}
+
+export interface ExplanationAlignment {
+  /** Every ZH word in the ZH explanation — same format as Alignment.vocab */
+  vocab_zh?: Record<string, VocabEntry>;
+  /** Every EN content word in the EN explanation, keyed by English word */
+  vocab_en?: Record<string, EnVocabEntry>;
+}
+
+/**
+ * Converts `vocab_en` (EnVocabEntry keyed by English word) to the standard
+ * `Vocab` format so `AlignedText` in EN mode can build its reverse map normally.
+ *
+ * Each English word becomes the `en` field of a `VocabEntry`; `AlignedText`'s
+ * `enEntries()` then uses `en_phrase ?? en` as the substring to match in text.
+ */
+export function vocabEnToVocab(vocabEn: Record<string, EnVocabEntry>): Vocab {
+  const result: Vocab = {};
+  for (const [enWord, { zh, pinyin }] of Object.entries(vocabEn)) {
+    result[zh] = { pinyin, en: enWord };
+  }
+  return result;
+}
+
 export interface Alignment {
   vocab: Vocab;
+  /** Present when explanation annotation succeeded (nested form from API) */
+  explanation?: ExplanationAlignment;
 }
 
 export interface WordChoice {
@@ -47,7 +79,6 @@ export interface ApiQuestion {
     answer?: Record<string, string>;
     correct_answer?: string;
     correct_answers?: Record<string, string>;
-    explanation?: string;
     [key: string]: unknown;
   };
   image_url: string | null;
@@ -56,8 +87,12 @@ export interface ApiQuestion {
   group_id: string | null;
   passage: string | null;
   choices: WordChoice[] | null;   // DT/XT word bank
+  /** Plain text explanation — present only after the question is answered */
+  explanation?: string;
   /** Pre-computed vocab dictionary for hover translations (may be absent for new questions) */
   alignment?: Alignment;
+  /** Structured annotated explanation — present only after the question is answered */
+  explanation_alignment?: ExplanationAlignment;
 }
 
 // A logical group rendered as a single navigable unit
@@ -89,4 +124,5 @@ export interface SubmitResult {
   difficulty: string;
   xp_awarded: number;
   blank_results?: BlankResult[];
+  explanation_alignment?: ExplanationAlignment;
 }

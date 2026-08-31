@@ -186,6 +186,15 @@ function parseCircleNum(text: string, keyPrefix: string): React.ReactElement[] {
 }
 
 /**
+ * Renders a single line of inline markdown (bold, italic, math, links, code)
+ * without block-level elements (no paragraphs, blockquotes, bullets).
+ * Useful for embedding markdown-formatted text inline within custom JSX.
+ */
+export function renderInlineMarkdown(text: string, keyPrefix: string): React.ReactElement[] {
+  return parseBold(text, keyPrefix, false);
+}
+
+/**
  * Renders a markdown-style string with support for:
  * - **bold** and italic (single asterisk or underscore) text
  * - `inline code` (rendered as amber highlight chip)
