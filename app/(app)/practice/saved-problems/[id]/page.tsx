@@ -307,14 +307,20 @@ function toApiQuestion(d: SavedQuestionDetail): ApiQuestion {
     passage: d.passage,
     choices: d.choices,
     alignment: d.alignment ?? undefined,
+    // Explanation lives top-level on ApiQuestion (not nested under
+    // content_zh/content_en) — every renderer (PassageQuestionGroup, page.tsx,
+    // WordBankSet) reads q.explanation / q.explanation_en directly, and picks
+    // between them per the active language toggle the same way a live practice
+    // session does.
+    explanation: d.explanation ?? undefined,
+    explanation_en: d.explanation_en ?? undefined,
+    explanation_alignment: d.explanation_alignment ?? undefined,
     content_zh: {
       ...d.content?.zh,
-      explanation: d.explanation ?? undefined,
       correct_answer: d.answer ?? undefined,
     },
     content_en: {
       ...d.content?.en,
-      explanation: d.explanation ?? undefined,
       correct_answer: d.answer ?? undefined,
     },
   };

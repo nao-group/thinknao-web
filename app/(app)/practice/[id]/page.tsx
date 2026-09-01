@@ -30,7 +30,6 @@ import {
 } from "@tabler/icons-react";
 import { Card } from "@/components/ui/card";
 import { FloatingChatbot } from "@/components/floating-chatbot";
-import { MarkdownLatexText } from "@/components/markdown-latex-text";
 import { ReportModal } from "@/components/report-modal";
 import { LanguageToggle, type Lang } from "@/components/language-toggle";
 
@@ -45,6 +44,7 @@ import { WordBankSet } from "./components/WordBankSet";
 import { PassageQuestionGroup } from "./components/PassageQuestionGroup";
 import { AlignedText } from "./components/AlignedText";
 import type { ApiQuestion, QuestionGroup, FillAnswerMap, SubmitResult } from "./types";
+import { vocabEnToVocab } from "./types";
 import {
   fetchSessionQuestions,
   fetchSessionReview,
@@ -451,9 +451,7 @@ function SummaryView({
               const userKey = answers[q.id] ?? "";
               const correctKey = qResult?.correct_answer ?? "";
               const options = getOptions(q);
-              const explanation = (lang === "zh"
-                ? (q.content_zh?.explanation ?? q.content_en?.explanation)
-                : (q.content_en?.explanation ?? q.content_zh?.explanation)) as string | undefined;
+              const explanation = lang === "zh" ? (q.explanation ?? q.explanation_en) : (q.explanation_en ?? q.explanation);
               const passage = group.passage;
 
               return (
@@ -553,7 +551,14 @@ function SummaryView({
                         <IconNotes size={18} stroke={1.5} color="#5F7D59" />
                         <Text className="answer-explanation-header" size="sm" fw={700}>Explanation</Text>
                       </Group>
-                      <MarkdownLatexText>{explanation}</MarkdownLatexText>
+                      <AlignedText
+                        text={explanation}
+                        vocab={lang === "zh"
+                          ? (q.explanation_alignment?.vocab_zh ?? q.alignment?.vocab ?? {})
+                          : vocabEnToVocab(q.explanation_alignment?.vocab_en ?? {})}
+                        mode={lang}
+                        block
+                      />
                     </Box>
                   )}
                 </Stack>
@@ -643,18 +648,24 @@ function SummaryView({
                 {/* Explanation — shown once (all questions share the same text) */}
                 {submitted && (() => {
                   const explanation = group.questions
-                    .map((q) => (lang === "zh"
-                      ? (q.content_zh?.explanation ?? q.content_en?.explanation)
-                      : (q.content_en?.explanation ?? q.content_zh?.explanation)) as string | undefined)
+                    .map((q) => (lang === "zh" ? (q.explanation ?? q.explanation_en) : (q.explanation_en ?? q.explanation)))
                     .find(Boolean);
                   if (!explanation) return null;
+                  const firstQ = group.questions[0];
                   return (
                     <Box className="answer-explanation-panel">
                       <Group gap={8} mb={rem(8)}>
                         <IconNotes size={18} stroke={1.5} color="#5F7D59" />
                         <Text className="answer-explanation-header" size="sm" fw={700}>Explanation</Text>
                       </Group>
-                      <MarkdownLatexText circleNums>{explanation}</MarkdownLatexText>
+                      <AlignedText
+                        text={explanation}
+                        vocab={lang === "zh"
+                          ? (firstQ?.explanation_alignment?.vocab_zh ?? firstQ?.alignment?.vocab ?? {})
+                          : vocabEnToVocab(firstQ?.explanation_alignment?.vocab_en ?? {})}
+                        mode={lang}
+                        block
+                      />
                     </Box>
                   );
                 })()}
@@ -844,19 +855,18 @@ export default function PracticeDetailPage() {
 
     setSubmitting(true);
     try {
-      const { results, explanation, explanation_en } = await submitQuestionGroup(sessionId, groupId, answersMap);
-      if (explanation || explanation_en) {
+      const { results, explanation, explanation_en, explanation_alignment } = await submitQuestionGroup(sessionId, groupId, answersMap);
+      if (explanation || explanation_en || explanation_alignment) {
         setQuestionGroups((prev) => prev.map((g, gi) => {
           if (gi !== groupIdx) return g;
           return {
             ...g,
-            questions: g.questions.map((q, qi) =>
-              qi === 0
-                ? { ...q,
-                    content_zh: { ...q.content_zh, explanation },
-                    content_en: { ...q.content_en, explanation: explanation_en } }
-                : q
-            ),
+            questions: g.questions.map((q, qi) => ({
+              ...q,
+              ...(qi === 0 && explanation ? { explanation } : {}),
+              ...(qi === 0 && explanation_en ? { explanation_en } : {}),
+              ...(explanation_alignment?.[q.id] ? { explanation_alignment: explanation_alignment[q.id] } : {}),
+            })),
           };
         }));
       }
@@ -883,19 +893,18 @@ export default function PracticeDetailPage() {
 
     setSubmitting(true);
     try {
-      const { results, explanation, explanation_en } = await submitQuestionGroup(sessionId, groupId, answersMap);
-      if (explanation || explanation_en) {
+      const { results, explanation, explanation_en, explanation_alignment } = await submitQuestionGroup(sessionId, groupId, answersMap);
+      if (explanation || explanation_en || explanation_alignment) {
         setQuestionGroups((prev) => prev.map((g, gi) => {
           if (gi !== groupIdx) return g;
           return {
             ...g,
-            questions: g.questions.map((aq, qi) =>
-              qi === 0
-                ? { ...aq,
-                    content_zh: { ...aq.content_zh, explanation },
-                    content_en: { ...aq.content_en, explanation: explanation_en } }
-                : aq
-            ),
+            questions: g.questions.map((aq, qi) => ({
+              ...aq,
+              ...(qi === 0 && explanation ? { explanation } : {}),
+              ...(qi === 0 && explanation_en ? { explanation_en } : {}),
+              ...(explanation_alignment?.[aq.id] ? { explanation_alignment: explanation_alignment[aq.id] } : {}),
+            })),
           };
         }));
       }
@@ -923,14 +932,17 @@ export default function PracticeDetailPage() {
 
     try {
       const result = await submitSingleQuestion(sessionId, questionId, selectedKey);
-      if (result.explanation || result.explanation_en) {
+      if (result.explanation || result.explanation_en || result.explanation_alignment) {
         setQuestionGroups((prev) => prev.map((g) => ({
           ...g,
           questions: g.questions.map((q) =>
             q.id === questionId
-              ? { ...q,
-                  content_zh: { ...q.content_zh, explanation: result.explanation },
-                  content_en: { ...q.content_en, explanation: result.explanation_en } }
+              ? {
+                  ...q,
+                  explanation: result.explanation,
+                  explanation_en: result.explanation_en,
+                  explanation_alignment: result.explanation_alignment ?? q.explanation_alignment,
+                }
               : q
           ),
         })));
@@ -1173,20 +1185,22 @@ export default function PracticeDetailPage() {
                   />
                   {submittedGroups.has(currentQ) && (() => {
                     const q0 = activeGroup.questions[0];
-                    const dtExplanation = (lang === "zh"
-                      ? (q0.content_zh?.explanation ?? q0.content_en?.explanation)
-                      : (q0.content_en?.explanation ?? q0.content_zh?.explanation)) as string | undefined;
+                    const dtExplanation = lang === "zh" ? (q0.explanation ?? q0.explanation_en) : (q0.explanation_en ?? q0.explanation);
+                    if (!dtExplanation) return null;
                     return (
                       <Box mt="md" className="answer-explanation-panel">
                         <Group gap={8} mb={rem(10)}>
                           <IconNotes size={18} stroke={1.5} color="#5F7D59" />
                           <Text className="answer-explanation-header" size="sm" fw={700}>Answer Key &amp; Explanation</Text>
                         </Group>
-                        {dtExplanation && (
-                          <MarkdownLatexText circleNums>
-                            {dtExplanation}
-                          </MarkdownLatexText>
-                        )}
+                        <AlignedText
+                          text={dtExplanation}
+                          vocab={lang === "zh"
+                            ? (q0.explanation_alignment?.vocab_zh ?? q0.alignment?.vocab ?? {})
+                            : vocabEnToVocab(q0.explanation_alignment?.vocab_en ?? {})}
+                          mode={lang}
+                          block
+                        />
                       </Box>
                     );
                   })()}
