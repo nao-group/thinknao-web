@@ -1,5 +1,10 @@
 import api from "@/lib/api";
-import type { Session, SessionProgress } from "./types";
+import type { LearningActivity, Session, SessionProgress } from "./types";
+
+export async function fetchLearningActivity(): Promise<LearningActivity> {
+  const { data } = await api.get<LearningActivity>("/api/stats/learning-activity");
+  return data;
+}
 
 export async function fetchRecentSessions(): Promise<Session[]> {
   const { data } = await api.get<{ sessions: Session[] }>("/api/sessions", {

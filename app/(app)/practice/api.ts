@@ -55,40 +55,50 @@ export async function deleteSession(sessionId: string): Promise<void> {
   await api.delete(`/api/sessions/${sessionId}`);
 }
 
-function stablePreviewNumber(seed: string, min: number, max: number) {
-  let hash = 0;
-  for (let index = 0; index < seed.length; index += 1) {
-    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
-  }
-  return min + (hash % (max - min + 1));
+interface ApiTopicScore {
+  topic_code: string;
+  topic_name: string | null;
+  answered: number;
+  correct: number;
+  average_score: number;
+  completed_sets: number;
 }
 
-/** Fetch every subject's curriculum topics and attach stable preview scores. */
+interface ApiSubjectScore {
+  subject_code: string;
+  subject_name: string | null;
+  answered: number;
+  correct: number;
+  average_score: number;
+  completed_sets: number;
+  topics: ApiTopicScore[];
+}
+
+/**
+ * The student's real average score per subject, broken down by topic.
+ *
+ * Only subjects they've actually answered questions in come back — a subject
+ * with no attempts is omitted rather than reported as 0%, which would read as
+ * "you scored zero" rather than "you haven't started this yet".
+ *
+ * `subjects` is accepted so the caller's label wins over the server's subject
+ * name, keeping the wording identical to the rest of the practice page.
+ */
 export async function fetchAverageScoreOverview(
   subjects: readonly { subjectCode: string; label: string }[]
 ): Promise<SubjectScoreOverview[]> {
-  const topicResults = await Promise.allSettled(
-    subjects.map((subject) => fetchTopics(subject.subjectCode))
-  );
+  const { data } = await api.get<{ subjects: ApiSubjectScore[] }>("/api/stats/subject-scores");
+  const labelByCode = new Map(subjects.map((s) => [s.subjectCode, s.label]));
 
-  return subjects.map((subject, index) => {
-    const result = topicResults[index];
-    const topics = result.status === "fulfilled" ? result.value : [];
-    const topicScores = topics.map((topic) => ({
-      name: topic.name,
-      averageScore: stablePreviewNumber(`${subject.subjectCode}:${topic.code}`, 58, 92),
-      completedSets: stablePreviewNumber(`${topic.code}:sets`, 2, 8),
-    }));
-    const averageScore = topicScores.length
-      ? Math.round(topicScores.reduce((sum, topic) => sum + topic.averageScore, 0) / topicScores.length)
-      : stablePreviewNumber(`${subject.subjectCode}:average`, 62, 86);
-
-    return {
-      code: subject.subjectCode,
-      name: subject.label,
-      averageScore,
-      completedSets: topicScores.reduce((sum, topic) => sum + topic.completedSets, 0),
-      topics: topicScores,
-    };
-  });
+  return (data.subjects ?? []).map((subject) => ({
+    code: subject.subject_code,
+    name: labelByCode.get(subject.subject_code) ?? subject.subject_name ?? subject.subject_code,
+    averageScore: Math.round(subject.average_score),
+    completedSets: subject.completed_sets,
+    topics: subject.topics.map((topic) => ({
+      name: topic.topic_name ?? topic.topic_code,
+      averageScore: Math.round(topic.average_score),
+      completedSets: topic.completed_sets,
+    })),
+  }));
 }

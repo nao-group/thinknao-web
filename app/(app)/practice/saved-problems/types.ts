@@ -1,4 +1,4 @@
-import type { Alignment } from "../[id]/types";
+import type { Alignment, ExplanationAlignment } from "../[id]/types";
 
 export type Difficulty = "easy" | "medium" | "hard";
 
@@ -40,7 +40,6 @@ export interface QuestionContent {
   answer?: Record<string, string>;
   options?: Record<string, string>;
   choices?: Record<string, string>;
-  explanation?: string;
   correct_answer?: string;
 }
 
@@ -51,8 +50,12 @@ export interface SavedQuestionDetail extends SavedQuestion {
   choices: { key: string; text: string }[] | null;
   /** null when the student hasn't answered — withheld server-side otherwise. */
   answer: string | null;
-  /** Single markdown explanation. null when the student hasn't answered. */
+  /** Markdown explanation, Chinese. null when the student hasn't answered. */
   explanation: string | null;
+  /** Markdown explanation, English. Same gating as `explanation`. */
+  explanation_en: string | null;
+  /** Hover-vocab annotation for the explanation text (vocab_zh / vocab_en). */
+  explanation_alignment: ExplanationAlignment | null;
   image_url: string | null;
   question_number: number | null;
   group_id: string | null;

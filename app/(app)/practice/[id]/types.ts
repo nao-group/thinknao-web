@@ -87,8 +87,10 @@ export interface ApiQuestion {
   group_id: string | null;
   passage: string | null;
   choices: WordChoice[] | null;   // DT/XT word bank
-  /** Plain text explanation — present only after the question is answered */
+  /** Plain text explanation, Chinese — present only after the question is answered */
   explanation?: string;
+  /** Plain text explanation, English — same gating as `explanation` */
+  explanation_en?: string;
   /** Pre-computed vocab dictionary for hover translations (may be absent for new questions) */
   alignment?: Alignment;
   /** Structured annotated explanation — present only after the question is answered */

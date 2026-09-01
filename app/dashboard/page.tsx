@@ -29,8 +29,8 @@ import { useRouter } from "next/navigation";
 import { AnnouncementCarousel } from "@/components/announcement-carousel";
 
 import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
-import type { Session, SessionProgress } from "./types";
-import { fetchRecentSessions, fetchInProgressSessions, fetchSessionProgress } from "./api";
+import type { Session, SessionProgress, LearningActivity as LearningActivityData } from "./types";
+import { fetchRecentSessions, fetchInProgressSessions, fetchSessionProgress, fetchLearningActivity } from "./api";
 import styles from "./dashboard.module.css";
 
 // ─── Subject meta ──────────────────────────────────────────────────────────────
@@ -218,18 +218,28 @@ function InProgressSkeleton() {
   );
 }
 
-const WEEK = [
-  { day: "Mon", pct: 18, xp: 45 },
-  { day: "Tue", pct: 72, xp: 180 },
-  { day: "Wed", pct: 58, xp: 145 },
-  { day: "Thu", pct: 48, xp: 120 },
-  { day: "Fri", pct: 65, xp: 162 },
-  { day: "Sat", pct: 12, xp: 30 },
-  { day: "Sun", pct: 80, xp: 200, current: true },
-];
-
 function LearningActivity() {
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+  const [activity, setActivity] = useState<LearningActivityData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchLearningActivity()
+      .then(setActivity)
+      .catch((err) => console.error("Failed to load learning activity:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const week = activity?.week ?? [];
+  // Bars are scaled against the week's own best day, so a quiet week still
+  // reads clearly instead of flatlining against some fixed ceiling.
+  const peakXp = Math.max(...week.map((d) => d.xp), 0);
+
+  /** "—" while loading or when the student isn't ranked yet — better than a
+   *  confident-looking 0 that means something different. */
+  const stat = (value: number | null | undefined, prefix = "") =>
+    loading ? "…" : value == null ? "—" : `${prefix}${value}`;
+
   return (
     <Card
       p="lg"
@@ -248,18 +258,35 @@ function LearningActivity() {
 
       <SimpleGrid cols={3} mb={24}>
         {[
-          { value: "7", label: "Day Streak", color: PRIMARY },
-          { value: "1", label: "Rank", color: INK },
-          { value: "100", label: "Monthly XP", color: INK },
-        ].map(({ value, label, color }) => (
-          <Box key={label} ta="center">
-            <Text fw={800} style={{ fontSize: rem(22), color }}>
-              {value}
-            </Text>
-            <Text size="xs" c="dimmed" lh={1.3}>
-              {label}
-            </Text>
-          </Box>
+          {
+            value: loading ? "…" : String(activity?.day_streak ?? 0),
+            label: "Day Streak",
+            color: PRIMARY,
+            tip: "Consecutive days you've answered at least one question",
+          },
+          {
+            value: stat(activity?.rank, "#"),
+            label: "Rank",
+            color: INK,
+            tip: `XP over the past 12 months${activity ? ` · ${activity.year_xp} XP` : ""}`,
+          },
+          {
+            value: stat(activity?.monthly_rank, "#"),
+            label: "Monthly Rank",
+            color: INK,
+            tip: `XP this month${activity ? ` · ${activity.month_xp} XP` : ""}`,
+          },
+        ].map(({ value, label, color, tip }) => (
+          <Tooltip key={label} label={tip} withArrow position="top" fz="xs" multiline w={200}>
+            <Box ta="center" style={{ cursor: "default" }}>
+              <Text fw={800} style={{ fontSize: rem(22), color }}>
+                {value}
+              </Text>
+              <Text size="xs" c="dimmed" lh={1.3}>
+                {label}
+              </Text>
+            </Box>
+          </Tooltip>
         ))}
       </SimpleGrid>
 
@@ -268,8 +295,9 @@ function LearningActivity() {
       </Text>
       <Box style={{ overflowX: "auto", marginInline: rem(-4) }}>
         <Group align="flex-end" justify="space-between" wrap="nowrap" style={{ height: rem(80), minWidth: rem(200), paddingInline: rem(2), gap: rem(6) }}>
-          {WEEK.map(({ day, pct, xp, current }, i) => {
+          {week.map(({ day, xp, is_today: current }, i) => {
             const isHovered = hoveredBar === i;
+            const pct = peakXp > 0 ? (xp / peakXp) * 100 : 0;
             return (
               <Tooltip key={i} label={`${day}: ${xp} XP`} withArrow position="top" fz="xs">
                 <Stack
