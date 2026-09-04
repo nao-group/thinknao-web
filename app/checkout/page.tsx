@@ -56,7 +56,7 @@ function formatIDR(amount: number): string {
 function getAccessUntil(durationMonths: number): string {
   const date = new Date();
   date.setMonth(date.getMonth() + durationMonths);
-  return date.toLocaleDateString("id-ID", {
+  return date.toLocaleDateString("en-US", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -141,10 +141,10 @@ function CheckoutContent() {
         setReferralDiscount(result.discount_amount);
         setShowReferralInput(false);
       } else {
-        setReferralError(result.message ?? "Kode referral tidak valid.");
+        setReferralError(result.message ?? "Invalid referral code.");
       }
     } catch {
-      setReferralError("Gagal memvalidasi kode. Silakan coba lagi.");
+      setReferralError("Failed to validate code. Please try again.");
     } finally {
       setReferralLoading(false);
     }
@@ -170,8 +170,8 @@ function CheckoutContent() {
       window.location.href = payment_url;
     } catch {
       notifications.show({
-        title: "Pembayaran gagal",
-        message: "Terjadi kesalahan. Silakan coba lagi.",
+        title: "Payment failed",
+        message: "Something went wrong. Please try again.",
         color: "red",
         autoClose: 4000,
       });
@@ -185,14 +185,14 @@ function CheckoutContent() {
     return (
       <Box style={{ minHeight: "100vh", background: "#F3F5F7", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Stack align="center" gap={rem(12)}>
-          <Text fw={600} style={{ color: INK }}>Gagal memuat data paket.</Text>
+          <Text fw={600} style={{ color: INK }}>Failed to load plan data.</Text>
           <Button
             variant="outline"
             size="sm"
             onClick={() => { setPlansError(false); setPlansLoading(true); fetchPlans().then(setPlans).catch(() => setPlansError(true)).finally(() => setPlansLoading(false)); }}
             style={{ borderColor: INK, color: INK }}
           >
-            Coba lagi
+            Try again
           </Button>
         </Stack>
       </Box>
@@ -229,7 +229,7 @@ function CheckoutContent() {
             onClick={() => router.back()}
             style={{ color: MUTED, paddingLeft: rem(4) }}
           >
-            Kembali
+            Back
           </Button>
           <Text fw={700} size="lg" style={{ color: INK }}>
             Draft Invoice
@@ -264,11 +264,11 @@ function CheckoutContent() {
           {/* Detail pemesanan */}
           <Box>
             <Text fw={700} size="xl" style={{ color: INK, marginBottom: rem(6) }}>
-              Detail pemesanan
+              Order Details
             </Text>
             <Text size="sm" style={{ color: MUTED, lineHeight: 1.6, marginBottom: rem(20) }}>
-              Periksa dan pastikan paket yang kamu pilih berikut adalah benar.
-              Setelah pembayaran, kami tidak dapat memberikan refund karena alasan apapun.
+              Please review and confirm your selected plan.
+              Once payment is made, we are unable to issue refunds for any reason.
             </Text>
 
             {/* Plan card — dark */}
@@ -292,7 +292,7 @@ function CheckoutContent() {
                     size="xs"
                     style={{ color: "rgba(255,250,240,0.55)", marginBottom: rem(4), letterSpacing: "0.04em" }}
                   >
-                    PROGRAM BELAJAR
+                    STUDY PLAN
                   </Text>
                   <Text fw={600} size="md" style={{ color: "#FFFAF0" }}>
                     {plan.name}
@@ -303,7 +303,7 @@ function CheckoutContent() {
                     size="xs"
                     style={{ color: "rgba(255,250,240,0.55)", marginBottom: rem(4), letterSpacing: "0.04em" }}
                   >
-                    AKSES HINGGA
+                    ACCESS UNTIL
                   </Text>
                   <Text fw={600} size="sm" style={{ color: "#FFFAF0" }}>
                     {accessUntil}
@@ -316,7 +316,7 @@ function CheckoutContent() {
           {/* Yang akan kamu dapatkan */}
           <Box>
             <Text fw={700} size="lg" style={{ color: INK, marginBottom: rem(16) }}>
-              Yang akan kamu dapatkan
+              What you'll get
             </Text>
             <Stack gap={rem(11)}>
               {FEATURES.map((feature) => (
@@ -359,7 +359,7 @@ function CheckoutContent() {
                 size="sm"
                 style={{ color: PRIMARY, marginBottom: rem(16), lineHeight: 1.5, letterSpacing: "-0.01em" }}
               >
-                Selangkah lagi untuk mendapatkan akses ThinkNao!
+                One step away from unlocking ThinkNao!
               </Text>
 
               {/* Plan preview */}
@@ -376,13 +376,13 @@ function CheckoutContent() {
                   {plan.name}
                 </Text>
                 <Text size="xs" style={{ color: MUTED, marginBottom: rem(10) }}>
-                  Akses penuh selama {plan.name_short} ({plan.duration_months * 30} hari)
+                  Full access for {plan.name_short} ({plan.duration_months * 30} days)
                 </Text>
                 <Group gap={rem(4)} align="baseline">
                   <Text fw={800} size="xl" style={{ color: INK }}>
                     {formatIDR(plan.price_per_month_idr)}
                   </Text>
-                  <Text size="sm" style={{ color: MUTED }}>/bulan</Text>
+                  <Text size="sm" style={{ color: MUTED }}>/month</Text>
                 </Group>
                 {plan.billing_note && (
                   <Text size="xs" style={{ color: MUTED, marginTop: rem(2) }}>
@@ -450,7 +450,7 @@ function CheckoutContent() {
                       fontWeight: 500,
                     }}
                   >
-                    Lebih hemat dengan pakai referral code!
+                    Have a referral code? Save more!
                   </Button>
                 )}
 
@@ -464,7 +464,7 @@ function CheckoutContent() {
                   >
                     <Group gap={rem(8)}>
                       <TextInput
-                        placeholder="Masukkan kode referral"
+                        placeholder="Enter referral code"
                         value={referralInput}
                         onChange={(e) => {
                           setReferralInput(e.target.value.toUpperCase());
@@ -497,7 +497,7 @@ function CheckoutContent() {
                           minWidth: rem(64),
                         }}
                       >
-                        Pakai
+                        Apply
                       </Button>
                     </Group>
                   </Box>
@@ -508,7 +508,7 @@ function CheckoutContent() {
               <Stack gap={rem(9)} mb={rem(12)}>
                 <Group justify="space-between">
                   <Text size="sm" style={{ color: MUTED }}>
-                    Paket belajar {plan.name_short}
+                    {plan.name_short} plan
                   </Text>
                   <Text size="sm" style={{ color: INK, fontWeight: 500 }}>
                     {formatIDR(plan.total_price_idr)}
@@ -517,7 +517,7 @@ function CheckoutContent() {
                 {referralDiscount > 0 && (
                   <Group justify="space-between">
                     <Text size="sm" style={{ color: "#16A34A" }}>
-                      Diskon referral
+                      Referral discount
                     </Text>
                     <Text size="sm" fw={600} style={{ color: "#16A34A" }}>
                       − {formatIDR(referralDiscount)}
@@ -547,16 +547,16 @@ function CheckoutContent() {
                 rightSection={!paymentLoading && <IconArrowRight size={16} stroke={2.2} />}
                 style={{ marginBottom: rem(12) }}
               >
-                Bayar
+                Pay now
               </LandingActionButton>
 
               <Text size="xs" ta="center" style={{ color: MUTED, marginBottom: rem(10) }}>
-                Belum Yakin?
+                Not sure yet?
               </Text>
 
               <Button
                 component="a"
-                href={`https://wa.me/${process.env.NEXT_PUBLIC_WA_NUMBER ?? "6285284229998"}`}
+                href={`https://wa.me/${process.env.NEXT_PUBLIC_WA_NUMBER ?? "6285284229998"}?text=${encodeURIComponent("Hi ThinkNao! I have a question about the subscription plans.")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 variant="outline"
@@ -572,7 +572,7 @@ function CheckoutContent() {
                   },
                 }}
               >
-                Konsultasi via WA
+                Chat via WhatsApp
               </Button>
 
             </Box>
@@ -595,8 +595,8 @@ function CheckoutContent() {
       >
         <Stack gap={rem(20)}>
           <Text size="sm" style={{ color: MUTED, lineHeight: 1.6 }}>
-            Buat akun terlebih dahulu untuk melanjutkan pembayaran — hanya butuh
-            1 menit, dan paket yang kamu pilih akan tersimpan otomatis.
+            Create an account to continue with payment — it only takes a minute,
+            and your selected plan will be saved automatically.
           </Text>
 
           <LandingActionButton
@@ -608,18 +608,18 @@ function CheckoutContent() {
             }
             rightSection={<IconArrowRight size={16} stroke={2.2} />}
           >
-            Buat Akun
+            Create Account
           </LandingActionButton>
 
           <Text size="sm" ta="center" style={{ color: MUTED }}>
-            Sudah punya akun?{" "}
+            Already have an account?{" "}
             <Anchor
               fw={700}
               style={{ color: INK }}
               component={Link}
               href={`/login?redirect=${encodeURIComponent(currentUrl)}`}
             >
-              Masuk
+              Log in
             </Anchor>
           </Text>
         </Stack>
