@@ -456,6 +456,29 @@
   .landing-filter-card:hover { transform: none; }
 }
 
+/* ── Checkout / draft invoice layout ──────────────────────────────────────── */
+
+.checkout-layout {
+  display: grid;
+  grid-template-columns: 1fr 390px;
+  gap: 32px;
+  align-items: start;
+}
+
+.checkout-sidebar {
+  position: sticky;
+  top: 72px;
+}
+
+@media (max-width: 860px) {
+  .checkout-layout {
+    grid-template-columns: 1fr;
+  }
+  .checkout-sidebar {
+    position: static;
+  }
+}
+
 @keyframes tabFadeIn {
   from {
     opacity: 0;
