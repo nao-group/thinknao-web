@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import {
   Anchor,
@@ -41,8 +41,10 @@ interface MaxDevicesPayload {
   sessions: Session[];
 }
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
   const { setAccessToken, setUser } = useAuthStore();
 
   const [email, setEmail] = useState("");
@@ -109,7 +111,7 @@ export default function LoginPage() {
         color: "green",
         autoClose: 3000,
       });
-      router.push("/dashboard");
+      router.push(redirect ?? "/dashboard");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 409) {
@@ -143,7 +145,7 @@ export default function LoginPage() {
         color: "green",
         autoClose: 3000,
       });
-      router.push("/dashboard");
+      router.push(redirect ?? "/dashboard");
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.status === 400) {
         setMaxDevices(null);
@@ -397,5 +399,13 @@ export default function LoginPage() {
         )}
       </Modal>
     </AuthSplitLayout>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   );
 }

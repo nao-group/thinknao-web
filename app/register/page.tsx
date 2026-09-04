@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Anchor,
   Box,
@@ -31,8 +31,10 @@ import axios from "axios";
 
 import { INK, PRIMARY } from "@/constants/colors";
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -115,7 +117,7 @@ export default function RegisterPage() {
         color: "green",
         autoClose: 4000,
       });
-      router.push("/login");
+      router.push(redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : "/login");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 400) {
@@ -282,5 +284,13 @@ export default function RegisterPage() {
         </Anchor>
       </Text>
     </AuthSplitLayout>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterContent />
+    </Suspense>
   );
 }
