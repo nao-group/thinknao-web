@@ -28,9 +28,10 @@ interface RawQuestion {
   content: { zh?: RawContent; en?: RawContent };
   /** Populated on /questions and /review endpoints */
   answer_state?: { selected_key: string; correct: boolean } | null;
-  /** Only on /review */
+  /** On /review, and on /questions once the question has been answered. */
   correct_answer?: string;
-  explanation?: string;
+  explanation?: string;      // Chinese
+  explanation_en?: string;   // English
   alignment?: Alignment | null;
   /** Structured annotated explanation — present only after question is answered */
   explanation_alignment?: ExplanationAlignment | null;
@@ -67,6 +68,7 @@ interface SingleSubmitResponse {
   difficulty: string;
   xp_awarded: number;
   explanation?: string;
+  explanation_en?: string;
   explanation_alignment?: ExplanationAlignment;
 }
 
@@ -82,6 +84,7 @@ interface GroupSubmitResponse {
     user_answer: string;
   }[];
   explanation?: string;
+  explanation_en?: string;
   /** Per-question annotated explanation — keyed by question_id (DT/XT) */
   explanation_alignment?: Record<string, ExplanationAlignment>;
 }
@@ -103,6 +106,7 @@ function adaptQuestion(raw: RawQuestion, wordBank: WordChoice[] | null, passage:
     passage,
     choices: wordBank,
     explanation: raw.explanation ?? undefined,
+    explanation_en: raw.explanation_en ?? undefined,
     alignment: raw.alignment ?? undefined,
     explanation_alignment:
       raw.explanation_alignment ?? raw.alignment?.explanation ?? undefined,
@@ -115,6 +119,7 @@ function adaptQuestion(raw: RawQuestion, wordBank: WordChoice[] | null, passage:
     content_en: {
       question: enRaw.question,
       answer: enRaw.options ?? enRaw.choices,
+      correct_answer: raw.correct_answer,
       ...enRaw,
     },
   };
@@ -148,12 +153,18 @@ export interface RestoredState {
 }
 
 /**
- * Continue-mode (`/questions`) intentionally never sends `correct_answer` for an
- * already-answered-but-still-in-progress question — only `/review` does, once the
- * session is done. Every `correct_answer` below falls back to "", the same sentinel
- * the rendering components already use to mean "don't highlight anything", rather
- * than the student's own selected key — which would render a wrong answer as if it
- * were the correct one.
+ * `correct_answer` arrives from `/review`, and from `/questions` for questions the
+ * student has already answered — it stays withheld for unanswered ones so resuming
+ * a session can never leak an answer.
+ *
+ * When it's absent but the answer was correct, the selected key IS the correct one,
+ * so it's inferred. Anything still unknown falls back to "", the sentinel the
+ * rendering components read as "don't highlight anything" — deliberately never the
+ * student's own key, which would paint a wrong answer as if it were right.
+ *
+ * Getting this wrong is what made every resumed answer render red with an ✗: with
+ * `correct_answer` empty, no option matched "correct", so the student's pick fell
+ * through to the "your (wrong) answer" branch even when they'd got it right.
  */
 function buildRestoredState(rawGroups: RawGroup[]): RestoredState {
   const answers: Record<string, string> = {};
@@ -183,13 +194,13 @@ function buildRestoredState(rawGroups: RawGroup[]): RestoredState {
         const blankResult: BlankResult = {
           blank_index: "1",
           correct,
-          correct_answer: q.correct_answer ?? "",
+          correct_answer: q.correct_answer ?? (correct ? selected_key : ""),
           user_answer: selected_key,
         };
         submitResults[q.id] = {
           question_id: q.id,
           correct,
-          correct_answer: q.correct_answer ?? "",
+          correct_answer: q.correct_answer ?? (correct ? selected_key : ""),
           difficulty: q.difficulty,
           xp_awarded: 0,
           blank_results: [blankResult],
@@ -201,7 +212,7 @@ function buildRestoredState(rawGroups: RawGroup[]): RestoredState {
         submitResults[q.id] = {
           question_id: q.id,
           correct,
-          correct_answer: q.correct_answer ?? "",
+          correct_answer: q.correct_answer ?? (correct ? selected_key : ""),
           difficulty: q.difficulty,
           xp_awarded: 0,
         };
@@ -266,7 +277,7 @@ export async function submitSingleQuestion(
   sessionId: string,
   questionId: string,
   selectedKey: string
-): Promise<SubmitResult & { explanation?: string }> {
+): Promise<SubmitResult & { explanation?: string; explanation_en?: string }> {
   const { data } = await api.post<SingleSubmitResponse>(
     `/api/questions/${questionId}/submit`,
     { session_id: sessionId, selected_key: selectedKey }
@@ -278,6 +289,7 @@ export async function submitSingleQuestion(
     difficulty: data.difficulty,
     xp_awarded: data.xp_awarded,
     explanation: data.explanation,
+    explanation_en: data.explanation_en,
     explanation_alignment: data.explanation_alignment,
   };
 }
@@ -289,6 +301,7 @@ export async function submitQuestionGroup(
 ): Promise<{
   results: Record<string, SubmitResult>;
   explanation?: string;
+  explanation_en?: string;
   explanation_alignment?: Record<string, ExplanationAlignment>;
 }> {
   const { data } = await api.post<GroupSubmitResponse>(
@@ -328,6 +341,7 @@ export async function submitQuestionGroup(
   return {
     results: resultMap,
     explanation: data.explanation,
+    explanation_en: data.explanation_en,
     explanation_alignment: data.explanation_alignment,
   };
 }

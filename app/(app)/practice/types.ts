@@ -13,6 +13,15 @@ export interface ApiSession {
   created_at: string;
 }
 
+export interface SubjectScore {
+  subject_code: string;
+  subject_name: string | null;
+  answered: number;
+  correct: number;
+  /** Percent, 0-100. */
+  average_score: number;
+}
+
 export interface Topic {
   id: string;
   name: string;

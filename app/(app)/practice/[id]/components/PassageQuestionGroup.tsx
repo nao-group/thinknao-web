@@ -248,7 +248,12 @@ export function PassageQuestionGroup({
   }
 
   function getExplanation(q: ApiQuestion): string | undefined {
-    return q.explanation;
+    // Follow the language toggle, falling back to the other language when one
+    // side has no explanation stored. The vocab hover annotations passed to
+    // PassageExplanationBox below (vocab_zh / vocab_en) are computed from
+    // these same two source texts, so they stay matched to whichever one
+    // is actually on screen.
+    return lang === "zh" ? (q.explanation ?? q.explanation_en) : (q.explanation_en ?? q.explanation);
   }
 
   return (
