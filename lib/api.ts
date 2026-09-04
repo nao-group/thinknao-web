@@ -51,7 +51,8 @@ api.interceptors.response.use(
 
       if (!refreshToken) {
         if (typeof window !== "undefined") {
-          window.location.href = "/login";
+          const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = `/login?redirect=${redirect}`;
         }
         return Promise.reject(error);
       }
@@ -63,7 +64,8 @@ api.interceptors.response.use(
       } catch {
         useAuthStore.getState().logout();
         if (typeof window !== "undefined") {
-          window.location.href = "/login";
+          const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = `/login?redirect=${redirect}`;
         }
         return Promise.reject(error);
       }
