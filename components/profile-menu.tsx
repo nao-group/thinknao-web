@@ -48,9 +48,9 @@ export function ProfileMenu() {
                 <Text size="sm" fw={600} c={INK} lh={1.3}>
                   {displayName}
                 </Text>
-                <Badge size="xs" color="dark" variant="filled" radius="sm">
+                {/* <Badge size="xs" color="dark" variant="filled" radius="sm">
                   PRO
-                </Badge>
+                </Badge> */}
               </Group>
               <Text size="xs" c="dimmed">
                 {user?.email ?? ""}

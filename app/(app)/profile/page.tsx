@@ -398,7 +398,7 @@ export default function ProfilePage() {
             ) : (
               <Group gap={8} mb={4} align="center">
                 <Text className="editorial-page-title">{profile?.full_name}</Text>
-                <Badge size="sm" color="dark" variant="filled" radius="sm">PRO</Badge>
+                {/* <Badge size="sm" color="dark" variant="filled" radius="sm">PRO</Badge> */}
               </Group>
             )}
             <Group gap="lg">
