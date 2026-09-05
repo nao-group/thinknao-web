@@ -834,7 +834,9 @@ export default function ProfilePage() {
                   <Box p="lg" style={{ backgroundColor: INK, borderRadius: rem(14) }}>
                     <Group justify="space-between" mb="md">
                       <Text fw={700} size="sm" c="white">Subscription</Text>
-                      <Badge size="sm" style={{ backgroundColor: PRIMARY, color: "white" }} radius="sm">PRO</Badge>
+                      <Badge size="sm" style={{ backgroundColor: PRIMARY, color: "white" }} radius="sm">
+                        {subscription.plans?.name ?? subscription.plan_id}
+                      </Badge>
                     </Group>
                     <Stack gap={8} mb="md">
                       <Group justify="space-between">

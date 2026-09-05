@@ -379,7 +379,7 @@ function SubscriptionCard({ subscription }: { subscription: Subscription | null 
             letterSpacing: "0.04em",
           }}
         >
-          PRO
+          {subscription.plans?.name ?? subscription.plan_id}
         </Box>
       </Group>
       <Stack gap={8} mb="md">
