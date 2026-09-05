@@ -31,6 +31,7 @@ import { AnnouncementCarousel } from "@/components/announcement-carousel";
 import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/constants/colors";
 import type { Session, SessionProgress, LearningActivity as LearningActivityData } from "./types";
 import { fetchRecentSessions, fetchInProgressSessions, fetchSessionProgress, fetchLearningActivity } from "./api";
+import { fetchSubscription, type Subscription } from "@/lib/payments";
 import styles from "./dashboard.module.css";
 
 // ─── Subject meta ──────────────────────────────────────────────────────────────
@@ -331,7 +332,37 @@ function LearningActivity() {
   );
 }
 
-function SubscriptionCard() {
+function SubscriptionCard({ subscription }: { subscription: Subscription | null | undefined }) {
+  const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL ?? "";
+
+  if (subscription === undefined) {
+    return <Skeleton height={180} radius="md" />;
+  }
+
+  if (!subscription) {
+    return (
+      <Box p="lg" className={styles.subscriptionCard} style={{ backgroundColor: INK }}>
+        <Text className={styles.darkCardTitle} fw={700} size="sm" c="white" mb="md">Subscription</Text>
+        <Text size="xs" c="rgba(255,255,255,0.5)" mb="md">No active subscription.</Text>
+        <Button
+          component="a"
+          href={`${landingUrl}/#pricing`}
+          fullWidth
+          size="sm"
+          style={{ backgroundColor: PRIMARY, color: "white", fontWeight: 600, borderRadius: rem(8) }}
+        >
+          View Plans
+        </Button>
+      </Box>
+    );
+  }
+
+  const isActive = subscription.status === "active";
+  const expires = new Date(subscription.expires_at);
+  const daysLeft = Math.max(0, Math.ceil((expires.getTime() - Date.now()) / 86400000));
+  const expiresLabel = expires.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const daysColor = daysLeft <= 7 ? "#EF4444" : daysLeft <= 30 ? "#F97316" : PRIMARY;
+
   return (
     <Box p="lg" className={styles.subscriptionCard} style={{ backgroundColor: INK }}>
       <Group justify="space-between" mb="md">
@@ -355,20 +386,24 @@ function SubscriptionCard() {
         <Group justify="space-between">
           <Text size="xs" c="rgba(255,255,255,0.5)">Status</Text>
           <Group gap={5}>
-            <Box style={{ width: rem(7), height: rem(7), borderRadius: "50%", backgroundColor: "#22C55E" }} />
-            <Text size="xs" fw={600} c="#22C55E">Active</Text>
+            <Box style={{ width: rem(7), height: rem(7), borderRadius: "50%", backgroundColor: isActive ? "#22C55E" : "#94A3B8" }} />
+            <Text size="xs" fw={600} c={isActive ? "#22C55E" : "#94A3B8"}>
+              {isActive ? "Active" : "Inactive"}
+            </Text>
           </Group>
         </Group>
         <Group justify="space-between">
           <Text size="xs" c="rgba(255,255,255,0.5)">Expires</Text>
-          <Text size="xs" fw={600} c="white">Aug 13, 2026</Text>
+          <Text size="xs" fw={600} c="white">{expiresLabel}</Text>
         </Group>
         <Group justify="space-between">
           <Text size="xs" c="rgba(255,255,255,0.5)">Days remaining</Text>
-          <Text size="xs" fw={700} c={PRIMARY}>23 days</Text>
+          <Text size="xs" fw={700} c={daysColor}>{daysLeft} days</Text>
         </Group>
       </Stack>
       <Button
+        component="a"
+        href={`${landingUrl}/#pricing`}
         fullWidth
         size="sm"
         style={{ backgroundColor: PRIMARY, color: "white", fontWeight: 600, borderRadius: rem(8) }}
@@ -387,18 +422,21 @@ export default function DashboardPage() {
   const [recentSessions, setRecentSessions] = useState<Session[]>([]);
   const [inProgressSessions, setInProgressSessions] = useState<Session[]>([]);
   const [progressMap, setProgressMap] = useState<Record<string, SessionProgress>>({});
+  const [subscription, setSubscription] = useState<Subscription | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const [recent, inProgress] = await Promise.all([
+        const [recent, inProgress, sub] = await Promise.all([
           fetchRecentSessions(),
           fetchInProgressSessions(),
+          fetchSubscription().catch(() => null),
         ]);
 
         setRecentSessions(recent);
         setInProgressSessions(inProgress);
+        setSubscription(sub);
 
         if (inProgress.length > 0) {
           const progressResults = await Promise.all(
@@ -511,7 +549,7 @@ export default function DashboardPage() {
           <Box className={styles.rightRail} visibleFrom="lg" style={{ width: rem(292), flexShrink: 0 }}>
             <Stack gap="md">
               <LearningActivity />
-              <SubscriptionCard />
+              <SubscriptionCard subscription={subscription} />
             </Stack>
           </Box>
         </Group>

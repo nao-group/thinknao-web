@@ -47,6 +47,7 @@ import { ReadonlyBio } from "./components/ReadonlyBio";
 import { SocialLink } from "./components/SocialLink";
 import type { UserProfile } from "./types";
 import { fetchProfile, fetchProvinces, updateProfile, uploadProfileImage, changePassword } from "./api";
+import { fetchSubscription, type Subscription } from "@/lib/payments";
 
 const fieldInputStyles = {
   label: { fontSize: rem(12), fontWeight: 600, color: INK, marginBottom: rem(6) },
@@ -95,6 +96,7 @@ function syncAvatarInStore(avatarUrl: string | null) {
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [subscription, setSubscription] = useState<Subscription | null | undefined>(undefined);
 
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [bannerUploading, setBannerUploading] = useState(false);
@@ -128,6 +130,10 @@ export default function ProfilePage() {
     fetchProvinces()
       .then(setProvinces)
       .catch(() => {});
+
+    fetchSubscription()
+      .then(setSubscription)
+      .catch(() => setSubscription(null));
   }, []);
 
   const initials = profile ? getInitials(profile.full_name) : "";
@@ -793,36 +799,74 @@ export default function ProfilePage() {
               </SectionCard>
 
               {/* Subscription */}
-              <Box p="lg" style={{ backgroundColor: INK, borderRadius: rem(14) }}>
-                <Group justify="space-between" mb="md">
-                  <Text fw={700} size="sm" c="white">Subscription</Text>
-                  <Badge size="sm" style={{ backgroundColor: PRIMARY, color: "white" }} radius="sm">PRO</Badge>
-                </Group>
-                <Stack gap={8} mb="md">
-                  <Group justify="space-between">
-                    <Text size="xs" c="rgba(255,255,255,0.5)">Status</Text>
-                    <Group gap={5}>
-                      <Box style={{ width: rem(7), height: rem(7), borderRadius: "50%", backgroundColor: "#22C55E" }} />
-                      <Text size="xs" fw={600} c="#22C55E">Active</Text>
+              {(() => {
+                const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL ?? "";
+
+                if (subscription === undefined) {
+                  return <Skeleton height={180} radius="md" />;
+                }
+
+                if (!subscription) {
+                  return (
+                    <Box p="lg" style={{ backgroundColor: INK, borderRadius: rem(14) }}>
+                      <Text fw={700} size="sm" c="white" mb="md">Subscription</Text>
+                      <Text size="xs" c="rgba(255,255,255,0.5)" mb="md">No active subscription.</Text>
+                      <Button
+                        component="a"
+                        href={`${landingUrl}/#pricing`}
+                        fullWidth
+                        size="sm"
+                        style={{ backgroundColor: PRIMARY, color: "white", fontWeight: 600, borderRadius: rem(8) }}
+                      >
+                        View Plans
+                      </Button>
+                    </Box>
+                  );
+                }
+
+                const isActive = subscription.status === "active";
+                const expires = new Date(subscription.expires_at);
+                const daysLeft = Math.max(0, Math.ceil((expires.getTime() - Date.now()) / 86400000));
+                const expiresLabel = expires.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+                const daysColor = daysLeft <= 7 ? "#EF4444" : daysLeft <= 30 ? "#F97316" : PRIMARY;
+
+                return (
+                  <Box p="lg" style={{ backgroundColor: INK, borderRadius: rem(14) }}>
+                    <Group justify="space-between" mb="md">
+                      <Text fw={700} size="sm" c="white">Subscription</Text>
+                      <Badge size="sm" style={{ backgroundColor: PRIMARY, color: "white" }} radius="sm">PRO</Badge>
                     </Group>
-                  </Group>
-                  <Group justify="space-between">
-                    <Text size="xs" c="rgba(255,255,255,0.5)">Expires</Text>
-                    <Text size="xs" fw={600} c="white">Aug 13, 2026</Text>
-                  </Group>
-                  <Group justify="space-between">
-                    <Text size="xs" c="rgba(255,255,255,0.5)">Days remaining</Text>
-                    <Text size="xs" fw={700} c={PRIMARY}>23 days</Text>
-                  </Group>
-                </Stack>
-                <Button
-                  fullWidth
-                  size="sm"
-                  style={{ backgroundColor: PRIMARY, color: "white", fontWeight: 600, borderRadius: rem(8) }}
-                >
-                  Manage Subscription
-                </Button>
-              </Box>
+                    <Stack gap={8} mb="md">
+                      <Group justify="space-between">
+                        <Text size="xs" c="rgba(255,255,255,0.5)">Status</Text>
+                        <Group gap={5}>
+                          <Box style={{ width: rem(7), height: rem(7), borderRadius: "50%", backgroundColor: isActive ? "#22C55E" : "#94A3B8" }} />
+                          <Text size="xs" fw={600} c={isActive ? "#22C55E" : "#94A3B8"}>
+                            {isActive ? "Active" : "Inactive"}
+                          </Text>
+                        </Group>
+                      </Group>
+                      <Group justify="space-between">
+                        <Text size="xs" c="rgba(255,255,255,0.5)">Expires</Text>
+                        <Text size="xs" fw={600} c="white">{expiresLabel}</Text>
+                      </Group>
+                      <Group justify="space-between">
+                        <Text size="xs" c="rgba(255,255,255,0.5)">Days remaining</Text>
+                        <Text size="xs" fw={700} c={daysColor}>{daysLeft} days</Text>
+                      </Group>
+                    </Stack>
+                    <Button
+                      component="a"
+                      href={`${landingUrl}/#pricing`}
+                      fullWidth
+                      size="sm"
+                      style={{ backgroundColor: PRIMARY, color: "white", fontWeight: 600, borderRadius: rem(8) }}
+                    >
+                      Manage Subscription
+                    </Button>
+                  </Box>
+                );
+              })()}
             </Stack>
           </Box>
         </Group>
