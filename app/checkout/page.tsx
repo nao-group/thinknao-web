@@ -95,7 +95,7 @@ function SummaryCardSkeleton() {
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
 
   const planId = searchParams.get("plan") ?? "biannual";
   const currentUrl = `/checkout?plan=${planId}`;
@@ -536,6 +536,58 @@ function CheckoutContent() {
                   {formatIDR(total)}
                 </Text>
               </Group>
+
+              {/* Logged-in account info */}
+              {user && (
+                <Box
+                  style={{
+                    border: "1px solid rgba(15,23,42,0.1)",
+                    borderRadius: rem(999),
+                    padding: `${rem(10)} ${rem(14)}`,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: rem(10),
+                    marginBottom: rem(12),
+                  }}
+                >
+                  <Box
+                    style={{
+                      width: rem(32),
+                      height: rem(32),
+                      borderRadius: "50%",
+                      background: "rgba(15,23,42,0.08)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 700,
+                      fontSize: rem(13),
+                      color: INK,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {user.full_name?.[0]?.toUpperCase() ?? user.email[0].toUpperCase()}
+                  </Box>
+                  <Box style={{ flex: 1, minWidth: 0 }}>
+                    <Text size="xs" fw={500} style={{ color: INK }} truncate>
+                      Signed in as {user.full_name ?? user.email.split("@")[0]}
+                    </Text>
+                    <Text size="xs" style={{ color: MUTED }} truncate>
+                      ({user.email})
+                    </Text>
+                  </Box>
+                  <Button
+                    variant="subtle"
+                    size="compact-xs"
+                    onClick={() => {
+                      logout();
+                      router.push(`/login?redirect=${encodeURIComponent(currentUrl)}`);
+                    }}
+                    style={{ color: PRIMARY, fontWeight: 700, flexShrink: 0, padding: `0 ${rem(4)}` }}
+                  >
+                    Switch Account
+                  </Button>
+                </Box>
+              )}
 
               {/* CTA */}
               <LandingActionButton
