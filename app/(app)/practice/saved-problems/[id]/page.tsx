@@ -353,6 +353,9 @@ export default function SavedProblemDetailPage() {
     fetchSavedQuestion(questionId)
       .then(setProblem)
       .catch((err) => {
+        // 401 is handled by the API interceptor (token refresh → redirect to login).
+        // Don't surface a confusing error message here — the redirect will take over.
+        if (err?.response?.status === 401) return;
         console.error("Failed to load saved question:", err);
         setLoadError("Failed to load this saved question.");
       })
@@ -591,11 +594,6 @@ export default function SavedProblemDetailPage() {
           {/* ── Right panel ── */}
           <Box visibleFrom="lg" style={{ width: rem(272), flexShrink: 0 }}>
             <Stack gap="md">
-              {/* Display-only progress panel for the original set */}
-              {problem.set_questions.length > 0 && (
-                <SetProgressPanel questions={problem.set_questions} />
-              )}
-
               <Card p="lg">
                 <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mb="md">
                   Practice Set

@@ -814,6 +814,7 @@ export default function PracticeDetailPage() {
         }
       })
       .catch((err) => {
+        if (err?.response?.status === 401) return; // interceptor handles redirect to login
         console.error("Failed to load session:", err);
         setLoadError("Failed to load session. Please try again.");
       })
