@@ -33,6 +33,7 @@ import { Card } from "@/components/ui/card";
 import { PaginationBtn } from "@/components/ui/pagination-btn";
 import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useSubscriptionAccessGuard } from "@/components/subscription-access-guard";
 import { SubjectCard } from "./components/SubjectCard";
 import { QuestionCountPill } from "./components/QuestionCountPill";
 import { TopicPill } from "./components/TopicPill";
@@ -45,6 +46,7 @@ import { fetchAverageScoreOverview, fetchSessions, fetchTopics, generatePractice
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function PracticePage() {
+  const subscriptionGuard = useSubscriptionAccessGuard();
   const router = useRouter();
   const [selectedSubject, setSelectedSubject] = useState<SubjectKey>("math");
   const [activeTab, setActiveTab] = useState<"in-progress" | "completed">("in-progress");
@@ -287,7 +289,7 @@ export default function PracticePage() {
                 <LandingActionButton
                   rightSection={<IconPlus size={15} stroke={2.2} />}
                   size="md"
-                  onClick={openGenerateModal}
+                  onClick={() => void subscriptionGuard.requireSubscription(openGenerateModal, "generate a new practice set")}
                 >
                   Generate Practice Set
                 </LandingActionButton>
@@ -430,7 +432,7 @@ export default function PracticePage() {
                       key={session.id}
                       session={session}
                       action={activeTab === "completed" ? "Review" : "Continue"}
-                      onContinue={() => {
+                      onContinue={() => void subscriptionGuard.requireSubscription(() => {
                         const params = new URLSearchParams({
                           name: session.name,
                           topic: session.topic_name,
@@ -442,7 +444,7 @@ export default function PracticePage() {
                             ? `${base}?review=true&${params.toString()}`
                             : `${base}?${params.toString()}`
                         );
-                      }}
+                      }, session.status === "completed" ? "review this practice set" : "continue this practice set")}
                       onRename={handleRename}
                       onDelete={(id, name) => setDeleteTarget({ id, name })}
                     />
@@ -776,6 +778,7 @@ export default function PracticePage() {
           </Modal>
         );
       })()}
+      {subscriptionGuard.modal}
     </Box>
   );
 }

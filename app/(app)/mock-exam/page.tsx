@@ -32,6 +32,7 @@ import type { ExamResult, MockQ, Phase, Subject } from "./types";
 import { ExamStructureTable } from "./components/ExamStructureTable";
 import { RecentAttempts } from "./components/RecentAttempts";
 import { SetupModal } from "./components/SetupModal";
+import { useSubscriptionAccessGuard } from "@/components/subscription-access-guard";
 import { GeneratingScreen } from "./components/GeneratingScreen";
 import { ExamTopBar } from "./components/ExamTopBar";
 import { QuestionNavigator } from "./components/QuestionNavigator";
@@ -54,6 +55,7 @@ function shuffle<T>(arr: T[]): T[] {
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function MockExamPage() {
+  const subscriptionGuard = useSubscriptionAccessGuard();
   const [phase, setPhase] = useState<Phase>("landing");
   const [setupOpen, setSetupOpen] = useState(false);
   const [setupLang, setSetupLang] = useState<Lang>("en");
@@ -149,7 +151,7 @@ export default function MockExamPage() {
             size="md"
             rightSection={<IconPlus size={15} stroke={2.2} />}
             style={{ flexShrink: 0 }}
-            onClick={() => setSetupOpen(true)}
+            onClick={() => void subscriptionGuard.requireSubscription(() => setSetupOpen(true), "start a new mock exam")}
           >
             Start New Exam
           </LandingActionButton>
@@ -197,9 +199,10 @@ export default function MockExamPage() {
           onSetupSubjectChange={setSetupSubject}
           setupLang={setupLang}
           onSetupLangChange={setSetupLang}
-          onStart={() => { setSetupOpen(false); setPhase("generating"); }}
+          onStart={() => void subscriptionGuard.requireSubscription(() => { setSetupOpen(false); setPhase("generating"); }, "generate and start this mock exam")}
           passMark={PASS_MARK}
         />
+        {subscriptionGuard.modal}
       </Box>
     );
   }

@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { SubscriptionEmptyCard } from "@/components/subscription-empty-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useSubscriptionAccessGuard } from "@/components/subscription-access-guard";
 import {
   IconAtom,
   IconBook,
@@ -406,6 +407,7 @@ function SubscriptionCard({ subscription }: { subscription: Subscription | null 
 
 export default function DashboardPage() {
   const router = useRouter();
+  const subscriptionGuard = useSubscriptionAccessGuard();
 
   const [recentSessions, setRecentSessions] = useState<Session[]>([]);
   const [inProgressSessions, setInProgressSessions] = useState<Session[]>([]);
@@ -450,13 +452,15 @@ export default function DashboardPage() {
   }, []);
 
   function navigateToSession(session: Session) {
-    const base = `/practice/${session.id}`;
-    const sharedParams = `name=${encodeURIComponent(session.name)}&subject=${encodeURIComponent(session.subject_code)}`;
-    if (session.status === "in_progress") {
-      router.push(`${base}?topic=${encodeURIComponent(session.topic_name ?? session.subject_name)}&${sharedParams}`);
-    } else {
-      router.push(`${base}?review=true&${sharedParams}`);
-    }
+    void subscriptionGuard.requireSubscription(() => {
+      const base = `/practice/${session.id}`;
+      const sharedParams = `name=${encodeURIComponent(session.name)}&subject=${encodeURIComponent(session.subject_code)}`;
+      if (session.status === "in_progress") {
+        router.push(`${base}?topic=${encodeURIComponent(session.topic_name ?? session.subject_name)}&${sharedParams}`);
+      } else {
+        router.push(`${base}?review=true&${sharedParams}`);
+      }
+    }, session.status === "in_progress" ? "continue this practice set" : "review this practice set");
   }
 
   return (
@@ -550,6 +554,7 @@ export default function DashboardPage() {
           </Box>
         </Group>
       </Box>
+      {subscriptionGuard.modal}
     </Box>
   );
 }
