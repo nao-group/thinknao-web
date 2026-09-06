@@ -15,6 +15,7 @@ import {
 } from "@mantine/core";
 import { Card } from "@/components/ui/card";
 import { LandingActionButton } from "@/components/ui/landing-action-button";
+import { SubscriptionEmptyCard } from "@/components/subscription-empty-card";
 import {
   IconAtom,
   IconBook,
@@ -340,21 +341,7 @@ function SubscriptionCard({ subscription }: { subscription: Subscription | null 
   }
 
   if (!subscription) {
-    return (
-      <Box p="lg" className={styles.subscriptionCard} style={{ backgroundColor: INK }}>
-        <Text className={styles.darkCardTitle} fw={700} size="sm" c="white" mb="md">Subscription</Text>
-        <Text size="xs" c="rgba(255,255,255,0.5)" mb="md">No active subscription.</Text>
-        <Button
-          component="a"
-          href={`${landingUrl}/#pricing`}
-          fullWidth
-          size="sm"
-          style={{ backgroundColor: PRIMARY, color: "white", fontWeight: 600, borderRadius: rem(8) }}
-        >
-          View Plans
-        </Button>
-      </Box>
-    );
+    return <SubscriptionEmptyCard />;
   }
 
   const isActive = subscription.status === "active";

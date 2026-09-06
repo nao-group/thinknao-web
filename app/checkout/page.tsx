@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Anchor,
@@ -200,13 +201,12 @@ function CheckoutContent() {
   }
 
   return (
-    <Box style={{ minHeight: "100vh", background: "#F3F5F7" }}>
+    <Box className="checkout-page">
 
       {/* Sticky page header */}
       <Box
+        className="checkout-header"
         style={{
-          background: "white",
-          borderBottom: "1px solid rgba(15, 23, 42, 0.07)",
           position: "sticky",
           top: 0,
           zIndex: 100,
@@ -231,7 +231,7 @@ function CheckoutContent() {
           >
             Back
           </Button>
-          <Text fw={700} size="lg" style={{ color: INK }}>
+          <Text className="checkout-heading" fw={700} size="lg" style={{ color: INK }}>
             Draft Invoice
           </Text>
           {plan?.savings_badge && (
@@ -262,8 +262,8 @@ function CheckoutContent() {
         <Stack gap={rem(32)}>
 
           {/* Detail pemesanan */}
-          <Box>
-            <Text fw={700} size="xl" style={{ color: INK, marginBottom: rem(6) }}>
+          <Box className="checkout-section-card">
+            <Text className="checkout-heading" fw={700} size="xl" style={{ color: INK, marginBottom: rem(6) }}>
               Order Details
             </Text>
             <Text size="sm" style={{ color: MUTED, lineHeight: 1.6, marginBottom: rem(20) }}>
@@ -276,8 +276,8 @@ function CheckoutContent() {
               <Skeleton height={80} radius={rem(16)} />
             ) : (
               <Box
+                className="checkout-plan-banner"
                 style={{
-                  background: "linear-gradient(135deg, #0F172A 0%, #1e2d45 100%)",
                   borderRadius: rem(16),
                   padding: `${rem(20)} ${rem(24)}`,
                   display: "flex",
@@ -314,13 +314,13 @@ function CheckoutContent() {
           </Box>
 
           {/* Yang akan kamu dapatkan */}
-          <Box>
-            <Text fw={700} size="lg" style={{ color: INK, marginBottom: rem(16) }}>
+          <Box className="checkout-section-card checkout-benefits-card">
+            <Text className="checkout-heading" fw={700} size="lg" style={{ color: INK, marginBottom: rem(16) }}>
               What you'll get
             </Text>
-            <Stack gap={rem(11)}>
+            <Stack className="checkout-feature-grid" gap={rem(11)}>
               {FEATURES.map((feature) => (
-                <Group key={feature} gap={rem(12)} wrap="nowrap">
+                <Group className="checkout-feature-item" key={feature} gap={rem(12)} wrap="nowrap">
                   <Box
                     style={{
                       width: 22,
@@ -351,10 +351,11 @@ function CheckoutContent() {
           {plansLoading || !plan ? (
             <SummaryCardSkeleton />
           ) : (
-            <Box className="warm-surface" style={{ padding: rem(24) }}>
+            <Box className="warm-surface checkout-summary-card" style={{ padding: rem(24) }}>
 
               {/* Heading */}
               <Text
+                className="checkout-heading checkout-summary-heading"
                 fw={700}
                 size="sm"
                 style={{ color: PRIMARY, marginBottom: rem(16), lineHeight: 1.5, letterSpacing: "-0.01em" }}
@@ -362,13 +363,40 @@ function CheckoutContent() {
                 One step away from unlocking ThinkNao!
               </Text>
 
+              {/* Logged-in account info — intentionally close to the reassurance heading */}
+              {user && (
+                <Box className="checkout-account-pill">
+                  <Box className="checkout-account-avatar">
+                    {user.full_name?.[0]?.toUpperCase() ?? user.email[0].toUpperCase()}
+                  </Box>
+                  <Box style={{ flex: 1, minWidth: 0 }}>
+                    <Text size="xs" fw={600} style={{ color: INK }} truncate>
+                      Signed in as {user.full_name ?? user.email.split("@")[0]}
+                    </Text>
+                    <Text size="xs" style={{ color: MUTED }} truncate>
+                      {user.email}
+                    </Text>
+                  </Box>
+                  <Button
+                    variant="subtle"
+                    size="compact-xs"
+                    onClick={() => {
+                      logout();
+                      router.push(`/login?redirect=${encodeURIComponent(currentUrl)}`);
+                    }}
+                    style={{ color: PRIMARY, fontWeight: 700, flexShrink: 0, padding: `0 ${rem(4)}` }}
+                  >
+                    Switch
+                  </Button>
+                </Box>
+              )}
+
               {/* Plan preview */}
               <Box
+                className="checkout-plan-preview"
                 style={{
-                  border: "1.5px solid rgba(15, 23, 42, 0.08)",
                   borderRadius: rem(12),
                   padding: `${rem(16)} ${rem(16)}`,
-                  background: "white",
                   marginBottom: rem(14),
                 }}
               >
@@ -537,58 +565,6 @@ function CheckoutContent() {
                 </Text>
               </Group>
 
-              {/* Logged-in account info */}
-              {user && (
-                <Box
-                  style={{
-                    border: "1px solid rgba(15,23,42,0.1)",
-                    borderRadius: rem(999),
-                    padding: `${rem(10)} ${rem(14)}`,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: rem(10),
-                    marginBottom: rem(12),
-                  }}
-                >
-                  <Box
-                    style={{
-                      width: rem(32),
-                      height: rem(32),
-                      borderRadius: "50%",
-                      background: "rgba(15,23,42,0.08)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 700,
-                      fontSize: rem(13),
-                      color: INK,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {user.full_name?.[0]?.toUpperCase() ?? user.email[0].toUpperCase()}
-                  </Box>
-                  <Box style={{ flex: 1, minWidth: 0 }}>
-                    <Text size="xs" fw={500} style={{ color: INK }} truncate>
-                      Signed in as {user.full_name ?? user.email.split("@")[0]}
-                    </Text>
-                    <Text size="xs" style={{ color: MUTED }} truncate>
-                      ({user.email})
-                    </Text>
-                  </Box>
-                  <Button
-                    variant="subtle"
-                    size="compact-xs"
-                    onClick={() => {
-                      logout();
-                      router.push(`/login?redirect=${encodeURIComponent(currentUrl)}`);
-                    }}
-                    style={{ color: PRIMARY, fontWeight: 700, flexShrink: 0, padding: `0 ${rem(4)}` }}
-                  >
-                    Switch Account
-                  </Button>
-                </Box>
-              )}
-
               {/* CTA */}
               <LandingActionButton
                 presentation="auth"
@@ -637,19 +613,41 @@ function CheckoutContent() {
         opened={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         centered
-        radius="md"
-        size="sm"
-        title={
-          <Text fw={700} size="lg" style={{ color: INK }}>
-            We want to know you more first
-          </Text>
-        }
+        radius="xl"
+        size={500}
+        padding={0}
+        title=""
+        classNames={{
+          content: "checkout-auth-modal",
+          header: "checkout-auth-modal__header",
+          body: "checkout-auth-modal__body",
+        }}
       >
-        <Stack gap={rem(20)}>
-          <Text size="sm" style={{ color: MUTED, lineHeight: 1.6 }}>
-            Create an account to continue with payment — it only takes a minute,
-            and your selected plan will be saved automatically.
-          </Text>
+        <Box className="checkout-auth-modal__visual">
+          <Image
+            src="/images/checkout/account-gate-illustration.png"
+            alt="Student entering an open learning gate with a verified account"
+            width={728}
+            height={544}
+            priority
+            className="checkout-auth-modal__illustration"
+          />
+        </Box>
+
+        <Stack className="checkout-auth-modal__content" gap={rem(18)}>
+          <Box ta="center">
+            <Box className="checkout-auth-modal__eyebrow">
+              <IconCheck size={12} stroke={2.5} />
+              Your plan stays selected
+            </Box>
+            <Text className="checkout-heading" fw={800} fz={23} style={{ color: INK, lineHeight: 1.2 }}>
+              We want to know you more first
+            </Text>
+            <Text size="sm" mt={8} style={{ color: MUTED, lineHeight: 1.65 }}>
+              Create an account to continue with payment. It only takes a minute,
+              and your selected plan will be saved automatically.
+            </Text>
+          </Box>
 
           <LandingActionButton
             presentation="auth"

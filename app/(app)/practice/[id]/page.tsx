@@ -43,6 +43,7 @@ import { DragDropParagraph } from "./components/DragDropParagraph";
 import { WordBankSet } from "./components/WordBankSet";
 import { PassageQuestionGroup } from "./components/PassageQuestionGroup";
 import { AlignedText } from "./components/AlignedText";
+import { FinishPracticeModal } from "./components/FinishPracticeModal";
 import type { ApiQuestion, QuestionGroup, FillAnswerMap, SubmitResult } from "./types";
 import { vocabEnToVocab } from "./types";
 import {
@@ -762,6 +763,7 @@ export default function PracticeDetailPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  const [finishModalOpen, setFinishModalOpen] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
   const [subjectCode, setSubjectCode] = useState(subjectParam);
   const zhOnly = subjectCode === "WH" || subjectCode === "LH";
@@ -997,6 +999,28 @@ export default function PracticeDetailPage() {
   function handleJump(groupIdx: number, subQIdx: number = 0) {
     setCurrentSubQ(subQIdx);
     setCurrentQ(groupIdx);
+  }
+
+  async function handleFinishPractice() {
+    setFinishing(true);
+    try {
+      await completeSession(sessionId);
+      const { groups, restored, fillAnswers: reviewFill, xpEarned: xp } = await fetchSessionReview(sessionId);
+      setXpEarned(xp);
+      setQuestionGroups(groups);
+      setAnswers(restored.answers as Record<string, string>);
+      setSubmittedIds(restored.submittedIds);
+      setSubmittedGroups(restored.submittedGroupIndices);
+      setSubmitResults(restored.submitResults);
+      setFillAnswers(reviewFill);
+      setSubmittedSet(new Set<number>(groups.map((_, i) => i)));
+      setFinishModalOpen(false);
+      setFinished(true);
+    } catch (err) {
+      console.error("Failed to load review after completing:", err);
+    } finally {
+      setFinishing(false);
+    }
   }
 
   function toggleFlag() {
@@ -1312,27 +1336,7 @@ export default function PracticeDetailPage() {
                   loading={finishing}
                   loaderProps={{ type: "dots", color: "white" }}
                   disabled={finishing}
-                  onClick={async () => {
-                    setFinishing(true);
-                    try {
-                      await completeSession(sessionId);
-                      // Fetch authoritative results from the review endpoint
-                      const { groups, restored, fillAnswers: reviewFill, xpEarned: xp } = await fetchSessionReview(sessionId);
-                      setXpEarned(xp);
-                      setQuestionGroups(groups);
-                      setAnswers(restored.answers as Record<string, string>);
-                      setSubmittedIds(restored.submittedIds);
-                      setSubmittedGroups(restored.submittedGroupIndices);
-                      setSubmitResults(restored.submitResults);
-                      setFillAnswers(reviewFill);
-                      // Mark all groups submitted for the summary
-                      const allSubmitted = new Set<number>(groups.map((_, i) => i));
-                      setSubmittedSet(allSubmitted);
-                    } catch (err) {
-                      console.error("Failed to load review after completing:", err);
-                    }
-                    setFinished(true);
-                  }}
+                  onClick={() => setFinishModalOpen(true)}
                   style={{ backgroundColor: CORRECT_GREEN, color: "white", fontWeight: 600 }}
                 >
                   Finish
@@ -1383,6 +1387,15 @@ export default function PracticeDetailPage() {
         onClose={() => setReportOpen(false)}
         questionId={activeGroup?.questions[currentSubQ]?.id ?? activeGroup?.questions[0]?.id}
         sessionId={sessionId}
+      />
+
+      <FinishPracticeModal
+        opened={finishModalOpen}
+        onClose={() => setFinishModalOpen(false)}
+        onConfirm={handleFinishPractice}
+        answered={Object.keys(submitResults).length}
+        total={questionGroups.reduce((sum, group) => sum + group.questions.length, 0)}
+        loading={finishing}
       />
 
       <FloatingChatbot

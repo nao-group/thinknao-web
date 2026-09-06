@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Button, Loader, Stack, Text, rem } from "@mantine/core";
+import Image from "next/image";
+import { Box, Button, Stack, Text, rem } from "@mantine/core";
 import { IconArrowRight, IconBrandWhatsapp, IconCircleCheck } from "@tabler/icons-react";
+import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { useAuthStore } from "@/store/auth";
-import { INK, PRIMARY, MUTED, CREAM } from "@/constants/colors";
+import { INK, PRIMARY, MUTED } from "@/constants/colors";
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
@@ -24,37 +26,26 @@ export default function PaymentSuccessPage() {
 
   return (
     <Box
-      style={{
-        minHeight: "100vh",
-        background: "#F3F5F7",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: rem(24),
-      }}
+      className="payment-success-page"
     >
       <Box
+        className="payment-success-card"
         style={{
           width: "100%",
-          maxWidth: 480,
-          background: "#FFFDF8",
-          borderRadius: rem(20),
-          border: "1px solid rgba(15,23,42,0.07)",
-          boxShadow: "0 10px 40px rgba(55,43,22,0.08)",
-          overflow: "hidden",
+          maxWidth: 540,
         }}
       >
         {/* Header bar */}
         <Box
+          className="payment-success-header"
           style={{
-            background: "linear-gradient(135deg, #0F172A 0%, #1e2d45 100%)",
             padding: `${rem(24)} ${rem(32)}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
           }}
         >
-          <Text fw={700} size="lg" style={{ color: "#FFFAF0", letterSpacing: "-0.02em" }}>
+          <Text className="checkout-heading" fw={700} size="lg" style={{ color: "#FFFAF0" }}>
             ThinkNao
           </Text>
           <Text
@@ -69,40 +60,28 @@ export default function PaymentSuccessPage() {
           </Text>
         </Box>
 
+        <Box className="payment-success-visual">
+          <Image
+            src="/images/payment/success-journey-transparent.png"
+            alt="Student celebrating an activated learning subscription at the Great Wall"
+            width={768}
+            height={512}
+            priority
+            className="payment-success-illustration"
+          />
+        </Box>
+
         {/* Body */}
-        <Stack gap={0} p={rem(32)}>
+        <Stack className="payment-success-body" gap={0} p={rem(32)}>
           {/* Success icon */}
           <Box style={{ textAlign: "center", marginBottom: rem(24) }}>
-            <Box
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 72,
-                height: 72,
-                borderRadius: "50%",
-                background: CREAM,
-                border: `2px solid rgba(212,160,23,0.25)`,
-                marginBottom: rem(16),
-              }}
-            >
-              <IconCircleCheck size={40} stroke={1.5} color={PRIMARY} />
+            <Box className="payment-success-badge">
+              <IconCircleCheck size={15} stroke={2.2} />
+              Payment Confirmed
             </Box>
 
-            <Text
-              size="xs"
-              fw={600}
-              style={{
-                color: MUTED,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                marginBottom: rem(6),
-              }}
-            >
-              Payment Confirmed
-            </Text>
-            <Text fw={800} size="xl" style={{ color: INK, letterSpacing: "-0.02em" }}>
-              You&apos;re all set! 🎉
+            <Text className="checkout-heading" fw={800} fz={27} style={{ color: INK }}>
+              You&apos;re all set!
             </Text>
           </Box>
 
@@ -118,9 +97,8 @@ export default function PaymentSuccessPage() {
 
           {/* Info card */}
           <Box
+            className="payment-success-info"
             style={{
-              background: CREAM,
-              border: "1.5px solid rgba(212,160,23,0.2)",
               borderRadius: rem(12),
               padding: rem(16),
               marginBottom: rem(28),
@@ -136,22 +114,16 @@ export default function PaymentSuccessPage() {
           </Box>
 
           {/* CTA */}
-          <Button
+          <LandingActionButton
+            presentation="auth"
             fullWidth
             size="md"
             rightSection={<IconArrowRight size={16} stroke={2.2} />}
             onClick={() => router.push(user ? "/dashboard" : "/login")}
-            style={{
-              background: "linear-gradient(145deg, #172033 0%, #0d1422 58%, #202b40 100%)",
-              color: "#FFFAF0",
-              borderRadius: rem(12),
-              fontWeight: 700,
-              height: rem(48),
-              marginBottom: rem(12),
-            }}
+            style={{ marginBottom: rem(12) }}
           >
             {user ? "Go to Dashboard" : "Log in to access"}
-          </Button>
+          </LandingActionButton>
 
           <Button
             component="a"

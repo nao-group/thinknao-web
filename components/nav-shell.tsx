@@ -27,12 +27,16 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { ProfileMenu } from "@/components/profile-menu";
+import { SubscriptionExpiryBanner } from "@/components/subscription-expiry-banner";
 import { useAuthStore } from "@/store/auth";
 import { useNavStore } from "@/store/nav";
 import { INK, MUTED } from "@/constants/colors";
 import styles from "./nav-shell.module.css";
+import { fetchSubscription, type Subscription } from "@/lib/payments";
 
 const HEADER_HEIGHT = 80;
+const EXPIRY_BANNER_HEIGHT = 76;
+const EXPIRY_BANNER_MOBILE_HEIGHT = 108;
 const SIDEBAR_EXPANDED = 240;
 const SIDEBAR_COLLAPSED = 72;
 
@@ -181,12 +185,22 @@ function getBreadcrumbs(pathname: string, sessionName?: string | null, problemCo
 export function NavShell({ children }: { children: React.ReactNode }) {
   const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
   const [collapsed, setCollapsed] = useState(false);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [expiryBannerDismissed, setExpiryBannerDismissed] = useState(false);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       setCollapsed(localStorage.getItem("nav-collapsed") === "true");
     });
     return () => cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchSubscription()
+      .then((result) => { if (active) setSubscription(result); })
+      .catch(() => { if (active) setSubscription(null); });
+    return () => { active = false; };
   }, []);
 
   const toggleCollapsed = () =>
@@ -207,6 +221,13 @@ export function NavShell({ children }: { children: React.ReactNode }) {
 
   const navbarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
   const breadcrumbs = getBreadcrumbs(pathname, storeSessionName, storeProblemCode);
+  const expiryRemaining = subscription ? new Date(subscription.expires_at).getTime() - Date.now() : 0;
+  const showExpiryBanner = Boolean(
+    !expiryBannerDismissed &&
+    subscription?.status === "active" &&
+    expiryRemaining > 0 &&
+    expiryRemaining <= 3 * 24 * 60 * 60 * 1000
+  );
 
   const allNavItems = NAV_SECTIONS.flatMap((s) => s.items);
   const hasExactMatch = allNavItems.some((i) => i.href === pathname);
@@ -216,7 +237,12 @@ export function NavShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AppShell
-      header={{ height: HEADER_HEIGHT }}
+      header={{
+        height: {
+          base: HEADER_HEIGHT + (showExpiryBanner ? EXPIRY_BANNER_MOBILE_HEIGHT : 0),
+          sm: HEADER_HEIGHT + (showExpiryBanner ? EXPIRY_BANNER_HEIGHT : 0),
+        },
+      }}
       navbar={{
         width: navbarWidth,
         breakpoint: "sm",
@@ -226,7 +252,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
     >
       {/* ── Full-width header ── */}
       <AppShell.Header className={styles.header}>
-        <Group h="100%" wrap="nowrap" gap={0}>
+        <Group h={HEADER_HEIGHT} wrap="nowrap" gap={0}>
           {/* Logo section — width tracks sidebar */}
           <UnstyledButton
             onClick={toggleCollapsed}
@@ -293,6 +319,12 @@ export function NavShell({ children }: { children: React.ReactNode }) {
             </Group>
           </Group>
         </Group>
+        {showExpiryBanner && subscription && (
+          <SubscriptionExpiryBanner
+            expiresAt={subscription.expires_at}
+            onDismiss={() => setExpiryBannerDismissed(true)}
+          />
+        )}
       </AppShell.Header>
 
       {/* ── Sidebar ── */}

@@ -48,6 +48,7 @@ import { SocialLink } from "./components/SocialLink";
 import type { UserProfile } from "./types";
 import { fetchProfile, fetchProvinces, updateProfile, uploadProfileImage, changePassword } from "./api";
 import { fetchSubscription, type Subscription } from "@/lib/payments";
+import { SubscriptionEmptyCard } from "@/components/subscription-empty-card";
 
 const fieldInputStyles = {
   label: { fontSize: rem(12), fontWeight: 600, color: INK, marginBottom: rem(6) },
@@ -807,21 +808,7 @@ export default function ProfilePage() {
                 }
 
                 if (!subscription) {
-                  return (
-                    <Box p="lg" style={{ backgroundColor: INK, borderRadius: rem(14) }}>
-                      <Text fw={700} size="sm" c="white" mb="md">Subscription</Text>
-                      <Text size="xs" c="rgba(255,255,255,0.5)" mb="md">No active subscription.</Text>
-                      <Button
-                        component="a"
-                        href={`${landingUrl}/#pricing`}
-                        fullWidth
-                        size="sm"
-                        style={{ backgroundColor: PRIMARY, color: "white", fontWeight: 600, borderRadius: rem(8) }}
-                      >
-                        View Plans
-                      </Button>
-                    </Box>
-                  );
+                  return <SubscriptionEmptyCard />;
                 }
 
                 const isActive = subscription.status === "active";

@@ -458,16 +458,371 @@
 
 /* ── Checkout / draft invoice layout ──────────────────────────────────────── */
 
+.checkout-page {
+  min-height: 100vh;
+  color: #0f172a;
+  background:
+    linear-gradient(180deg, rgba(247, 248, 247, .93) 0%, rgba(244, 245, 243, .9) 46%, rgba(248, 244, 235, .86) 100%),
+    url("/images/auth/thinknao-china-landscape.png") center bottom / 100% auto no-repeat,
+    #f3f5f7;
+  background-attachment: fixed;
+}
+
+.checkout-header {
+  border-bottom: 1px solid rgba(15, 23, 42, .07);
+  background: rgba(255, 253, 248, .86);
+  box-shadow: 0 8px 28px rgba(44, 39, 29, .035);
+  backdrop-filter: blur(16px) saturate(1.08);
+}
+
+.checkout-heading {
+  font-family: var(--font-poppins), Arial, sans-serif !important;
+  letter-spacing: -.035em;
+}
+
 .checkout-layout {
   display: grid;
   grid-template-columns: 1fr 390px;
-  gap: 32px;
+  gap: 38px;
   align-items: start;
 }
 
 .checkout-sidebar {
   position: sticky;
-  top: 72px;
+  top: 82px;
+}
+
+.checkout-section-card {
+  position: relative;
+  overflow: hidden;
+  padding: 26px;
+  border: 1px solid rgba(130, 111, 69, .14);
+  border-radius: 22px;
+  background: rgba(255, 253, 248, .78);
+  box-shadow: 0 18px 50px rgba(57, 48, 31, .065), inset 0 1px 0 rgba(255,255,255,.86);
+  backdrop-filter: blur(10px);
+}
+
+.checkout-section-card::after {
+  content: "";
+  position: absolute;
+  top: -74px;
+  right: -70px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(222, 183, 77, .15), transparent 68%);
+}
+
+.checkout-plan-banner {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.09);
+  background:
+    radial-gradient(circle at 85% 20%, rgba(212,160,23,.23), transparent 28%),
+    linear-gradient(135deg, #10192b 0%, #1e2d45 72%, #273752 100%);
+  box-shadow: 0 12px 28px rgba(15,23,42,.17), inset 0 1px 0 rgba(255,255,255,.09);
+}
+
+.checkout-benefits-card {
+  background: rgba(255, 253, 248, .7);
+}
+
+.checkout-feature-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px !important;
+  row-gap: 9px !important;
+}
+
+.checkout-feature-item {
+  padding: 7px 8px;
+  border-radius: 12px;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.checkout-feature-item:hover {
+  transform: translateX(2px);
+  background: rgba(247, 232, 190, .35);
+}
+
+.checkout-summary-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(212, 160, 23, .16) !important;
+  border-radius: 24px !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(222,183,77,.13), transparent 28%),
+    linear-gradient(155deg, rgba(255,253,248,.98), rgba(252,247,237,.96)) !important;
+  box-shadow: 0 24px 70px rgba(56,46,27,.13), inset 0 1px 0 #fff !important;
+}
+
+.checkout-summary-heading {
+  max-width: 290px;
+  font-size: 16px !important;
+  color: #98710f !important;
+  margin-bottom: 12px !important;
+}
+
+.checkout-account-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 9px 10px;
+  border: 1px solid rgba(15,23,42,.09);
+  border-radius: 14px;
+  background: rgba(255,255,255,.68);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 5px 14px rgba(45,38,25,.04);
+}
+
+.checkout-account-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  color: #111a2a;
+  font-size: 13px;
+  font-weight: 800;
+  background: linear-gradient(145deg, #f9edc9, #e8cb7b);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+}
+
+.checkout-plan-preview {
+  border: 1px solid rgba(15, 23, 42, .08);
+  background: rgba(255,255,255,.76);
+  box-shadow: inset 0 1px 0 #fff, 0 8px 22px rgba(55,45,28,.045);
+}
+
+.checkout-auth-modal {
+  overflow: hidden;
+  border: 1px solid rgba(212, 160, 23, .14);
+  background: #fffdf8;
+  box-shadow: 0 32px 90px rgba(9, 16, 29, .28), inset 0 1px 0 #fff;
+}
+
+.checkout-auth-modal__header {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  min-height: auto;
+  padding: 0;
+  background: transparent;
+}
+
+.checkout-auth-modal__header .mantine-Modal-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(15, 23, 42, .08);
+  border-radius: 999px;
+  color: #263247;
+  background: rgba(255, 253, 248, .88);
+  box-shadow: 0 5px 14px rgba(15,23,42,.08);
+  backdrop-filter: blur(8px);
+}
+
+.checkout-auth-modal__body {
+  padding: 0 !important;
+}
+
+.checkout-auth-modal__visual {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 260px;
+  overflow: hidden;
+  padding: 16px 44px 0;
+  background:
+    radial-gradient(circle at 50% 86%, rgba(231, 199, 111, .26), transparent 42%),
+    linear-gradient(180deg, #f8f3e9 0%, #fffdf8 100%);
+}
+
+.checkout-auth-modal__visual::after {
+  content: "";
+  position: absolute;
+  right: 22px;
+  bottom: 18px;
+  left: 22px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,160,23,.35), transparent);
+}
+
+.checkout-auth-modal__illustration {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 12px 18px rgba(27,35,47,.09));
+}
+
+.checkout-auth-modal__content {
+  padding: 22px 30px 26px;
+}
+
+.checkout-auth-modal__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  border: 1px solid rgba(212,160,23,.2);
+  border-radius: 999px;
+  color: #8b6710;
+  background: #fbf2d9;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+/* ── Payment success ──────────────────────────────────────────────────────── */
+
+.payment-success-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  background:
+    linear-gradient(180deg, rgba(246,248,247,.91), rgba(248,244,235,.88)),
+    url("/images/auth/thinknao-china-landscape.png") center bottom / 100% auto no-repeat,
+    #f3f5f7;
+}
+
+.payment-success-card {
+  overflow: hidden;
+  border: 1px solid rgba(212,160,23,.16);
+  border-radius: 26px;
+  background: linear-gradient(155deg, rgba(255,253,248,.99), rgba(251,247,239,.98));
+  box-shadow: 0 34px 90px rgba(32,38,47,.18), inset 0 1px 0 #fff;
+}
+
+.payment-success-header {
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  background:
+    radial-gradient(circle at 80% 0%, rgba(212,160,23,.2), transparent 34%),
+    linear-gradient(135deg, #10192b 0%, #1e2d45 78%);
+}
+
+.payment-success-visual {
+  position: relative;
+  height: 250px;
+  overflow: hidden;
+  padding: 12px 28px 0;
+  background:
+    radial-gradient(circle at 50% 92%, rgba(231,199,111,.24), transparent 42%),
+    linear-gradient(180deg, #f8f3e9 0%, #fffdf8 100%);
+}
+
+.payment-success-visual::after {
+  content: "";
+  position: absolute;
+  right: 24px;
+  bottom: 12px;
+  left: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,160,23,.35), transparent);
+}
+
+.payment-success-illustration {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 12px 20px rgba(24,32,44,.1));
+}
+
+.payment-success-body {
+  position: relative;
+}
+
+.payment-success-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 6px 11px;
+  border: 1px solid rgba(212,160,23,.24);
+  border-radius: 999px;
+  color: #8d6810;
+  background: #fbf1d5;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.payment-success-info {
+  border: 1px solid rgba(212,160,23,.2);
+  background: linear-gradient(145deg, #fff8e8, #f7e8c7);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+}
+
+/* Payment failed keeps the receipt shell, with a softer recovery mood. */
+.payment-failed-card {
+  border-color: rgba(190,107,82,.18);
+}
+
+.payment-failed-visual {
+  background:
+    radial-gradient(circle at 50% 92%, rgba(204,126,96,.16), transparent 44%),
+    linear-gradient(180deg, #faf2eb 0%, #fffdf8 100%);
+}
+
+.payment-failed-visual::after {
+  background: linear-gradient(90deg, transparent, rgba(190,107,82,.3), transparent);
+}
+
+.payment-failed-illustration {
+  transform: scale(1.05);
+  transform-origin: center bottom;
+}
+
+.payment-failed-badge {
+  border-color: rgba(190,107,82,.24);
+  color: #934f3e;
+  background: #fae9e1;
+}
+
+.payment-failed-info {
+  border-color: rgba(190,107,82,.18);
+  background: linear-gradient(145deg, #fff8f3, #f8e7de);
+}
+
+@media (max-width: 600px) {
+  .payment-success-page {
+    align-items: flex-start;
+    padding: 18px 14px;
+    background-size: auto 55%;
+  }
+
+  .payment-success-card {
+    border-radius: 21px;
+  }
+
+  .payment-success-header {
+    padding: 18px 20px !important;
+  }
+
+  .payment-success-visual {
+    height: 210px;
+    padding-inline: 15px;
+  }
+
+  .payment-success-body {
+    padding: 24px 20px !important;
+  }
 }
 
 @media (max-width: 860px) {
@@ -476,6 +831,35 @@
   }
   .checkout-sidebar {
     position: static;
+  }
+
+  .checkout-page {
+    background-size: auto 55%;
+    background-attachment: scroll;
+  }
+}
+
+@media (max-width: 620px) {
+  .checkout-feature-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .checkout-section-card {
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .checkout-summary-card {
+    border-radius: 20px !important;
+  }
+
+  .checkout-auth-modal__visual {
+    height: 220px;
+    padding-inline: 28px;
+  }
+
+  .checkout-auth-modal__content {
+    padding: 20px 20px 24px;
   }
 }
 
@@ -497,6 +881,275 @@
 .no-select {
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* ── Practice finish confirmation ─────────────────────────────────────────── */
+.finish-practice-modal {
+  overflow: hidden;
+  border: 1px solid rgba(212,160,23,.18);
+  background: linear-gradient(155deg, #fffdf8, #fbf7ef);
+  box-shadow: 0 32px 90px rgba(24,32,44,.25), inset 0 1px 0 #fff;
+}
+
+.finish-practice-modal__body {
+  padding: 0;
+}
+
+.finish-practice-modal__header {
+  position: absolute;
+  z-index: 3;
+  top: 14px;
+  right: 14px;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.finish-practice-modal__close {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(15,23,42,.1);
+  border-radius: 50%;
+  color: #0f172a;
+  background: rgba(255,253,248,.9);
+  box-shadow: 0 5px 16px rgba(15,23,42,.1);
+  backdrop-filter: blur(8px);
+}
+
+.finish-practice-modal__close:hover {
+  background: #fffdf8;
+}
+
+.finish-practice-modal__visual {
+  position: relative;
+  height: 230px;
+  overflow: hidden;
+  padding: 12px 26px 0;
+  background:
+    radial-gradient(circle at 70% 88%, rgba(212,160,23,.22), transparent 38%),
+    linear-gradient(180deg, #f7f1e6, #fffdf8);
+}
+
+.finish-practice-modal__visual::after {
+  content: "";
+  position: absolute;
+  right: 24px;
+  bottom: 8px;
+  left: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,160,23,.36), transparent);
+}
+
+.finish-practice-modal__illustration {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 12px 18px rgba(25,33,44,.1));
+}
+
+.finish-practice-modal__content {
+  padding: 23px 28px 28px;
+}
+
+.finish-practice-modal__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+  padding: 6px 11px;
+  border: 1px solid rgba(212,160,23,.22);
+  border-radius: 999px;
+  color: #8b6710;
+  background: #fbf2d9;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.finish-practice-modal__status {
+  width: 100%;
+  margin-top: 18px;
+  padding: 13px 15px;
+  border: 1px solid rgba(212,160,23,.18);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #fff8e8, #f8edcf);
+  text-align: center;
+}
+
+.finish-practice-modal__status.is-warning {
+  border-color: rgba(190,107,82,.18);
+  background: linear-gradient(145deg, #fff8f3, #f8e7de);
+}
+
+/* ── Subscription empty state ─────────────────────────────────────────────── */
+.subscription-empty-card {
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 82% 28%, rgba(212,160,23,.2), transparent 36%),
+    linear-gradient(145deg, #111a2c, #1c2a43);
+  box-shadow: 0 18px 42px rgba(15,23,42,.14), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.subscription-empty-card__title {
+  position: relative;
+  z-index: 2;
+  color: #fff;
+}
+
+.subscription-empty-card__visual {
+  position: relative;
+  height: 118px;
+  margin: -6px -10px 0;
+}
+
+.subscription-empty-card__illustration {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 10px 16px rgba(0,0,0,.18));
+}
+
+.subscription-empty-card__copy {
+  position: relative;
+  z-index: 2;
+  margin: -2px 0 15px;
+}
+
+.subscription-empty-card__action {
+  min-height: 42px;
+}
+
+/* ── Expiring subscription banner ─────────────────────────────────────────── */
+.subscription-expiry-banner {
+  height: 76px;
+  color: #fffdf8;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255,255,255,.1), transparent 28%),
+    linear-gradient(110deg, #17243a 0%, #234d55 66%, #1d6566 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 8px 24px rgba(15,23,42,.13);
+}
+
+.subscription-expiry-banner__inner {
+  width: 100%;
+  height: 100%;
+  padding: 10px clamp(18px, 3vw, 46px);
+}
+
+.subscription-expiry-banner__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 50%;
+  color: #f2c85b;
+  background: rgba(255,255,255,.07);
+}
+
+.subscription-expiry-banner__message {
+  min-width: 0;
+  flex: 1;
+}
+
+.subscription-expiry-banner__title {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.subscription-expiry-banner__description {
+  color: rgba(255,255,255,.72);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.subscription-expiry-banner__countdown {
+  flex-shrink: 0;
+}
+
+.subscription-expiry-banner__time {
+  min-width: 43px;
+  padding: 5px 6px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 10px;
+  background: rgba(7,18,31,.28);
+  text-align: center;
+}
+
+.subscription-expiry-banner__time span {
+  display: block;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+
+.subscription-expiry-banner__time small {
+  color: rgba(255,255,255,.58);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.subscription-expiry-banner__cta {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding-inline: 19px;
+}
+
+.subscription-expiry-banner__close {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  color: rgba(255,255,255,.7);
+}
+
+.subscription-expiry-banner__close:hover {
+  color: #fff;
+  background: rgba(255,255,255,.1);
+}
+
+@media (max-width: 760px) {
+  .subscription-expiry-banner { height: 108px; }
+  .subscription-expiry-banner__inner { gap: 9px; padding: 9px 12px; }
+  .subscription-expiry-banner__icon { display: none; }
+  .subscription-expiry-banner__description { display: none; }
+  .subscription-expiry-banner__title { font-size: 13px; }
+  .subscription-expiry-banner__time { min-width: 36px; padding-inline: 4px; }
+  .subscription-expiry-banner__cta { min-width: 44px; padding-inline: 12px; }
+  .subscription-expiry-banner__cta .mantine-Button-label { font-size: 0; }
+  .subscription-expiry-banner__cta .mantine-Button-label::after { content: "Renew"; font-size: 12px; }
+  .subscription-expiry-banner__close { width: 36px; height: 44px; }
+}
+
+@media (max-width: 520px) {
+  .subscription-expiry-banner__inner { flex-wrap: wrap; align-content: center; }
+  .subscription-expiry-banner__message { flex-basis: calc(100% - 45px); }
+  .subscription-expiry-banner__countdown { order: 3; flex: 1; }
+  .subscription-expiry-banner__cta { order: 4; }
+  .subscription-expiry-banner__close { order: 2; }
+}
+
+@media (max-width: 520px) {
+  .finish-practice-modal__visual { height: 190px; padding-inline: 14px; }
+  .finish-practice-modal__content { padding: 20px 18px 22px; }
+  .finish-practice-modal__actions { flex-direction: column-reverse; }
+  .finish-practice-modal__actions > * { width: 100%; flex: none; }
 }
 
 @keyframes icon-spin {
