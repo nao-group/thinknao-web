@@ -1,7 +1,12 @@
+"use client";
+
 import Image from "next/image";
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Box, Text } from "@mantine/core";
 import styles from "./auth-split-layout.module.css";
+
+// Resets on a full document load; survives client-side route changes.
+let documentEntranceClaimed = false;
 
 const COPY = {
   login: {
@@ -24,35 +29,17 @@ function ThinkNaoLogo() {
   );
 }
 
-const WALL_COLUMNS = 10;
-const WALL_ROWS = 5;
-
-function WallDismantle() {
+function GateEntrance() {
   return (
-    <div className={styles.wallSequence} aria-hidden="true">
-      {Array.from({ length: WALL_COLUMNS * WALL_ROWS }, (_, index) => {
-        const column = index % WALL_COLUMNS;
-        const row = Math.floor(index / WALL_COLUMNS);
-        const direction = column < WALL_COLUMNS / 2 ? -1 : 1;
-        const distance = 26 + ((column * 13 + row * 7) % 42);
-        const lift = -18 - ((column * 9 + row * 11) % 46);
-        const rotation = direction * (2 + ((column + row) % 5));
-
-        return (
-          <span
-            key={index}
-            className={styles.wallBlock}
-            style={{
-              "--wall-x": `${(column / (WALL_COLUMNS - 1)) * 100}%`,
-              "--wall-y": `${(row / (WALL_ROWS - 1)) * 100}%`,
-              "--wall-delay": `${Math.max(0, (WALL_ROWS - row - 1) * 65 + Math.abs(column - 4.5) * 22)}ms`,
-              "--wall-tx": `${direction * distance}vw`,
-              "--wall-ty": `${lift}vh`,
-              "--wall-rotate": `${rotation}deg`,
-            } as CSSProperties}
-          />
-        );
-      })}
+    <div className={styles.gateSequence} aria-hidden="true">
+      <div className={styles.gateVeil} />
+      <div className={styles.gateCamera}>
+        <div className={styles.gateScene}>
+          <div className={`${styles.gateDoor} ${styles.gateDoorLeft}`} />
+          <div className={`${styles.gateDoor} ${styles.gateDoorRight}`} />
+          <div className={styles.gateFrame} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -78,16 +65,48 @@ export function AuthSplitLayout({
   mode?: keyof typeof COPY;
 }) {
   const copy = COPY[mode];
+  const [gateState, setGateState] = useState<"pending" | "ready" | "skip">("pending");
+
+  const entranceClaim = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (entranceClaim.current === null) {
+      const navigation = performance.getEntriesByType("navigation")[0];
+      const initialPath = navigation ? new URL(navigation.name).pathname.replace(/\/$/, "") : "";
+      entranceClaim.current = !documentEntranceClaimed && initialPath === `/${mode}`;
+      if (entranceClaim.current) documentEntranceClaimed = true;
+    }
+    // Keep the same claim during React Strict Mode's effect replay.
+    if (!entranceClaim.current) {
+      const frame = requestAnimationFrame(() => setGateState("skip"));
+      return () => cancelAnimationFrame(frame);
+    }
+    const texture = new window.Image();
+    const timeout = window.setTimeout(() => setGateState("skip"), 1500);
+    texture.onload = () => {
+      window.clearTimeout(timeout);
+      setGateState(state => state === "pending" ? "ready" : state);
+    };
+    texture.onerror = () => {
+      window.clearTimeout(timeout);
+      setGateState("skip");
+    };
+    texture.src = "/images/auth/ceremonial-gate.png";
+    return () => {
+      texture.onload = texture.onerror = null;
+      window.clearTimeout(timeout);
+    };
+  }, [mode]);
 
   return (
-    <main className={styles.shell}>
+    <main className={styles.shell} data-gate-state={gateState}>
       <section className={styles.hero} aria-labelledby="auth-hero-title">
         <Image
           src="/images/auth/thinknao-china-landscape.png"
           alt=""
           fill
           preload
-          sizes="(max-width: 767px) 100vw, 58vw"
+          sizes="100vw"
           className={styles.landscape}
         />
         <div className={styles.wash} />
@@ -104,7 +123,6 @@ export function AuthSplitLayout({
           <Text className={styles.heroBody}>{copy.body}</Text>
         </div>
 
-        <WallDismantle />
       </section>
 
       <section className={styles.formPanel} aria-label={mode === "login" ? "Log in" : "Create an account"}>
@@ -112,6 +130,7 @@ export function AuthSplitLayout({
         <Box className={styles.formCard}>{children}</Box>
         <Text className={styles.formFooter}>LEARN BOLDLY · THINK BEYOND</Text>
       </section>
+      <GateEntrance key={mode} />
     </main>
   );
 }
