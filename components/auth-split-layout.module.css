@@ -101,30 +101,77 @@
   animation: contentReveal 0.72s 1.44s both;
 }
 
-.gate {
+.wallSequence {
   position: absolute;
   z-index: 5;
-  top: 0;
-  bottom: 0;
-  width: 51%;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  pointer-events: none;
+}
+
+.wallBlock {
+  min-width: 0;
   background-image: url("/images/auth/great-wall-cutout.png");
   background-repeat: no-repeat;
-  background-size: 200% 100%;
-  filter: drop-shadow(0 18px 28px rgba(15, 23, 42, 0.2));
-  will-change: transform;
+  background-position: var(--wall-x) var(--wall-y);
+  background-size: 1000% 500%;
+  filter: drop-shadow(0 8px 12px rgba(15, 23, 42, 0.12));
+  will-change: transform, opacity, filter;
+  animation: dismantleWall 1.35s var(--wall-delay) cubic-bezier(0.7, 0, 0.3, 1) both;
 }
 
-.gateLeft {
-  left: 0;
-  background-position: left center;
-  animation: openGateLeft 1.45s 0.18s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+.ambientSky {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.gateRight {
-  right: 0;
-  background-position: right center;
-  animation: openGateRight 1.45s 0.18s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+.cloud {
+  position: absolute;
+  width: clamp(190px, 22vw, 390px);
+  height: clamp(42px, 6vw, 92px);
+  border-radius: 50%;
+  opacity: 0.24;
+  background:
+    radial-gradient(ellipse at 28% 62%, rgba(255,255,255,.92) 0 24%, transparent 25%),
+    radial-gradient(ellipse at 48% 44%, rgba(255,255,255,.85) 0 31%, transparent 32%),
+    radial-gradient(ellipse at 70% 64%, rgba(255,255,255,.82) 0 28%, transparent 29%);
+  filter: blur(2px);
+  animation: cloudDrift 24s linear infinite;
 }
+
+.cloudOne { top: 17%; left: -24%; animation-duration: 27s; }
+.cloudTwo { top: 34%; left: -30%; width: clamp(150px, 18vw, 300px); animation-delay: -9s; animation-duration: 31s; opacity: .18; }
+.cloudThree { top: 8%; left: -20%; width: clamp(130px, 15vw, 250px); animation-delay: -18s; animation-duration: 36s; opacity: .14; }
+
+.bird {
+  position: absolute;
+  z-index: 1;
+  width: 18px;
+  height: 8px;
+  animation: birdFlight 7.5s ease-in-out infinite;
+}
+
+.bird::before,
+.bird::after {
+  position: absolute;
+  top: 2px;
+  width: 10px;
+  height: 6px;
+  content: "";
+  border-top: 1.8px solid rgba(55, 79, 105, .72);
+  border-radius: 50%;
+}
+
+.bird::before { left: 0; transform: rotate(16deg); }
+.bird::after { right: 0; transform: rotate(-16deg); }
+.birdOne { top: 46%; right: 14%; }
+.birdTwo { top: 43%; right: 11%; animation-delay: -2.2s; transform: scale(.74); }
+.birdThree { top: 49%; right: 8%; animation-delay: -4.5s; transform: scale(.58); }
 
 .formPanel {
   position: absolute;
@@ -171,8 +218,20 @@
   text-align: center;
 }
 
-@keyframes openGateLeft { to { transform: translateX(-101%); } }
-@keyframes openGateRight { to { transform: translateX(101%); } }
+@keyframes dismantleWall {
+  0%, 12% { opacity: 1; transform: translate3d(0, 0, 0) rotate(0); filter: drop-shadow(0 8px 12px rgba(15, 23, 42, .12)) blur(0); }
+  72% { opacity: .78; }
+  100% { opacity: 0; transform: translate3d(var(--wall-tx), var(--wall-ty), 0) rotate(var(--wall-rotate)) scale(.92); filter: drop-shadow(0 12px 18px rgba(15, 23, 42, .08)) blur(1px); }
+}
+@keyframes cloudDrift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(145vw, 2vh, 0); }
+}
+@keyframes birdFlight {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-2deg); }
+  45% { transform: translate3d(-34px, -12px, 0) rotate(3deg); }
+  70% { transform: translate3d(-16px, 4px, 0) rotate(-1deg); }
+}
 @keyframes landscapeArrive {
   from { filter: saturate(0.75); transform: scale(1.09); }
   to { filter: saturate(1); transform: scale(1); }
@@ -195,7 +254,7 @@
 @media (max-width: 767px) {
   .shell { display: block; min-height: 100dvh; overflow: auto; }
   .hero { position: fixed; inset: 0; min-height: 100dvh; }
-  .heroHeader, .heroCopy, .gate { display: none; }
+  .heroHeader, .heroCopy, .wallSequence { display: none; }
   .landscape { object-position: 50% center; filter: saturate(0.8); }
   .wash { background: linear-gradient(180deg, rgba(15, 23, 42, 0.2), rgba(15, 23, 42, 0.72)); }
   .formPanel {
@@ -229,6 +288,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gate { display: none; }
-  .landscape, .heroHeader, .kicker, .heroTitle, .heroBody, .formCard { animation: none; }
+  .wallSequence { display: none; }
+  .landscape, .heroHeader, .kicker, .heroTitle, .heroBody, .formCard, .cloud, .bird { animation: none; }
 }
