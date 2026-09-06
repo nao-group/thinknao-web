@@ -15,7 +15,13 @@ function getRemaining(expiresAt: string) {
   return { milliseconds, days, hours, minutes, seconds };
 }
 
-export function SubscriptionExpiryBanner({ expiresAt, onDismiss }: { expiresAt: string; onDismiss: () => void }) {
+export function SubscriptionExpiryBanner({
+  expiresAt,
+  onDismiss,
+}: {
+  expiresAt: string;
+  onDismiss: () => void;
+}) {
   const [remaining, setRemaining] = useState(() => getRemaining(expiresAt));
   const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL ?? "";
 

@@ -29,6 +29,7 @@ import { SUBJECTS, SUBJECT_META, PAGE_SIZE } from "../data";
 import { INK, SURFACE, PRIMARY, CREAM } from "@/constants/colors";
 import { PaginationBtn } from "@/components/ui/pagination-btn";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ProblemRow, DIFFICULTY_STYLE, DIFFICULTY_LABEL } from "./components/ProblemRow";
 import { fetchSavedQuestions, removeBookmark } from "./api";
 import type { SavedQuestion } from "./types";
@@ -301,13 +302,10 @@ export default function SavedProblemsPage() {
                   />
                 ))
               ) : (
-                <Box py="xl" style={{ textAlign: "center" }}>
-                  <Text c="dimmed" size="sm">
-                    {searchQuery || activeFilters > 0
-                      ? "No saved problems match your filters."
-                      : "No saved problems yet — bookmark a question from a practice session to see it here."}
-                  </Text>
-                </Box>
+                <EmptyState
+                  title={searchQuery || activeFilters > 0 ? "No matching saved problems" : "No saved problems yet"}
+                  description={searchQuery || activeFilters > 0 ? "Adjust your search or filters and try again." : "Bookmark a question during practice and it will appear here."}
+                />
               )}
             </Stack>
           )}

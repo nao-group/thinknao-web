@@ -35,8 +35,6 @@ import styles from "./nav-shell.module.css";
 import { fetchSubscription, type Subscription } from "@/lib/payments";
 
 const HEADER_HEIGHT = 80;
-const EXPIRY_BANNER_HEIGHT = 76;
-const EXPIRY_BANNER_MOBILE_HEIGHT = 108;
 const SIDEBAR_EXPANDED = 240;
 const SIDEBAR_COLLAPSED = 72;
 
@@ -237,12 +235,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AppShell
-      header={{
-        height: {
-          base: HEADER_HEIGHT + (showExpiryBanner ? EXPIRY_BANNER_MOBILE_HEIGHT : 0),
-          sm: HEADER_HEIGHT + (showExpiryBanner ? EXPIRY_BANNER_HEIGHT : 0),
-        },
-      }}
+      header={{ height: HEADER_HEIGHT }}
       navbar={{
         width: navbarWidth,
         breakpoint: "sm",
@@ -319,12 +312,6 @@ export function NavShell({ children }: { children: React.ReactNode }) {
             </Group>
           </Group>
         </Group>
-        {showExpiryBanner && subscription && (
-          <SubscriptionExpiryBanner
-            expiresAt={subscription.expires_at}
-            onDismiss={() => setExpiryBannerDismissed(true)}
-          />
-        )}
       </AppShell.Header>
 
       {/* ── Sidebar ── */}
@@ -453,6 +440,12 @@ export function NavShell({ children }: { children: React.ReactNode }) {
           flexDirection: "column",
         }}
       >
+        {showExpiryBanner && subscription && (
+          <SubscriptionExpiryBanner
+            expiresAt={subscription.expires_at}
+            onDismiss={() => setExpiryBannerDismissed(true)}
+          />
+        )}
         {children}
       </AppShell.Main>
     </AppShell>

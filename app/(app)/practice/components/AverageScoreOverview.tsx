@@ -5,6 +5,7 @@ import { IconChartBar } from "@tabler/icons-react";
 import { INK, MUTED, PRIMARY } from "@/constants/colors";
 import { SUBJECTS, SUBJECT_META } from "../data";
 import type { SubjectScoreOverview } from "../types";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function scoreColor(score: number) {
   if (score >= 75) return "#5F7D59";
@@ -46,10 +47,7 @@ export function AverageScoreOverview({
       ) : error ? (
         <Text size="sm" c={MUTED} lh={1.55}>{error}</Text>
       ) : ordered.length === 0 ? (
-        <Box className="average-score-empty">
-          <Text size="sm" fw={650} c={INK}>No score history yet</Text>
-          <Text size="xs" c={MUTED} mt={4} lh={1.5}>Complete a practice set to unlock your subject and topic overview.</Text>
-        </Box>
+        <EmptyState compact title="No score history yet" description="Complete a practice set to unlock your subject and topic overview." />
       ) : (
         <Accordion variant="separated" radius="lg" defaultValue={ordered[0]?.code}>
           {ordered.map((subject) => {

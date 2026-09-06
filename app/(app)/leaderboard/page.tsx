@@ -17,6 +17,7 @@ import { PodiumCard } from "./components/PodiumCard";
 import { RankRow } from "./components/RankRow";
 import { SkeletonRow } from "./components/SkeletonRow";
 import { UserProfileDrawer } from "./components/UserProfileDrawer";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { MonthlyXp, LeaderboardEntry } from "./types";
 import { fetchLeaderboardEntries, fetchMyRank } from "./api";
 
@@ -181,6 +182,9 @@ export default function LeaderboardPage() {
       {/* My XP card */}
       <MyXpCard entry={myEntry} loading={loading} />
 
+      {!loading && entries.length === 0 ? (
+        <EmptyState title="The leaderboard is quiet for now" description="Complete practice sets and earn XP to become the first name here." />
+      ) : <>
       {/* Podium — top 3 */}
       {loading ? (
         <Box
@@ -216,6 +220,8 @@ export default function LeaderboardPage() {
               />
             ))}
       </Stack>
+
+      </>}
 
       {/* My rank — shown at bottom only if I'm outside the top 50 */}
       {!loading && myEntry && !meIsInList && (

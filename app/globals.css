@@ -1033,6 +1033,8 @@
 /* ── Expiring subscription banner ─────────────────────────────────────────── */
 .subscription-expiry-banner {
   height: 76px;
+  width: 100%;
+  flex: 0 0 76px;
   color: #fffdf8;
   background:
     radial-gradient(circle at 18% 0%, rgba(255,255,255,.1), transparent 28%),
@@ -1124,8 +1126,63 @@
   background: rgba(255,255,255,.1);
 }
 
+/* ── Global list empty state ──────────────────────────────────────────────── */
+.global-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 250px;
+  padding: 28px 22px;
+  border: 1px solid rgba(212,160,23,.14);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 22%, rgba(212,160,23,.09), transparent 34%),
+    linear-gradient(150deg, #fffdf8, #fbf7ef);
+  text-align: center;
+}
+
+.global-empty-state__illustration {
+  display: block;
+  width: min(190px, 62vw);
+  height: 126px;
+  margin-bottom: 8px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 15px rgba(27,35,47,.08));
+}
+
+.global-empty-state__title {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.global-empty-state__description {
+  max-width: 420px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.global-empty-state--compact {
+  min-height: 190px;
+  padding: 18px;
+}
+
+.global-empty-state--compact .global-empty-state__illustration {
+  width: 130px;
+  height: 84px;
+  margin-bottom: 5px;
+}
+
 @media (max-width: 760px) {
-  .subscription-expiry-banner { height: 108px; }
+  .subscription-expiry-banner {
+    width: 100%;
+    height: 108px;
+    flex-basis: 108px;
+  }
   .subscription-expiry-banner__inner { gap: 9px; padding: 9px 12px; }
   .subscription-expiry-banner__icon { display: none; }
   .subscription-expiry-banner__description { display: none; }

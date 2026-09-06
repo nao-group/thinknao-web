@@ -16,6 +16,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { SubscriptionEmptyCard } from "@/components/subscription-empty-card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   IconAtom,
   IconBook,
@@ -494,7 +495,11 @@ export default function DashboardPage() {
                     <ProblemSetCard key={s.id} session={s} onClick={() => navigateToSession(s)} />
                   ))
                 ) : (
-                  <Text size="sm" c="dimmed">No practice sets yet.</Text>
+                  <EmptyState
+                    title="No practice sets yet"
+                    description="Generate your first set and start building momentum."
+                    style={{ gridColumn: "1 / -1" }}
+                  />
                 )}
               </SimpleGrid>
             </Box>
@@ -526,7 +531,11 @@ export default function DashboardPage() {
                     />
                   ))
                 ) : (
-                  <Text size="sm" c="dimmed">No sessions in progress.</Text>
+                  <EmptyState
+                    title="Nothing in progress"
+                    description="A practice set you start will appear here."
+                    compact
+                  />
                 )}
               </Stack>
             </Box>

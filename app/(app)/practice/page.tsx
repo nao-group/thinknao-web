@@ -32,6 +32,7 @@ import { notifications } from "@mantine/notifications";
 import { Card } from "@/components/ui/card";
 import { PaginationBtn } from "@/components/ui/pagination-btn";
 import { LandingActionButton } from "@/components/ui/landing-action-button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { SubjectCard } from "./components/SubjectCard";
 import { QuestionCountPill } from "./components/QuestionCountPill";
 import { TopicPill } from "./components/TopicPill";
@@ -418,15 +419,10 @@ export default function PracticePage() {
                   ))}
                 </Stack>
               ) : sessions.length === 0 ? (
-                <Box py="xl" style={{ textAlign: "center" }}>
-                  <Text size="sm" c={MUTED}>
-                    {searchQuery
-                      ? `No practice sets found for "${searchQuery}"`
-                      : activeTab === "in-progress"
-                      ? "No practice sets in progress. Generate one above!"
-                      : "No completed practice sets yet."}
-                  </Text>
-                </Box>
+                <EmptyState
+                  title={searchQuery ? "No matching practice sets" : activeTab === "in-progress" ? "Nothing in progress" : "No completed sets yet"}
+                  description={searchQuery ? `Try another keyword instead of “${searchQuery}”.` : activeTab === "in-progress" ? "Generate a set above and your progress will be saved here." : "Finish a practice set to build your review history."}
+                />
               ) : (
                 <Stack key={activeTab} gap={0} className="tab-fade-in">
                   {sessions.map((session) => (
@@ -717,7 +713,7 @@ export default function PracticePage() {
                 ))}
               </Box>
             ) : topics.length === 0 ? (
-              <Text size="sm" c={MUTED} mb="xl">No topics available for this subject.</Text>
+              <EmptyState compact title="No topics available" description="Try selecting another subject." mb="xl" />
             ) : (
               <Box mb="xl" style={{ display: "flex", flexWrap: "wrap", gap: rem(8) }}>
                 {topics.map((t) => (
