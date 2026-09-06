@@ -414,13 +414,7 @@ function CheckoutContent() {
                   <Text fw={800} size="xl" style={{ color: INK }}>
                     {formatIDR(plan.price_per_month_idr)}
                   </Text>
-                  <Text size="sm" style={{ color: MUTED }}>/month</Text>
                 </Group>
-                {plan.billing_note && (
-                  <Text size="xs" style={{ color: MUTED, marginTop: rem(2) }}>
-                    {plan.billing_note}
-                  </Text>
-                )}
               </Box>
 
               {/* Referral code section */}
