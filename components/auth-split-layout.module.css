@@ -176,8 +176,6 @@
 .shell[data-gate-state="pending"] .gateScene { visibility: hidden; }
 .shell[data-gate-state="skip"] .gateSequence { display: none; }
 .shell[data-gate-state="skip"] .formCard { animation: none; }
-.shell:focus-within .gateSequence { display: none; }
-.shell:focus-within .formCard { animation: none; }
 
 .ambientSky {
   position: absolute;

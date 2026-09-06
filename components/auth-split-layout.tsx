@@ -29,9 +29,15 @@ function ThinkNaoLogo() {
   );
 }
 
-function GateEntrance() {
+function GateEntrance({ onComplete }: { onComplete: () => void }) {
   return (
-    <div className={styles.gateSequence} aria-hidden="true">
+    <div
+      className={styles.gateSequence}
+      aria-hidden="true"
+      onAnimationEnd={(event) => {
+        if (event.target === event.currentTarget) onComplete();
+      }}
+    >
       <div className={styles.gateVeil} />
       <div className={styles.gateCamera}>
         <div className={styles.gateScene}>
@@ -99,7 +105,13 @@ export function AuthSplitLayout({
   }, [mode]);
 
   return (
-    <main className={styles.shell} data-gate-state={gateState}>
+    <main
+      className={styles.shell}
+      data-gate-state={gateState}
+      onPointerDownCapture={() => setGateState("skip")}
+      onFocusCapture={() => setGateState("skip")}
+      onSubmitCapture={() => setGateState("skip")}
+    >
       <section className={styles.hero} aria-labelledby="auth-hero-title">
         <Image
           src="/images/auth/thinknao-china-landscape.png"
@@ -130,7 +142,7 @@ export function AuthSplitLayout({
         <Box className={styles.formCard}>{children}</Box>
         <Text className={styles.formFooter}>LEARN BOLDLY · THINK BEYOND</Text>
       </section>
-      <GateEntrance key={mode} />
+      {gateState === "ready" && <GateEntrance onComplete={() => setGateState("skip")} />}
     </main>
   );
 }
