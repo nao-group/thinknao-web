@@ -98,7 +98,7 @@ export function AnnouncementCarousel() {
                     width: "220px",
                     height: "220px",
                     borderRadius: "50%",
-                    border: "1px solid rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(251,241,213,0.05)",
                     pointerEvents: "none",
                   }}
                 />
@@ -132,7 +132,7 @@ export function AnnouncementCarousel() {
                     >
                       {slide.title}
                     </Title>
-                    <Text size="sm" c="rgba(255,255,255,0.5)">
+                    <Text size="sm" c="rgba(251,241,213,0.5)">
                       {slide.sub}
                     </Text>
                   </Box>
@@ -152,7 +152,7 @@ export function AnnouncementCarousel() {
                     >
                       {slide.cta}
                     </Button>
-                    <Text size="xs" c="rgba(255,255,255,0.4)" ta="right">
+                    <Text size="xs" c="rgba(251,241,213,0.4)" ta="right">
                       {slide.end}
                     </Text>
                   </Box>

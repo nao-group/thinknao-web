@@ -17,7 +17,8 @@ export function MyXpCard({ entry, loading }: { entry: LeaderboardEntry | null; l
   return (
     <Box
       mb="xl"
-      p="lg"
+      p={rem(22)}
+      className="leaderboard-standing-card"
       style={{
         background: `linear-gradient(135deg, ${INK} 0%, #1E2A4A 60%, #252060 100%)`,
         borderRadius: rem(16),
@@ -38,8 +39,10 @@ export function MyXpCard({ entry, loading }: { entry: LeaderboardEntry | null; l
         </Stack>
       ) : entry ? (
         <>
-          <Group justify="space-between" align="flex-start" mb="md">
-            <Group gap={12} align="center">
+          <Text size="xs" c="rgba(255,255,255,0.55)" fw={800} tt="uppercase" style={{ letterSpacing: "0.1em" }} mb="md">
+            Your Standing
+          </Text>
+          <Group gap={12} align="center" mb="lg">
               <Avatar
                 size={rem(52)}
                 radius="xl"
@@ -48,20 +51,23 @@ export function MyXpCard({ entry, loading }: { entry: LeaderboardEntry | null; l
                 {getInitials(entry.full_name)}
               </Avatar>
               <Box>
-                <Text size="xs" c="rgba(255,255,255,0.5)" fw={600} tt="uppercase" style={{ letterSpacing: "0.06em" }}>
-                  Your Standing
-                </Text>
+                <Text size="sm" c="white" fw={700} lineClamp={1}>{entry.full_name}</Text>
                 <Group gap={6} align="center">
                   <Text fw={800} size="xl" c="white">#{entry.rank}</Text>
                   {medal && <Text style={{ fontSize: rem(16) }}>{medal.label}</Text>}
                 </Group>
               </Box>
-            </Group>
-            <Box style={{ textAlign: "right" }}>
+          </Group>
+          <Group gap="sm" mb="lg" grow>
+            <Box className="leaderboard-standing-stat">
               <Text size="xs" c="rgba(255,255,255,0.5)" fw={600} tt="uppercase" style={{ letterSpacing: "0.06em" }}>
                 This Year
               </Text>
-              <Text fw={800} size="lg" c={PRIMARY}>{(entry.yearly_xp ?? entry.total_xp).toLocaleString()} XP</Text>
+              <Text fw={800} size="md" c={PRIMARY}>{(entry.yearly_xp ?? entry.total_xp).toLocaleString()} XP</Text>
+            </Box>
+            <Box className="leaderboard-standing-stat">
+              <Text size="xs" c="rgba(255,255,255,0.5)" fw={600} tt="uppercase" style={{ letterSpacing: "0.06em" }}>All Time</Text>
+              <Text fw={800} size="md" c="white">{entry.total_xp.toLocaleString()} XP</Text>
             </Box>
           </Group>
 

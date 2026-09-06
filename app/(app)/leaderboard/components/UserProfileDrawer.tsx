@@ -9,6 +9,7 @@ import {
   Group,
   Stack,
   Text,
+  UnstyledButton,
   rem,
 } from "@mantine/core";
 import {
@@ -19,6 +20,7 @@ import {
   IconSchool,
   IconTarget,
   IconTrophy,
+  IconX,
 } from "@tabler/icons-react";
 import { INK, SURFACE, PRIMARY, CREAM, MUTED } from "@/constants/colors";
 import { getInitials } from "@/lib/format";
@@ -95,13 +97,13 @@ export function UserProfileDrawer({
       opened={!!entry}
       onClose={onClose}
       position="right"
-      size={rem(340)}
+      size={rem(410)}
       withCloseButton={false}
       overlayProps={{ backgroundOpacity: 0.25, blur: 1 }}
       transitionProps={{ transition: "slide-left", duration: 220 }}
       styles={{
         body: { padding: 0, height: "100%", display: "flex", flexDirection: "column" },
-        content: { borderRadius: `${rem(16)} 0 0 ${rem(16)}`, overflow: "hidden", display: "flex", flexDirection: "column" },
+        content: { borderRadius: `${rem(24)} 0 0 ${rem(24)}`, overflow: "hidden", display: "flex", flexDirection: "column", background: "#FFFDF8" },
       }}
     >
       {entry && (
@@ -110,14 +112,21 @@ export function UserProfileDrawer({
           <Box
             style={{
               position: "relative",
-              height: rem(160),
-              background: `linear-gradient(135deg, ${INK} 0%, #1E2A4A 60%, #252060 100%)`,
+              height: rem(190),
+              background: `linear-gradient(145deg, ${INK} 0%, #23334B 58%, #5B4B2A 140%)`,
               flexShrink: 0,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
+            <UnstyledButton
+              onClick={onClose}
+              aria-label="Close profile"
+              style={{ position: "absolute", top: rem(14), left: rem(14), width: rem(36), height: rem(36), borderRadius: "50%", display: "grid", placeItems: "center", color: "white", background: "rgba(255,255,255,.12)", zIndex: 2 }}
+            >
+              <IconX size={18} />
+            </UnstyledButton>
             {/* Decorative rings */}
             {[
               { size: 200, top: -60, right: -40, opacity: 0.08 },
@@ -173,9 +182,10 @@ export function UserProfileDrawer({
 
           {/* Scrollable content */}
           <Box style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
-            <Box px="lg" pt="md" pb="xl">
+            <Box px={rem(24)} pt="lg" pb="xl">
               {/* Name + XP */}
-              <Group justify="space-between" align="flex-start" mb={4}>
+              <Text size="xs" fw={800} tt="uppercase" c={PRIMARY} style={{ letterSpacing: "0.1em" }} mb={6}>Learner profile</Text>
+              <Group justify="space-between" align="flex-start" mb={6}>
                 <Text fw={800} size="lg" c={INK} style={{ lineHeight: 1.2 }}>
                   {entry.full_name}
                 </Text>
@@ -189,11 +199,13 @@ export function UserProfileDrawer({
               </Group>
 
               {/* Location + school */}
-              <Stack gap={4} mb="md">
-                {entry.province && <InfoRow icon={IconMapPin} text={entry.province} />}
-                {entry.current_school && <InfoRow icon={IconSchool} text={entry.current_school} />}
-                {entry.dream_university && <InfoRow icon={IconTarget} text={entry.dream_university} />}
-              </Stack>
+              <Box className="leaderboard-profile-info" mb="lg">
+                <Stack gap={8}>
+                  {entry.province && <InfoRow icon={IconMapPin} text={entry.province} />}
+                  {entry.current_school && <InfoRow icon={IconSchool} text={entry.current_school} />}
+                  {entry.dream_university && <InfoRow icon={IconTarget} text={entry.dream_university} />}
+                </Stack>
+              </Box>
 
               {/* XP Stats */}
               <Box
