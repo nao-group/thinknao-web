@@ -139,7 +139,11 @@ function CheckoutContent() {
       const result = await validateReferral(code);
       if (result.valid) {
         setReferralCode(code.toUpperCase());
-        setReferralDiscount(result.discount_amount);
+        const discountIDR =
+          result.discount_type === "percentage"
+            ? Math.floor((plan?.total_price_idr ?? 0) * result.discount_amount / 100)
+            : result.discount_amount;
+        setReferralDiscount(discountIDR);
         setShowReferralInput(false);
       } else {
         setReferralError(result.message ?? "Invalid referral code.");
