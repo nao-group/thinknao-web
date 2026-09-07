@@ -43,6 +43,7 @@ export function RankRow({ entry, index, isMe, onClick }: { entry: LeaderboardEnt
 
       {/* Avatar */}
       <Avatar
+        src={entry.avatar_url}
         size={rem(40)}
         radius="xl"
         style={{ backgroundColor: av.bg, color: av.color, fontWeight: 700, fontSize: rem(14), flexShrink: 0 }}
@@ -89,7 +90,7 @@ export function RankRow({ entry, index, isMe, onClick }: { entry: LeaderboardEnt
           flexShrink: 0,
         }}
       >
-        {entry.total_xp.toLocaleString()} XP
+        {entry.yearly_xp.toLocaleString()} XP
       </Badge>
     </Box>
   );

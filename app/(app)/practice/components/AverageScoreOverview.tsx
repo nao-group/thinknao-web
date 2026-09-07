@@ -87,8 +87,12 @@ export function AverageScoreOverview({
                         </Group>
                         <Group justify="space-between" mt={6} gap="xs" wrap="nowrap">
                           <Progress value={topic.averageScore} color={scoreColor(topic.averageScore)} size={4} radius="xl" style={{ flex: 1 }} />
+                          {/* Same numbers behind the percentage: correct out of every
+                              verified question in the topic, not out of attempts. */}
                           <Text fz={10} c={MUTED} style={{ whiteSpace: "nowrap" }}>
-                            {topic.completedSets} {topic.completedSets === 1 ? "set" : "sets"}
+                            {topic.totalQuestions > 0
+                              ? `${topic.correct}/${topic.totalQuestions} correct`
+                              : "No questions yet"}
                           </Text>
                         </Group>
                         </Box>
