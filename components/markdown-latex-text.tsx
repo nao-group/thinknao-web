@@ -2,7 +2,7 @@
 
 import { PRIMARY, INK, CORRECT_DARK } from "@/constants/colors";
 import { rem } from "@mantine/core";
-import { splitMath, renderMath } from "@/lib/latex";
+import { splitMath, renderMath, MATH_RE } from "@/lib/latex";
 
 const BOLD_RE = /(\*\*(?:[^*]|\*(?!\*))+\*\*)/g;
 // Runs after BOLD_RE has already consumed every `**...**` span, so a lone `*` or `_`
@@ -73,13 +73,29 @@ function parseBold(text: string, keyPrefix: string, circleNums: boolean): React.
 }
 
 function parseItalic(text: string, keyPrefix: string, circleNums: boolean): React.ReactElement[] {
-  return text.split(ITALIC_RE).flatMap((part, i): React.ReactElement[] => {
+  // Protect math expressions from underscore-italic mis-parsing.
+  // LaTeX subscripts like _{92} resemble italic _..._ markers and break math
+  // when the italic regex consumes them first.  Extract math into placeholders,
+  // run italic detection on the safe string, then restore before handing to parseMath.
+  const extracted: string[] = [];
+  const shielded = text.replace(new RegExp(MATH_RE.source, "g"), (m) => {
+    extracted.push(m);
+    return `\x00${extracted.length - 1}\x00`;
+  });
+
+  const RESTORE_RE = /\x00(\d+)\x00/g;
+  function restore(s: string): string {
+    if (!extracted.length) return s;
+    return s.replace(RESTORE_RE, (_, i) => extracted[Number(i)]);
+  }
+
+  return shielded.split(ITALIC_RE).flatMap((part, i): React.ReactElement[] => {
     const key = `${keyPrefix}-i${i}`;
     const isItalic = (part.startsWith("*") && part.endsWith("*")) || (part.startsWith("_") && part.endsWith("_"));
     if (isItalic) {
-      return [<em key={key}>{parseMath(part.slice(1, -1), key, circleNums)}</em>];
+      return [<em key={key}>{parseMath(restore(part.slice(1, -1)), key, circleNums)}</em>];
     }
-    return parseMath(part, key, circleNums);
+    return parseMath(restore(part), key, circleNums);
   });
 }
 
