@@ -65,8 +65,8 @@ function LogoMark({ collapsed }: { collapsed?: boolean }) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src="/images/logo/thinknao_o.svg"
-        alt="ThinkNao"
+        src="/images/logo/nao_icon_dark.png"
+        alt="ThinkNAO"
         style={{ width: rem(36), height: rem(36), objectFit: "contain", flexShrink: 0 }}
       />
     );
@@ -74,9 +74,9 @@ function LogoMark({ collapsed }: { collapsed?: boolean }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/images/logo/thinknao_full.svg"
-      alt="ThinkNao"
-      style={{ height: rem(60), objectFit: "contain", flexShrink: 0 }}
+      src="/images/logo/think_nao_dark.png"
+      alt="ThinkNAO"
+      style={{ width: rem(168), height: "auto", maxHeight: rem(46), objectFit: "contain", flexShrink: 0 }}
     />
   );
 }

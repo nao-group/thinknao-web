@@ -25,7 +25,7 @@ function ThinkNaoLogo() {
   return (
     // Existing brand asset; keep its original proportions.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/images/logo/thinknao_full.svg" alt="ThinkNAO" className={styles.logo} />
+    <img src="/images/logo/think_nao_dark.png" alt="ThinkNAO" className={styles.logo} />
   );
 }
 
