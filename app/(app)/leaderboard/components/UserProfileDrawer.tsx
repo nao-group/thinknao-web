@@ -113,13 +113,26 @@ export function UserProfileDrawer({
             style={{
               position: "relative",
               height: rem(190),
-              background: `linear-gradient(145deg, ${INK} 0%, #23334B 58%, #5B4B2A 140%)`,
+              background: entry.banner_url
+                ? `url(${entry.banner_url}) center / cover no-repeat`
+                : `linear-gradient(145deg, ${INK} 0%, #23334B 58%, #5B4B2A 140%)`,
               flexShrink: 0,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
+            {/* Scrim — keeps the avatar, rank badge and close button legible on a photo */}
+            {entry.banner_url && (
+              <Box
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "linear-gradient(180deg, rgba(15,23,42,0.45) 0%, rgba(15,23,42,0.30) 100%)",
+                  pointerEvents: "none",
+                }}
+              />
+            )}
             <UnstyledButton
               onClick={onClose}
               aria-label="Close profile"
