@@ -165,6 +165,7 @@ export function UserProfileDrawer({
             </Box>
             {/* Avatar centered on banner */}
             <Avatar
+              src={entry.avatar_url}
               size={rem(88)}
               radius="xl"
               style={{
@@ -194,7 +195,7 @@ export function UserProfileDrawer({
                   radius="sm"
                   style={{ backgroundColor: CREAM, color: PRIMARY, fontWeight: 700, flexShrink: 0 }}
                 >
-                  {entry.total_xp.toLocaleString()} XP
+                  {entry.yearly_xp.toLocaleString()} XP
                 </Badge>
               </Group>
 

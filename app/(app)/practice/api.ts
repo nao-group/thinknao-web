@@ -58,8 +58,8 @@ export async function deleteSession(sessionId: string): Promise<void> {
 interface ApiTopicScore {
   topic_code: string;
   topic_name: string | null;
-  answered: number;
   correct: number;
+  total_questions: number;
   average_score: number;
   completed_sets: number;
 }
@@ -67,19 +67,21 @@ interface ApiTopicScore {
 interface ApiSubjectScore {
   subject_code: string;
   subject_name: string | null;
-  answered: number;
-  correct: number;
   average_score: number;
   completed_sets: number;
   topics: ApiTopicScore[];
 }
 
 /**
- * The student's real average score per subject, broken down by topic.
+ * Mastery score for every subject and every topic in the curriculum — not
+ * filtered down to only ones the student has attempted.
  *
- * Only subjects they've actually answered questions in come back — a subject
- * with no attempts is omitted rather than reported as 0%, which would read as
- * "you scored zero" rather than "you haven't started this yet".
+ * TOPIC score = distinct questions in that topic ever answered correctly,
+ * out of every verified question that exists in the topic. Coverage, not
+ * attempt accuracy — a topic never started is a real 0%, not omitted or null.
+ *
+ * SUBJECT score = the plain average of its topic scores, NOT weighted by how
+ * many questions are banked under each topic.
  *
  * `subjects` is accepted so the caller's label wins over the server's subject
  * name, keeping the wording identical to the rest of the practice page.
@@ -97,6 +99,8 @@ export async function fetchAverageScoreOverview(
     completedSets: subject.completed_sets,
     topics: subject.topics.map((topic) => ({
       name: topic.topic_name ?? topic.topic_code,
+      correct: topic.correct,
+      totalQuestions: topic.total_questions,
       averageScore: Math.round(topic.average_score),
       completedSets: topic.completed_sets,
     })),

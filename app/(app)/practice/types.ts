@@ -30,6 +30,11 @@ export interface Topic {
 
 export interface TopicScoreOverview {
   name: string;
+  /** Distinct questions in this topic ever answered correctly, out of every
+   *  verified question that exists in the topic — a coverage/mastery score,
+   *  not attempt accuracy. Never started is a real 0, not null. */
+  correct: number;
+  totalQuestions: number;
   averageScore: number;
   completedSets: number;
 }
@@ -37,6 +42,8 @@ export interface TopicScoreOverview {
 export interface SubjectScoreOverview {
   code: string;
   name: string;
+  /** Plain average of this subject's topic scores — NOT weighted by how many
+   *  questions are banked under each topic. */
   averageScore: number;
   completedSets: number;
   topics: TopicScoreOverview[];

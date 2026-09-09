@@ -44,6 +44,7 @@ export function MyXpCard({ entry, loading }: { entry: LeaderboardEntry | null; l
           </Text>
           <Group gap={12} align="center" mb="lg">
               <Avatar
+                src={entry.avatar_url}
                 size={rem(52)}
                 radius="xl"
                 style={{ backgroundColor: av.bg, color: av.color, fontWeight: 700, fontSize: rem(16), flexShrink: 0, border: "2px solid rgba(255,255,255,0.2)" }}

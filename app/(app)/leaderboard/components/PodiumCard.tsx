@@ -26,6 +26,7 @@ export function PodiumCard({ entry, height, onClick }: { entry: LeaderboardEntry
       {/* Avatar */}
       <Box style={{ position: "relative" }}>
         <Avatar
+          src={entry.avatar_url}
           size={isFirst ? rem(72) : rem(56)}
           radius="xl"
           style={{ backgroundColor: av.bg, color: av.color, fontWeight: 700, fontSize: isFirst ? rem(22) : rem(16) }}
@@ -76,7 +77,7 @@ export function PodiumCard({ entry, height, onClick }: { entry: LeaderboardEntry
           radius="sm"
           style={{ backgroundColor: "rgba(255,255,255,0.25)", color: "white", fontWeight: 700, fontSize: rem(11) }}
         >
-          {entry.total_xp.toLocaleString()} XP
+          {entry.yearly_xp.toLocaleString()} XP
         </Badge>
         {entry.province && (
           <Text size="xs" c="rgba(255,255,255,0.8)" ta="center" lineClamp={1}>
