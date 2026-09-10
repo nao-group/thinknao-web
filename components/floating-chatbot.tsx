@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Box, Group, Stack, Text, Textarea, TextInput, Tooltip, UnstyledButton, rem } from "@mantine/core";
 import {
   IconArrowLeft,
+  IconAlertCircle,
+  IconClockHour4,
   IconHistory,
   IconMessageCircle,
   IconPencil,
@@ -33,6 +35,44 @@ interface FloatingChatbotProps {
 }
 
 const GREETING = "Hi! I'm here to help you understand this problem. Feel free to ask anything about it.";
+const DAILY_CONVERSATION_LIMIT = 50;
+const DAILY_WARNING_REMAINING = 10;
+// Demo seed: keep the near-limit notice visible until backend usage is connected.
+const DEMO_INITIAL_DAILY_USED = 42;
+
+function todayKey(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function usageStorageKey(userId: string): string {
+  return `thinknao-chatbot-usage-demo-v2:${userId}`;
+}
+
+function readDailyUsage(userId: string): number {
+  if (typeof window === "undefined") return DEMO_INITIAL_DAILY_USED;
+  try {
+    const saved = JSON.parse(localStorage.getItem(usageStorageKey(userId)) ?? "null") as {
+      date?: string;
+      used?: number;
+    } | null;
+    if (saved?.date !== todayKey()) return DEMO_INITIAL_DAILY_USED;
+    return Math.min(Math.max(Number(saved.used) || 0, 0), DAILY_CONVERSATION_LIMIT);
+  } catch {
+    return DEMO_INITIAL_DAILY_USED;
+  }
+}
+
+function saveDailyUsage(userId: string, used: number) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(
+    usageStorageKey(userId),
+    JSON.stringify({ date: todayKey(), used: Math.min(used, DAILY_CONVERSATION_LIMIT) })
+  );
+}
 
 interface HistoryMessage {
   role: string;
@@ -140,6 +180,7 @@ function PracticeSetMessage({ text }: { text: string }) {
 // ─── Main component ─────────────────────────────────────────────────────────
 
 export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps) {
+  const currentUser = useAuthStore((state) => state.user);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"chat" | "history">("chat");
   const [messages, setMessages] = useState<Message[]>([
@@ -148,6 +189,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [dailyUsed, setDailyUsed] = useState(DEMO_INITIAL_DAILY_USED);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const historyLoadedForSession = useRef<string | null>(null);
@@ -184,6 +226,14 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
   const [renameValue, setRenameValue] = useState("");
   const [starterPrompts, setStarterPrompts] = useState<string[]>([]);
   const [foreignSetName, setForeignSetName] = useState("");
+
+  useEffect(() => {
+    const userId = currentUser?.user_id ?? "anonymous";
+    const syncUsage = () => setDailyUsed(readDailyUsage(userId));
+    syncUsage();
+    const timer = window.setInterval(syncUsage, 60_000);
+    return () => window.clearInterval(timer);
+  }, [currentUser?.user_id]);
 
   useEffect(() => {
     if (!questionId) return;
@@ -415,7 +465,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
 
   async function handleSend(overrideText?: string) {
     const text = (overrideText ?? input).trim();
-    if (!text || loading || !questionId) return;
+    if (!text || loading || !questionId || dailyUsed >= DAILY_CONVERSATION_LIMIT) return;
     if (!overrideText) setInput("");
     const isPracticeCmd = text.toLowerCase().startsWith("/practice");
     setMessages((prev) => [...prev, { role: "user", text, timestamp: new Date() }]);
@@ -436,6 +486,10 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
       });
 
       if (!res.ok || !res.body) {
+        if (res.status === 429) {
+          setDailyUsed(DAILY_CONVERSATION_LIMIT);
+          saveDailyUsage(currentUser?.user_id ?? "anonymous", DAILY_CONVERSATION_LIMIT);
+        }
         let detail = "Sorry, I couldn't connect right now. Please try again.";
         try {
           const errBody = await res.json();
@@ -445,6 +499,14 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
         }
         throw new Error(detail);
       }
+
+      const remainingHeader = res.headers.get("x-chatbot-daily-remaining");
+      const serverRemaining = remainingHeader === null ? null : Number(remainingHeader);
+      const nextUsed = serverRemaining !== null && Number.isFinite(serverRemaining)
+        ? DAILY_CONVERSATION_LIMIT - Math.min(DAILY_CONVERSATION_LIMIT, Math.max(0, serverRemaining))
+        : Math.min(dailyUsed + 1, DAILY_CONVERSATION_LIMIT);
+      setDailyUsed(nextUsed);
+      saveDailyUsage(currentUser?.user_id ?? "anonymous", nextUsed);
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -492,7 +554,10 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
     return `${Math.floor(hours / 24)}d ago`;
   }
 
-  const canSend = !!input.trim() && !loading;
+  const dailyRemaining = Math.max(0, DAILY_CONVERSATION_LIMIT - dailyUsed);
+  const quotaReached = dailyRemaining === 0;
+  const showQuotaNotice = dailyRemaining <= DAILY_WARNING_REMAINING;
+  const canSend = !!input.trim() && !loading && !quotaReached;
 
   return (
     <>
@@ -575,8 +640,10 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                   <IconSparkles size={16} stroke={1.5} color={PRIMARY} />
                 </Box>
                 <Box>
-                  <Text fw={700} size="sm" c={INK} lh={1.25}>AI Tutor</Text>
-                  <Text size="xs" c={MUTED} lh={1.25}>Unlimited chat access</Text>
+                  <Text fw={700} size="sm" c={INK} lh={1.25}>Ask NAO</Text>
+                  <Text size="xs" c={MUTED} lh={1.25}>
+                    {dailyUsed} / {DAILY_CONVERSATION_LIMIT} used today
+                  </Text>
                 </Box>
               </Group>
             )}
@@ -827,7 +894,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                       </Box>
                       <Box style={{ maxWidth: m.type === "practice_set" ? "94%" : "82%" }}>
                         <Group gap={6} mb={5} align="center">
-                          <Text size="xs" fw={700} c={INK} lh={1}>AI Tutor</Text>
+                          <Text size="xs" fw={700} c={INK} lh={1}>Ask NAO</Text>
                           {m.timestamp && (
                             <Text size="xs" c={MUTED} lh={1}>{formatTime(m.timestamp)}</Text>
                           )}
@@ -851,6 +918,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                       <UnstyledButton
                         key={p}
                         onClick={() => handleSend(p)}
+                        disabled={quotaReached}
                         style={{
                           fontSize: rem(12.5),
                           padding: `${rem(6)} ${rem(10)}`,
@@ -859,6 +927,8 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                           backgroundColor: SURFACE,
                           color: INK,
                           lineHeight: 1.3,
+                          opacity: quotaReached ? 0.45 : 1,
+                          cursor: quotaReached ? "not-allowed" : "pointer",
                         }}
                       >
                         {p}
@@ -881,7 +951,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                       <IconSparkles size={14} stroke={1.5} color={PRIMARY} />
                     </Box>
                     <Box>
-                      <Text size="xs" fw={700} c={INK} mb={6} lh={1}>AI Tutor</Text>
+                      <Text size="xs" fw={700} c={INK} mb={6} lh={1}>Ask NAO</Text>
                       <Group gap={5} align="center">
                         {[0, 1, 2].map((d) => (
                           <Box
@@ -904,9 +974,68 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
 
             {/* ── Input composer ── */}
             <Box px="md" py="md" style={{ borderTop: "1px solid #F1F5F9", backgroundColor: "white", flexShrink: 0 }}>
+              {showQuotaNotice && (
+                <Box
+                  role="status"
+                  aria-live="polite"
+                  mb="sm"
+                  p="sm"
+                  style={{
+                    borderRadius: rem(12),
+                    border: quotaReached ? "1px solid #F3CECB" : "1px solid #EBD59B",
+                    background: quotaReached
+                      ? "linear-gradient(135deg, #FFF6F4 0%, #FCEBE8 100%)"
+                      : "linear-gradient(135deg, #FFF9EA 0%, #F8EED2 100%)",
+                  }}
+                >
+                  <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
+                    <Group gap={8} align="flex-start" wrap="nowrap">
+                      <Box
+                        mt={1}
+                        style={{
+                          width: rem(28),
+                          height: rem(28),
+                          borderRadius: rem(9),
+                          display: "grid",
+                          placeItems: "center",
+                          flexShrink: 0,
+                          color: quotaReached ? "#B94A48" : "#946A08",
+                          backgroundColor: quotaReached ? "#F8DCD8" : "#F3E1AC",
+                        }}
+                      >
+                        {quotaReached ? <IconAlertCircle size={15} /> : <IconClockHour4 size={15} />}
+                      </Box>
+                      <Box>
+                        <Text size="xs" fw={750} c={quotaReached ? "#8F3735" : "#755205"}>
+                          {quotaReached ? "Daily chat limit reached" : `${dailyRemaining} AI conversations left today`}
+                        </Text>
+                        <Text size="xs" c={quotaReached ? "#A65C59" : "#8C7132"} mt={2} lh={1.4}>
+                          {quotaReached
+                            ? `You’ve used all ${DAILY_CONVERSATION_LIMIT}. Your access resets at midnight.`
+                            : "Your daily quota resets automatically at midnight."}
+                        </Text>
+                      </Box>
+                    </Group>
+                    <Text size="xs" fw={800} c={quotaReached ? "#8F3735" : "#755205"} style={{ whiteSpace: "nowrap" }}>
+                      {dailyUsed}/{DAILY_CONVERSATION_LIMIT}
+                    </Text>
+                  </Group>
+                  <Box mt={8} h={3} style={{ overflow: "hidden", borderRadius: rem(999), backgroundColor: "rgba(117,82,5,.12)" }}>
+                    <Box
+                      h="100%"
+                      style={{
+                        width: `${(dailyUsed / DAILY_CONVERSATION_LIMIT) * 100}%`,
+                        borderRadius: "inherit",
+                        backgroundColor: quotaReached ? "#C65D58" : PRIMARY,
+                        transition: "width 220ms ease",
+                      }}
+                    />
+                  </Box>
+                </Box>
+              )}
               <Box
                 style={{
-                  border: `1.5px solid ${input.trim() ? "#CBD5E1" : "#E2E8F0"}`,
+                  border: `1.5px solid ${quotaReached ? "#E5E7EB" : input.trim() ? "#CBD5E1" : "#E2E8F0"}`,
                   borderRadius: rem(16),
                   backgroundColor: SURFACE,
                   overflow: "hidden",
@@ -915,9 +1044,10 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
               >
                 <Textarea
                   ref={inputRef}
-                  placeholder="Ask something..."
+                  placeholder={quotaReached ? "Daily limit reached — available again tomorrow" : "Ask something..."}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
+                  disabled={quotaReached}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -937,6 +1067,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                       boxShadow: "none",
                       color: INK,
                       resize: "none",
+                      cursor: quotaReached ? "not-allowed" : "text",
                     },
                   }}
                 />
