@@ -17,7 +17,8 @@ export interface LeaderboardEntry {
   tiktok: string | null;
   linkedin: string | null;
   avatar_url: string | null;
-  total_xp: number;
+  banner_url: string | null;
   yearly_xp: number;
+  month_xp: number;
   monthly_xp: MonthlyXp[];
 }

@@ -64,11 +64,11 @@ export function MyXpCard({ entry, loading }: { entry: LeaderboardEntry | null; l
               <Text size="xs" c="rgba(255,255,255,0.5)" fw={600} tt="uppercase" style={{ letterSpacing: "0.06em" }}>
                 This Year
               </Text>
-              <Text fw={800} size="md" c={PRIMARY}>{(entry.yearly_xp ?? entry.total_xp).toLocaleString()} XP</Text>
+              <Text fw={800} size="md" c={PRIMARY}>{entry.yearly_xp.toLocaleString()} XP</Text>
             </Box>
             <Box className="leaderboard-standing-stat">
-              <Text size="xs" c="rgba(255,255,255,0.5)" fw={600} tt="uppercase" style={{ letterSpacing: "0.06em" }}>All Time</Text>
-              <Text fw={800} size="md" c="white">{entry.total_xp.toLocaleString()} XP</Text>
+              <Text size="xs" c="rgba(255,255,255,0.5)" fw={600} tt="uppercase" style={{ letterSpacing: "0.06em" }}>This Month</Text>
+              <Text fw={800} size="md" c="white">{entry.month_xp.toLocaleString()} XP</Text>
             </Box>
           </Group>
 
