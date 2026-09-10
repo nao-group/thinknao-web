@@ -7,6 +7,8 @@ import styles from "./auth-split-layout.module.css";
 
 // Resets on a full document load; survives client-side route changes.
 let documentEntranceClaimed = false;
+// Ceremonial gate is temporarily disabled; keep the implementation for a future re-enable.
+const CEREMONIAL_GATE_ENABLED = false;
 
 const COPY = {
   login: {
@@ -71,11 +73,15 @@ export function AuthSplitLayout({
   mode?: keyof typeof COPY;
 }) {
   const copy = COPY[mode];
-  const [gateState, setGateState] = useState<"pending" | "ready" | "skip">("pending");
+  const [gateState, setGateState] = useState<"pending" | "ready" | "skip">(
+    CEREMONIAL_GATE_ENABLED ? "pending" : "skip"
+  );
 
   const entranceClaim = useRef<boolean | null>(null);
 
   useEffect(() => {
+    if (!CEREMONIAL_GATE_ENABLED) return;
+
     if (entranceClaim.current === null) {
       const navigation = performance.getEntriesByType("navigation")[0];
       const initialPath = navigation ? new URL(navigation.name).pathname.replace(/\/$/, "") : "";
@@ -142,7 +148,10 @@ export function AuthSplitLayout({
         <Box className={styles.formCard}>{children}</Box>
         <Text className={styles.formFooter}>LEARN BOLDLY · THINK BEYOND</Text>
       </section>
-      {gateState === "ready" && <GateEntrance onComplete={() => setGateState("skip")} />}
+      {/* Ceremonial gate temporarily commented out/disabled. */}
+      {CEREMONIAL_GATE_ENABLED && gateState === "ready" && (
+        <GateEntrance onComplete={() => setGateState("skip")} />
+      )}
     </main>
   );
 }
