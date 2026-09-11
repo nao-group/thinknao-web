@@ -58,6 +58,7 @@ function SocialRow({
   if (!value) return null;
   const handle = extractSocialHandle(value);
   const href = buildSocialUrl(value, baseUrl);
+  const isLinkedIn = label.toLowerCase() === "linkedin";
   return (
     <Group gap={10} align="center">
       <Box
@@ -74,10 +75,10 @@ function SocialRow({
       >
         <Icon size={16} stroke={1.5} color={iconColor} />
       </Box>
-      <Box style={{ minWidth: 0 }}>
+      <Box style={{ minWidth: 0, overflow: "hidden" }}>
         <Text size="xs" fw={600} c={MUTED}>{label}</Text>
-        <Anchor href={href} target="_blank" size="sm" fw={600} c={INK} underline="hover">
-          @{handle}
+        <Anchor href={href} target="_blank" size="sm" fw={600} c={INK} underline="hover" style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {isLinkedIn ? handle : `@${handle}`}
         </Anchor>
       </Box>
     </Group>

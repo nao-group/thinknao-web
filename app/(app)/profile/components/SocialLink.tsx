@@ -50,9 +50,10 @@ interface SocialLinkProps {
 export function SocialLink({ icon: Icon, iconColor, iconBg, label, url, baseUrl }: SocialLinkProps) {
   const handle = url ? extractSocialHandle(url) : null;
   const href = url ? buildSocialUrl(url, baseUrl) : null;
+  const isLinkedIn = label.toLowerCase() === "linkedin";
 
   return (
-    <Group gap={12} align="center">
+    <Group gap={12} align="center" wrap="nowrap">
       <Box
         style={{
           width: rem(36),
@@ -67,11 +68,11 @@ export function SocialLink({ icon: Icon, iconColor, iconBg, label, url, baseUrl 
       >
         <Icon size={18} stroke={1.5} color={iconColor} />
       </Box>
-      <Box style={{ minWidth: 0 }}>
+      <Box style={{ flex: 1, minWidth: 0 }}>
         <Text size="xs" fw={600} c="dimmed">{label}</Text>
         {handle ? (
-          <Anchor href={href!} target="_blank" size="sm" fw={600} c={INK} underline="hover" truncate style={{ display: "block", maxWidth: rem(180) }}>
-            @{handle}
+          <Anchor href={href!} target="_blank" size="sm" fw={600} c={INK} underline="hover" style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {isLinkedIn ? handle : `@${handle}`}
           </Anchor>
         ) : (
           <Text size="sm" c="dimmed">Not set</Text>
