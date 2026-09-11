@@ -780,6 +780,7 @@ export default function ProfilePage() {
                       iconBg="#FFF0F5"
                       label="Instagram"
                       url={profile?.instagram ?? null}
+                      baseUrl="https://instagram.com/"
                     />
                     <SocialLink
                       icon={IconBrandTiktok}
@@ -787,6 +788,7 @@ export default function ProfilePage() {
                       iconBg="#F1F5F9"
                       label="TikTok"
                       url={profile?.tiktok ?? null}
+                      baseUrl="https://tiktok.com/@"
                     />
                     <SocialLink
                       icon={IconBrandLinkedin}
@@ -794,6 +796,7 @@ export default function ProfilePage() {
                       iconBg="#EFF6FF"
                       label="LinkedIn"
                       url={profile?.linkedin ?? null}
+                      baseUrl="https://linkedin.com/in/"
                     />
                   </Stack>
                 )}

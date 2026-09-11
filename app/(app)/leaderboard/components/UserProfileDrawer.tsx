@@ -24,6 +24,7 @@ import {
 } from "@tabler/icons-react";
 import { INK, SURFACE, PRIMARY, CREAM, MUTED } from "@/constants/colors";
 import { getInitials } from "@/lib/format";
+import { extractSocialHandle, buildSocialUrl } from "@/app/(app)/profile/components/SocialLink";
 import { avatarStyle, RANK_MEDAL } from "./avatarStyle";
 import { XpStats } from "./XpStats";
 import type { LeaderboardEntry } from "../types";
@@ -44,17 +45,19 @@ function SocialRow({
   iconColor,
   iconBg,
   label,
-  handle,
+  value,
   baseUrl,
 }: {
   icon: React.ElementType;
   iconColor: string;
   iconBg: string;
   label: string;
-  handle: string | null;
+  value: string | null;
   baseUrl: string;
 }) {
-  if (!handle) return null;
+  if (!value) return null;
+  const handle = extractSocialHandle(value);
+  const href = buildSocialUrl(value, baseUrl);
   return (
     <Group gap={10} align="center">
       <Box
@@ -73,7 +76,7 @@ function SocialRow({
       </Box>
       <Box style={{ minWidth: 0 }}>
         <Text size="xs" fw={600} c={MUTED}>{label}</Text>
-        <Anchor href={`${baseUrl}${handle}`} target="_blank" size="sm" fw={600} c={INK} underline="hover">
+        <Anchor href={href} target="_blank" size="sm" fw={600} c={INK} underline="hover">
           @{handle}
         </Anchor>
       </Box>
@@ -270,7 +273,7 @@ export function UserProfileDrawer({
                       iconColor="#E1306C"
                       iconBg="#FFF0F5"
                       label="Instagram"
-                      handle={entry.instagram}
+                      value={entry.instagram}
                       baseUrl="https://instagram.com/"
                     />
                     <SocialRow
@@ -278,7 +281,7 @@ export function UserProfileDrawer({
                       iconColor="#010101"
                       iconBg="#F1F5F9"
                       label="TikTok"
-                      handle={entry.tiktok}
+                      value={entry.tiktok}
                       baseUrl="https://tiktok.com/@"
                     />
                     <SocialRow
@@ -286,7 +289,7 @@ export function UserProfileDrawer({
                       iconColor="#0A66C2"
                       iconBg="#EFF6FF"
                       label="LinkedIn"
-                      handle={entry.linkedin}
+                      value={entry.linkedin}
                       baseUrl="https://linkedin.com/in/"
                     />
                   </Stack>
