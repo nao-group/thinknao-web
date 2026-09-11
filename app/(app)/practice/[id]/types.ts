@@ -124,7 +124,7 @@ export interface SubmitResult {
   correct: boolean;
   correct_answer: string;
   difficulty: string;
-  xp_awarded: number;
+  xp_awarded: number | null;
   blank_results?: BlankResult[];
   explanation_alignment?: ExplanationAlignment;
 }

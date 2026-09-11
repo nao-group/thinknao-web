@@ -66,7 +66,7 @@ interface SingleSubmitResponse {
   correct: boolean;
   correct_answer: string;
   difficulty: string;
-  xp_awarded: number;
+  xp_awarded: number | null;
   explanation?: string;
   explanation_en?: string;
   explanation_alignment?: ExplanationAlignment;
@@ -75,7 +75,7 @@ interface SingleSubmitResponse {
 interface GroupSubmitResponse {
   group_id: string;
   correct: boolean;
-  xp_awarded: number;
+  xp_awarded: number | null;
   results: {
     question_id: string;
     blank_index: string;
@@ -287,7 +287,7 @@ export async function submitSingleQuestion(
     correct: data.correct,
     correct_answer: data.correct_answer,
     difficulty: data.difficulty,
-    xp_awarded: data.xp_awarded,
+    xp_awarded: data.xp_awarded ?? 0,
     explanation: data.explanation,
     explanation_en: data.explanation_en,
     explanation_alignment: data.explanation_alignment,
@@ -331,11 +331,11 @@ export async function submitQuestionGroup(
     resultMap[r.question_id].correct = r.correct;
   }
 
-  // Distribute xp and overall correctness from group result
+  // Set overall correctness per question from blank results
+  // (xp_awarded is always null from the API — XP is computed in the background)
   for (const qid of Object.keys(resultMap)) {
     const blankResults = resultMap[qid].blank_results ?? [];
     resultMap[qid].correct = blankResults.every((b) => b.correct);
-    resultMap[qid].xp_awarded = data.xp_awarded / Object.keys(resultMap).length;
   }
 
   return {
@@ -348,6 +348,14 @@ export async function submitQuestionGroup(
 
 export async function completeSession(sessionId: string): Promise<void> {
   await api.patch(`/api/sessions/${sessionId}/complete`);
+}
+
+/** Fetch XP earned in a session. Call after a 1–2s delay post-submit (XP is computed in the background). */
+export async function fetchSessionXp(sessionId: string): Promise<number> {
+  const { data } = await api.get<{ session_id: string; xp_earned: number }>(
+    `/api/sessions/${sessionId}/xp`
+  );
+  return data.xp_earned ?? 0;
 }
 
 // ─── Bookmarks ──────────────────────────────────────────────────────────────
