@@ -479,10 +479,11 @@
 }
 
 .answer-explanation-header {
-  margin-bottom: 14px !important;
+  margin: 0 !important;
   color: #44603F !important;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 17px !important;
+  line-height: 1 !important;
   letter-spacing: -0.015em;
 }
 

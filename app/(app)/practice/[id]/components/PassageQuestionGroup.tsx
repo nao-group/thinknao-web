@@ -174,9 +174,9 @@ function PassageExplanationBox({
 }) {
   return (
     <Box mt="md" className="answer-explanation-panel">
-      <Group gap={8} mb={rem(10)}>
-        <IconNotes size={18} stroke={1.5} color="#5F7D59" />
-        <Text className="answer-explanation-header" size="sm" fw={700}>Answer Key &amp; Explanation</Text>
+      <Group gap={8} mb={rem(10)} align="center">
+        <Box style={{ display: "grid", placeItems: "center", flexShrink: 0 }}><IconNotes size={18} stroke={1.5} color="#5F7D59" /></Box>
+        <Text className="answer-explanation-header" size="sm" fw={700} lh={1}>Answer Key &amp; Explanation</Text>
       </Group>
       {loading ? (
         <Box style={{ display: "flex", flexDirection: "column", gap: rem(8) }}>

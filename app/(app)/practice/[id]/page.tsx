@@ -548,9 +548,9 @@ function SummaryView({
                   </Stack>
                   {submitted && explanation && (
                     <Box className="answer-explanation-panel">
-                      <Group gap={8} mb={rem(8)}>
-                        <IconNotes size={18} stroke={1.5} color="#5F7D59" />
-                        <Text className="answer-explanation-header" size="sm" fw={700}>Explanation</Text>
+                      <Group gap={8} mb={rem(8)} align="center">
+                        <Box style={{ display: "grid", placeItems: "center", flexShrink: 0 }}><IconNotes size={18} stroke={1.5} color="#5F7D59" /></Box>
+                        <Text className="answer-explanation-header" size="sm" fw={700} lh={1}>Explanation</Text>
                       </Group>
                       <AlignedText
                         text={explanation}
@@ -655,9 +655,9 @@ function SummaryView({
                   const firstQ = group.questions[0];
                   return (
                     <Box className="answer-explanation-panel">
-                      <Group gap={8} mb={rem(8)}>
-                        <IconNotes size={18} stroke={1.5} color="#5F7D59" />
-                        <Text className="answer-explanation-header" size="sm" fw={700}>Explanation</Text>
+                      <Group gap={8} mb={rem(8)} align="center">
+                        <Box style={{ display: "grid", placeItems: "center", flexShrink: 0 }}><IconNotes size={18} stroke={1.5} color="#5F7D59" /></Box>
+                        <Text className="answer-explanation-header" size="sm" fw={700} lh={1}>Explanation</Text>
                       </Group>
                       <AlignedText
                         text={explanation}
@@ -1214,9 +1214,9 @@ export default function PracticeDetailPage() {
                     if (!dtExplanation) return null;
                     return (
                       <Box mt="md" className="answer-explanation-panel">
-                        <Group gap={8} mb={rem(10)}>
-                          <IconNotes size={18} stroke={1.5} color="#5F7D59" />
-                          <Text className="answer-explanation-header" size="sm" fw={700}>Answer Key &amp; Explanation</Text>
+                        <Group gap={8} mb={rem(10)} align="center">
+                          <Box style={{ display: "grid", placeItems: "center", flexShrink: 0 }}><IconNotes size={18} stroke={1.5} color="#5F7D59" /></Box>
+                          <Text className="answer-explanation-header" size="sm" fw={700} lh={1}>Answer Key &amp; Explanation</Text>
                         </Group>
                         <AlignedText
                           text={dtExplanation}
