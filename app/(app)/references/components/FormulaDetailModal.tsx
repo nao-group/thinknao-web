@@ -32,7 +32,7 @@ export function FormulaDetailModal({
           <Text size="md" fw={600} c={MUTED} mt={e.zhName ? 2 : 0}>{e.name}</Text>
         </Box>
         <Box px="lg" py="md" mb="lg" style={{ backgroundColor: meta.iconBg, borderRadius: rem(12), borderLeft: `4px solid ${meta.iconColor}`, textAlign: "center" }}>
-          <Text fw={800} style={{ fontFamily: "monospace", fontSize: rem(20), color: meta.iconColor, letterSpacing: "0.04em" }}>
+          <Text fw={800} style={{ fontFamily: "var(--font-poppins)", fontSize: rem(20), color: meta.iconColor, letterSpacing: "0.04em" }}>
             <LatexText>{e.formula}</LatexText>
           </Text>
         </Box>
@@ -48,7 +48,7 @@ export function FormulaDetailModal({
                   {e.variables.map((v) => (
                     <Group key={v} gap={8} align="flex-start">
                       <Box style={{ width: rem(5), height: rem(5), borderRadius: "50%", backgroundColor: meta.iconColor, marginTop: rem(7), flexShrink: 0 }} />
-                      <Text size="sm" c={INK} style={{ fontFamily: "monospace" }}><LatexText>{v}</LatexText></Text>
+                      <Text size="sm" c={INK} style={{ fontFamily: "var(--font-poppins)" }}><LatexText>{v}</LatexText></Text>
                     </Group>
                   ))}
                 </Stack>

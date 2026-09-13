@@ -504,7 +504,7 @@ function CheckoutContent() {
                           input: {
                             borderRadius: rem(8),
                             fontSize: rem(13),
-                            fontFamily: "monospace",
+                            fontFamily: "var(--font-poppins)",
                             letterSpacing: "0.06em",
                             textTransform: "uppercase",
                           },

@@ -26,7 +26,7 @@
 }
 
 .sectionTitle {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-poppins);
   font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.025em;
@@ -35,7 +35,7 @@
 
 .cardTitle,
 .darkCardTitle {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-poppins);
   font-size: 17px;
   letter-spacing: -0.015em;
 }
@@ -83,7 +83,7 @@
   padding-inline: 9px;
   border-radius: 10px;
   color: #a77905;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-poppins);
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
