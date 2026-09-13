@@ -235,6 +235,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AppShell
+      className={styles.shell}
       header={{ height: HEADER_HEIGHT }}
       navbar={{
         width: navbarWidth,
