@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Badge,
@@ -21,6 +21,7 @@ import {
   IconAdjustmentsHorizontal,
   IconAlertCircle,
   IconBookmark,
+  IconCheck,
   IconChevronLeft,
   IconChevronRight,
   IconPlus,
@@ -39,7 +40,7 @@ import { QuestionCountPill } from "./components/QuestionCountPill";
 import { TopicPill } from "./components/TopicPill";
 import { PracticeSetRow } from "./components/PracticeSetRow";
 import { AverageScoreOverview } from "./components/AverageScoreOverview";
-import { SUBJECTS, SUBJECT_META, QUESTION_COUNTS, PAGE_SIZE, type SubjectKey } from "./data";
+import { SUBJECTS, SUBJECT_META, TOPIC_GROUPS, QUESTION_COUNTS, PAGE_SIZE, type SubjectKey } from "./data";
 import type { ApiSession, SubjectScoreOverview, Topic } from "./types";
 import { fetchAverageScoreOverview, fetchSessions, fetchTopics, generatePracticeSet, renameSession, deleteSession } from "./api";
 
@@ -67,6 +68,7 @@ export default function PracticePage() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
   const [modalTopic, setModalTopic] = useState<Topic | null>(null);
+  const [activeTopicGroup, setActiveTopicGroup] = useState("All Topics");
   const [modalCount, setModalCount] = useState<number | "Custom">(20);
   const [modalCustomCount, setModalCustomCount] = useState<number | string>("");
   const [generating, setGenerating] = useState(false);
@@ -162,14 +164,17 @@ export default function PracticePage() {
   }
 
   // ── Generate practice set ─────────────────────────────────────────────────
-  async function openGenerateModal() {
+  async function openGenerateModal(subjectKey: SubjectKey) {
+    setSelectedSubject(subjectKey);
     setModalTopic(null);
     setModalCount(20);
     setModalCustomCount("");
+    setGenerating(false);
     setGenerateError(null);
+    setActiveTopicGroup(TOPIC_GROUPS[subjectKey]?.[0]?.label ?? "All Topics");
     setGenerateOpen(true);
 
-    const subject = SUBJECTS.find((s) => s.key === selectedSubject)!;
+    const subject = SUBJECTS.find((s) => s.key === subjectKey)!;
     setTopicsLoading(true);
     try {
       const fetchedTopics = await fetchTopics(subject.subjectCode);
@@ -181,6 +186,28 @@ export default function PracticePage() {
       setTopicsLoading(false);
     }
   }
+
+  const groupedTopics = useMemo(() => {
+    const definitions = TOPIC_GROUPS[selectedSubject];
+    if (!definitions) return [{ label: "All Topics", topics }];
+
+    const normalize = (value: string) => value.trim().toLowerCase().replace(/[’‘]/g, "'");
+    const topicByName = new Map(topics.map((topic) => [normalize(topic.name), topic]));
+    const grouped = definitions.map((group) => ({
+      label: group.label,
+      topics: group.topics
+        .map((name) => topicByName.get(normalize(name)))
+        .filter((topic): topic is Topic => Boolean(topic)),
+    }));
+    const assignedNames = new Set(definitions.flatMap((group) => group.topics.map(normalize)));
+    const unmatched = topics.filter((topic) => !assignedNames.has(normalize(topic.name)));
+
+    return unmatched.length > 0
+      ? [...grouped, { label: "Other Topics", topics: unmatched }]
+      : grouped;
+  }, [selectedSubject, topics]);
+
+  const visibleTopics = groupedTopics.find((group) => group.label === activeTopicGroup)?.topics ?? [];
 
   async function handleGenerate() {
     if (!modalTopic) return;
@@ -266,7 +293,7 @@ export default function PracticePage() {
               <Group justify="space-between" align="flex-start" mb={rem(6)}>
                 <Box>
                   <Text className="editorial-section-title" size="lg" c={INK} mb={4}>Generate Practice Set</Text>
-                  <Text size="sm" c="dimmed">Choose a subject and let AI build your set instantly</Text>
+                  <Text size="sm" c="dimmed">Choose a subject to configure topics and generate your set</Text>
                 </Box>
               </Group>
 
@@ -276,20 +303,17 @@ export default function PracticePage() {
               <Box mb="lg" style={{ display: "flex", gap: rem(12), overflowX: "auto", paddingBottom: rem(4), paddingTop: rem(4), paddingLeft: rem(4), paddingRight: rem(4) }}>
                 {SUBJECTS.map((s) => (
                   <Box key={s.key} style={{ width: rem(150), flex: "0 0 auto", alignSelf: "stretch" }}>
-                    <SubjectCard subject={s} selected={selectedSubject === s.key} onSelect={() => setSelectedSubject(s.key)} />
+                    <SubjectCard
+                      subject={s}
+                      selected={selectedSubject === s.key}
+                      onSelect={() => void subscriptionGuard.requireSubscription(
+                        () => openGenerateModal(s.key),
+                        `generate a ${s.label} practice set`,
+                      )}
+                    />
                   </Box>
                 ))}
               </Box>
-
-              <Group justify="flex-end">
-                <LandingActionButton
-                  rightSection={<IconPlus size={15} stroke={2.2} />}
-                  size="md"
-                  onClick={() => void subscriptionGuard.requireSubscription(openGenerateModal, "generate a new practice set")}
-                >
-                  Generate Practice Set
-                </LandingActionButton>
-              </Group>
             </Card>
 
             {/* My Practice Sets */}
@@ -698,14 +722,15 @@ export default function PracticePage() {
             radius="lg"
             size="lg"
             overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
+            styles={{ body: { maxHeight: "calc(100dvh - 140px)", overflowY: "auto" } }}
           >
-            {/* Topics */}
+            {/* Topic groups */}
             <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mb="sm">
-              Topic
+              Topic Group
             </Text>
 
             {topicsLoading ? (
-              <Box py="md" style={{ display: "flex", flexWrap: "wrap", gap: rem(8) }}>
+              <Box py="md" mb="lg" style={{ display: "flex", gap: rem(8), overflow: "hidden" }}>
                 {Array.from({ length: 4 }, (_, i) => (
                   <Box key={i} style={{ height: rem(32), width: rem(120), backgroundColor: SURFACE, borderRadius: rem(999) }} />
                 ))}
@@ -713,16 +738,75 @@ export default function PracticePage() {
             ) : topics.length === 0 ? (
               <EmptyState compact title="No topics available" description="Try selecting another subject." mb="xl" />
             ) : (
-              <Box mb="xl" style={{ display: "flex", flexWrap: "wrap", gap: rem(8) }}>
-                {topics.map((t) => (
-                  <TopicPill
-                    key={t.id}
-                    label={t.name}
-                    selected={modalTopic?.id === t.id}
-                    onToggle={() => setModalTopic(modalTopic?.id === t.id ? null : t)}
-                  />
-                ))}
-              </Box>
+              <>
+                <Box
+                  mb="lg"
+                  pb={4}
+                  role="tablist"
+                  aria-label={`${subject.label} topic groups`}
+                  style={{ display: "flex", gap: rem(8), overflowX: "auto" }}
+                >
+                  {groupedTopics.map((group) => (
+                    <TopicPill
+                      key={group.label}
+                      label={group.label}
+                      selected={activeTopicGroup === group.label}
+                      onToggle={() => {
+                        setActiveTopicGroup(group.label);
+                        setModalTopic(null);
+                        setGenerateError(null);
+                      }}
+                    />
+                  ))}
+                </Box>
+
+                <Group justify="space-between" align="center" mb="sm">
+                  <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed">
+                    Choose Topic
+                  </Text>
+                  <Text size="xs" c="dimmed">In recommended learning order</Text>
+                </Group>
+
+                <Stack gap={8} mb="xl">
+                  {visibleTopics.map((topic, index) => {
+                    const selected = modalTopic?.id === topic.id;
+                    return (
+                      <UnstyledButton
+                        key={topic.id}
+                        onClick={() => {
+                          setModalTopic(selected ? null : topic);
+                          setGenerateError(null);
+                        }}
+                        aria-pressed={selected}
+                        style={{
+                          width: "100%", minHeight: rem(48), padding: `${rem(10)} ${rem(12)}`,
+                          borderRadius: rem(10), border: `1.5px solid ${selected ? subject.iconColor : "#E2E8F0"}`,
+                          backgroundColor: selected ? subject.iconBg : "#FFFDF8",
+                          display: "flex", alignItems: "center", gap: rem(12),
+                          transition: "border-color 150ms ease, background-color 150ms ease, transform 150ms ease",
+                        }}
+                      >
+                        <Box style={{
+                          width: rem(28), height: rem(28), borderRadius: rem(8), flexShrink: 0,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          backgroundColor: selected ? subject.iconColor : SURFACE,
+                          color: selected ? "white" : MUTED, fontSize: rem(12), fontWeight: 700,
+                        }}>
+                          {selected ? <IconCheck size={15} stroke={2.5} /> : index + 1}
+                        </Box>
+                        <Text size="sm" fw={selected ? 700 : 500} c={INK} style={{ textAlign: "left" }}>
+                          {topic.name}
+                        </Text>
+                      </UnstyledButton>
+                    );
+                  })}
+                  {visibleTopics.length === 0 && (
+                    <Box p="md" style={{ borderRadius: rem(10), backgroundColor: SURFACE, textAlign: "center" }}>
+                      <Text size="sm" c="dimmed">No topics are available in this group yet.</Text>
+                    </Box>
+                  )}
+                </Stack>
+              </>
             )}
 
             {/* Question count */}
