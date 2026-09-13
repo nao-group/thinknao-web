@@ -49,6 +49,7 @@ import type { UserProfile } from "./types";
 import { fetchProfile, fetchProvinces, updateProfile, uploadProfileImage, changePassword } from "./api";
 import { fetchSubscription, type Subscription } from "@/lib/payments";
 import { SubscriptionEmptyCard } from "@/components/subscription-empty-card";
+import { LoginDevices } from "./components/LoginDevices";
 
 const fieldInputStyles = {
   label: { fontSize: rem(12), fontWeight: 600, color: INK, marginBottom: rem(6) },
@@ -612,6 +613,8 @@ export default function ProfilePage() {
                 </Group>
               </Stack>
             </SectionCard>
+
+            <LoginDevices />
           </Stack>
 
           {/* Right panel */}
