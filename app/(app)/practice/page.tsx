@@ -268,10 +268,6 @@ export default function PracticePage() {
                   <Text className="editorial-section-title" size="lg" c={INK} mb={4}>Generate Practice Set</Text>
                   <Text size="sm" c="dimmed">Choose a subject and let AI build your set instantly</Text>
                 </Box>
-                <Group gap={6} px="sm" py={rem(6)} style={{ borderRadius: rem(999), border: `1px solid ${PRIMARY}`, flexShrink: 0 }}>
-                  <IconStar size={13} stroke={1.5} color={PRIMARY} fill={PRIMARY} />
-                  <Text size="xs" fw={600} c={PRIMARY}>AI-Powered</Text>
-                </Group>
               </Group>
 
               <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mt="lg" mb="sm">
