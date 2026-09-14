@@ -28,7 +28,13 @@ const NAME_TO_SUBJECT_CODE: Record<string, string> = Object.fromEntries(
 );
 
 interface RawContent {
-  question?: string;
+  // Real API: question is blank-indexed, e.g. { "1": "text" } — even for
+  // single-choice "standard" questions, matching every other question type.
+  // Choices live under "answer" (build_content only renames this to
+  // "options" for JF/YL types, and strips it for DT/XT — "standard" types,
+  // which is most of what exams sample, keep the raw "answer" key).
+  question?: string | Record<string, string>;
+  answer?: Record<string, string>;
   choices?: Record<string, string>;
   options?: Record<string, string>;
 }
@@ -60,9 +66,17 @@ interface ExamCreateApiResponse {
   groups: RawQuestionGroup[];
 }
 
-function choicesToOptions(choices: Record<string, string> | undefined): { key: string; text: string }[] {
-  if (!choices) return [];
-  return Object.entries(choices).map(([key, text]) => ({ key, text }));
+function extractText(content: RawContent | undefined): string {
+  const qField = content?.question;
+  if (!qField) return "";
+  if (typeof qField === "string") return qField;
+  return Object.values(qField)[0] ?? "";
+}
+
+function extractOptions(content: RawContent | undefined): { key: string; text: string }[] {
+  const answer = content?.answer ?? content?.options ?? content?.choices;
+  if (!answer) return [];
+  return Object.entries(answer).map(([key, text]) => ({ key, text }));
 }
 
 function topicLabelFromCode(code: string): string {
@@ -72,19 +86,21 @@ function topicLabelFromCode(code: string): string {
 }
 
 function adaptQuestion(raw: RawQuestionInGroup, subject: Subject): MockQ {
-  const en = raw.content?.en ?? {};
-  const zh = raw.content?.zh ?? {};
-  const enOptions = choicesToOptions(en.choices ?? en.options);
-  const zhOptions = choicesToOptions(zh.choices ?? zh.options);
+  const en = raw.content?.en;
+  const zh = raw.content?.zh;
+  const enText = extractText(en);
+  const zhText = extractText(zh);
+  const enOptions = extractOptions(en);
+  const zhOptions = extractOptions(zh);
   return {
     id: raw.id,
     subject,
     topic: topicLabelFromCode(raw.code),
-    text: en.question ?? zh.question ?? "",
+    text: enText || zhText,
     options: enOptions.length ? enOptions : zhOptions,
     correctAnswer: "", // never sent by the API before submission — grading happens server-side
-    zh: zh.question
-      ? { topic: topicLabelFromCode(raw.code), text: zh.question, options: zhOptions.length ? zhOptions : undefined }
+    zh: zhText
+      ? { topic: topicLabelFromCode(raw.code), text: zhText, options: zhOptions.length ? zhOptions : undefined }
       : undefined,
   };
 }

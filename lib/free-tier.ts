@@ -9,9 +9,9 @@ export interface FreeTierStatus {
   practice_questions_cap: number;   // -1 = unlimited
   mock_exam_used: number;
   mock_exam_cap: number;            // -1 = unlimited
-  chat_conversations_used: number;
-  chat_conversations_cap: number;   // -1 = unlimited
-  chat_conversations_reset: "lifetime" | "daily";
+  chat_messages_used: number;
+  chat_messages_cap: number;   // -1 = unlimited
+  chat_messages_reset: "lifetime" | "daily";
 }
 
 export async function fetchFreeTierStatus(): Promise<FreeTierStatus> {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Box, Group, Stack, Text, Textarea, TextInput, Tooltip, UnstyledButton, rem } from "@mantine/core";
 import {
   IconArrowLeft,
@@ -35,9 +36,9 @@ interface FloatingChatbotProps {
 }
 
 const GREETING = "Hi! I'm here to help you understand this problem. Feel free to ask anything about it.";
-// Subscribers warn once 5 conversations remain of their daily allowance.
+// Subscribers warn once 5 messages remain of their daily allowance.
 // Free-tier's lifetime cap is small enough that it never shows this amber
-// warning state — see the plain "X of N free conversations used" line instead.
+// warning state — see the plain "X of N free messages used" line instead.
 const WARNING_REMAINING_THRESHOLD = 5;
 
 interface ChatQuota {
@@ -154,6 +155,11 @@ function PracticeSetMessage({ text }: { text: string }) {
 // ─── Main component ─────────────────────────────────────────────────────────
 
 export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps) {
+  // Portal target isn't available during SSR — defer rendering the panel
+  // until after mount, once document.body exists.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"chat" | "history">("chat");
   const [messages, setMessages] = useState<Message[]>([
@@ -551,7 +557,9 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
   const showQuotaNotice = quotaReached || showWarningCard || showFreeCounter;
   const canSend = !!input.trim() && !loading && !quotaReached;
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <>
       {/* ── Sliding panel ── */}
       <Box
@@ -1011,16 +1019,16 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                           {quotaReached
                             ? "Chat limit reached"
                             : isFreeTier
-                              ? `${quota.used} of ${quota.limit} free conversations used`
-                              : `${quota.remaining} AI conversations left today`}
+                              ? `${quota.used} of ${quota.limit} free messages used`
+                              : `${quota.remaining} AI messages left today`}
                         </Text>
                         <Text size="xs" c={quotaReached ? WRONG_RED : showWarningCard ? "#8C7132" : MUTED} mt={2} lh={1.4}>
                           {quotaReached
                             ? isFreeTier
-                              ? "Upgrade for unlimited conversations."
+                              ? "Upgrade for unlimited messages."
                               : `You’ve used all ${quota.limit}. Your access resets at midnight.`
                             : isFreeTier
-                              ? "Upgrade for unlimited conversations."
+                              ? "Upgrade for unlimited messages."
                               : "Your daily quota resets automatically at midnight."}
                         </Text>
                       </Box>
@@ -1148,6 +1156,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
           40% { opacity: 1; transform: scale(1); }
         }
       `}</style>
-    </>
+    </>,
+    document.body
   );
 }
