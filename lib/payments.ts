@@ -5,7 +5,7 @@ export interface Subscription {
   plan_id: string;
   status: string;
   starts_at: string;
-  expires_at: string;
+  expires_at: string | null;
   plans: {
     name: string;
     name_short: string | null;

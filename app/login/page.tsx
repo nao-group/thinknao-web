@@ -41,6 +41,15 @@ interface MaxDevicesPayload {
   sessions: Session[];
 }
 
+interface LoginUser {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  avatar_url?: string | null;
+  onboarding_completed?: boolean;
+}
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -87,11 +96,21 @@ function LoginContent() {
     setForgotError("");
   }
 
-  function storeSession(accessToken: string, refreshToken: string, user: { id: string; user_id: string; full_name: string; email: string; avatar_url?: string | null }) {
+  function storeSession(accessToken: string, refreshToken: string, user: LoginUser) {
     setAccessToken(accessToken);
     setUser(user);
     localStorage.setItem("refresh_token", refreshToken);
     document.cookie = "auth_session=1; path=/; max-age=2592000";
+  }
+
+  function getPostLoginDestination(user: LoginUser) {
+    const safeRedirect = redirect?.startsWith("/") && !redirect.startsWith("//")
+      ? redirect
+      : "/dashboard";
+
+    return user.onboarding_completed
+      ? safeRedirect
+      : `/onboarding?next=${encodeURIComponent(safeRedirect)}`;
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -111,7 +130,7 @@ function LoginContent() {
         color: "green",
         autoClose: 3000,
       });
-      router.push(redirect ?? "/dashboard");
+      router.push(getPostLoginDestination(data.user));
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 409) {
@@ -145,7 +164,7 @@ function LoginContent() {
         color: "green",
         autoClose: 3000,
       });
-      router.push(redirect ?? "/dashboard");
+      router.push(getPostLoginDestination(data.user));
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.status === 400) {
         setMaxDevices(null);

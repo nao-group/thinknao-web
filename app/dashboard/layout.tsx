@@ -1,10 +1,10 @@
 import { NavShell } from "@/components/nav-shell";
-import { OnboardingModal } from "@/components/onboarding-modal";
+import { OnboardingGuard } from "@/components/onboarding-guard";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <NavShell>
-      <OnboardingModal />
+      <OnboardingGuard />
       {children}
     </NavShell>
   );
