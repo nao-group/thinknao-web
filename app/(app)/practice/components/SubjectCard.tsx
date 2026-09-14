@@ -17,6 +17,8 @@ export function SubjectCard({
   return (
     <UnstyledButton
       onClick={onSelect}
+      aria-label={`Choose ${subject.label}`}
+      aria-pressed={selected}
       className="landing-filter-card"
       data-active={selected}
       style={{

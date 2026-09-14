@@ -19,6 +19,34 @@ export const SUBJECTS = [
 
 export type SubjectKey = (typeof SUBJECTS)[number]["key"];
 
+export interface TopicGroupDefinition {
+  label: string;
+  topics: readonly string[];
+}
+
+/** Frontend-only learning paths. Topic names are matched against the API response. */
+export const TOPIC_GROUPS: Partial<Record<SubjectKey, readonly TopicGroupDefinition[]>> = {
+  math: [
+    { label: "Sets and Inequalities", topics: ["Sets", "Inequalities"] },
+    { label: "Functions", topics: ["Functions", "Elementary Functions", "Sequences", "Calculus"] },
+    { label: "Geometry and Algebra", topics: ["Complex Numbers", "Vectors", "Analytic Geometry", "Space Coordinate System", "Solid Geometry"] },
+    { label: "Probability and Statistics", topics: ["Probability and Statistics"] },
+  ],
+  physics: [
+    { label: "Mechanics", topics: ["Kinematics", "Newton's Laws of Motion", "Work and Energy", "Momentum and Impulse", "Circular Motion and Gravitation"] },
+    { label: "Electricity and Magnetism", topics: ["Electrostatics", "Electric Circuits", "Magnetic Field", "Electromagnetic Induction"] },
+    { label: "Waves and Optics", topics: ["Simple Harmonic Motion and Waves", "Geometrical Optics", "Physical Optics"] },
+    { label: "Thermodynamics", topics: ["Molecular Kinetic Theory", "Gas Laws", "Laws of Thermodynamics"] },
+    { label: "Modern Physics", topics: ["Photoelectric Effect", "Atomic Structure", "Nuclear Physics"] },
+  ],
+  chem: [
+    { label: "Basic Chemical Concepts", topics: ["Matter and Classification of Substances", "Atomic Structure and Periodic Table", "Chemical Nomenclature and Equation Writing", "Mole Calculation"] },
+    { label: "Inorganic Chemistry", topics: ["Inorganic Properties", "Ionic Reactions and Tests", "Redox Reactions", "Chemical Experiment and Application", "Industrial Chemistry Process"] },
+    { label: "Organic Chemistry", topics: ["Basic Organic Chemistry"] },
+    { label: "Physical Chemistry", topics: ["Chemical Bonding and Intermolecular Forces", "Ideal Gas Law", "Electrolyte Solution Theory", "Solution Concentration and pH", "Chemical Reaction Rate and Equilibrium"] },
+  ],
+};
+
 /** Visual metadata keyed by API subject_code */
 export const SUBJECT_META: Record<string, {
   icon: React.ComponentType<{ size?: number; stroke?: number; color?: string }>;

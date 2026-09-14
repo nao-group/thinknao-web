@@ -1,24 +1,37 @@
+.shell {
+  min-height: 100dvh;
+  background-color: #f5f2eb;
+  background-image: url("/images/auth/thinknao-china-landscape.png");
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
 .header {
   border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(255, 253, 248, 0.92);
+  background: rgba(255, 253, 248, 0.74);
   box-shadow: 0 1px 18px rgba(54, 43, 22, 0.035);
-  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(18px) saturate(1.08);
+  backdrop-filter: blur(18px) saturate(1.08);
 }
 
 .greeting {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(22px, 2vw, 29px);
+  font-family: var(--font-poppins);
+  font-size: clamp(18px, 1.6vw, 23px);
   font-weight: 500;
   letter-spacing: -0.035em;
 }
 
 .navbar {
   border-right: 1px solid rgba(15, 23, 42, 0.08);
-  background: #f6f1e7;
+  background: rgba(246, 241, 231, 0.68);
+  -webkit-backdrop-filter: blur(18px) saturate(1.05);
+  backdrop-filter: blur(18px) saturate(1.05);
 }
 
 .sectionLabel {
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-poppins);
   font-weight: 600;
   letter-spacing: 0.12em !important;
 }
@@ -36,7 +49,7 @@
   overflow: hidden;
   border-radius: 0 17px 17px 0;
   color: #667080;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-poppins);
   font-size: 16px;
   font-weight: 500;
   letter-spacing: -0.01em;
@@ -123,13 +136,14 @@
 }
 
 .main {
-  background:
-    radial-gradient(circle at 88% 0%, rgba(212, 160, 23, 0.07), transparent 24rem),
-    #f5f2eb;
+  background: rgba(245, 242, 235, 0.56);
+  -webkit-backdrop-filter: blur(10px) saturate(0.92);
+  backdrop-filter: blur(10px) saturate(0.92);
 }
 
 @media (max-width: 767px) {
-  .navbar { background: #f8f4eb; }
+  .shell { background-attachment: scroll; }
+  .navbar { background: rgba(248, 244, 235, 0.8); }
   .navItem { width: calc(100% - 8px); }
 }
 

@@ -46,3 +46,20 @@ export async function changePassword(params: {
     confirm_password: params.confirmPassword,
   });
 }
+
+export interface LoginDevice {
+  session_id: string;
+  device: string;
+  created_at: string | null;
+  last_active_at: string | null;
+  is_current: boolean;
+}
+
+export async function fetchLoginDevices(): Promise<LoginDevice[]> {
+  const { data } = await api.get<{ sessions: LoginDevice[] }>("/api/auth/sessions");
+  return data.sessions;
+}
+
+export async function forgetLoginDevice(sessionId: string): Promise<void> {
+  await api.delete(`/api/auth/sessions/${encodeURIComponent(sessionId)}`);
+}

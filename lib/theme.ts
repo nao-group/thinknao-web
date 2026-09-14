@@ -1,9 +1,9 @@
 import { createTheme, rem } from "@mantine/core";
 
 export const theme = createTheme({
-  fontFamily: "var(--font-poppins), sans-serif",
+  fontFamily: "var(--font-poppins)",
   headings: {
-    fontFamily: "var(--font-poppins), sans-serif",
+    fontFamily: "var(--font-poppins)",
     fontWeight: "700",
   },
   primaryColor: "gold",
@@ -33,14 +33,14 @@ export const theme = createTheme({
     Input: {
       styles: {
         input: {
-          fontFamily: "var(--font-poppins), sans-serif",
+          fontFamily: "var(--font-poppins)",
         },
       },
     },
     Button: {
       styles: {
         root: {
-          fontFamily: "var(--font-poppins), sans-serif",
+          fontFamily: "var(--font-poppins)",
         },
       },
     },

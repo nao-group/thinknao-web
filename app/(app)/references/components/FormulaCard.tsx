@@ -38,7 +38,7 @@ export function FormulaCard({ entry, onClick }: { entry: FormulaEntry; onClick: 
           borderLeft: `3px solid ${meta.iconColor}`,
         }}
       >
-        <Text size="sm" fw={700} c={meta.iconColor} style={{ fontFamily: "monospace", letterSpacing: "0.02em" }}>
+        <Text size="sm" fw={700} c={meta.iconColor} style={{ fontFamily: "var(--font-poppins)", letterSpacing: "0.02em" }}>
           <LatexText>{entry.formula}</LatexText>
         </Text>
       </Box>

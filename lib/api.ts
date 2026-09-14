@@ -6,8 +6,21 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
+api.interceptors.request.use(async (config) => {
+  let token = useAuthStore.getState().accessToken;
+
+  if (!token && typeof window !== "undefined") {
+    const rt = localStorage.getItem("refresh_token");
+    if (rt) {
+      try {
+        token = await refreshAccessToken(rt);
+      } catch {
+        // refresh failed – let the request go through without a token;
+        // the response interceptor will handle the 401 → redirect.
+      }
+    }
+  }
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

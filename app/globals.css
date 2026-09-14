@@ -35,13 +35,13 @@
 
 .editorial-page-title,
 .editorial-section-title {
-  font-family: Georgia, "Times New Roman", serif !important;
+  font-family: var(--font-poppins) !important;
   color: #0F172A;
   letter-spacing: -0.03em;
 }
 
 .editorial-page-title {
-  font-size: clamp(30px, 3vw, 42px) !important;
+  font-size: clamp(24px, 2.25vw, 32px) !important;
   font-weight: 500 !important;
   line-height: 1.08 !important;
 }
@@ -58,7 +58,7 @@
 }
 
 .editorial-page .warm-surface > .mantine-Group-root:first-child .mantine-Text-root:first-of-type {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-poppins);
   letter-spacing: -0.015em;
 }
 
@@ -479,10 +479,11 @@
 }
 
 .answer-explanation-header {
-  margin-bottom: 14px !important;
+  margin: 0 !important;
   color: #44603F !important;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-poppins);
   font-size: 17px !important;
+  line-height: 1 !important;
   letter-spacing: -0.015em;
 }
 
@@ -565,7 +566,7 @@
 }
 
 .checkout-heading {
-  font-family: var(--font-poppins), Arial, sans-serif !important;
+  font-family: var(--font-poppins) !important;
   letter-spacing: -.035em;
 }
 

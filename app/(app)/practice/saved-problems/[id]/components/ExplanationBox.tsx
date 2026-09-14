@@ -9,9 +9,9 @@ export function ExplanationBox({ explanation, circleNums = false }: { explanatio
     <Box
       className="answer-explanation-panel"
     >
-      <Group gap={8} mb={8}>
-        <IconNotes size={17} stroke={1.5} color="#5F7D59" />
-        <Text className="answer-explanation-header" size="sm" fw={700}>Answer Key &amp; Explanation</Text>
+      <Group gap={8} mb={8} align="center">
+        <Box style={{ display: "grid", placeItems: "center", flexShrink: 0 }}><IconNotes size={17} stroke={1.5} color="#5F7D59" /></Box>
+        <Text className="answer-explanation-header" size="sm" fw={700} lh={1}>Answer Key &amp; Explanation</Text>
       </Group>
       <MarkdownLatexText circleNums={circleNums}>{explanation}</MarkdownLatexText>
     </Box>

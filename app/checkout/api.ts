@@ -1,10 +1,10 @@
 import api from "@/lib/api";
 
 export interface Plan {
-  id: string;              // 'THINK-1MONTH', 'THINK-6MONTH', 'THINK-12MONTH'
+  id: string;
   product_id: string;      // 'THINKNAO'
-  name: string;            // '1 Month', '6 Months', '1 Year'
-  name_short: string;      // '1 month', '6 months', '1 year'
+  name: string;            // 'Free Access', '1 Month', '3 Months', '6 Months'
+  name_short: string;      // 'Usage-limited', '1 month', '3 months', '6 months'
   duration_months: number;
   price_per_month_idr: number;
   total_price_idr: number;
@@ -17,6 +17,11 @@ export interface Plan {
     name: string;
     slug: string;
   };
+}
+
+export async function activateFreePlan(): Promise<{ status: string; plan_id: string; expires_at: null }> {
+  const { data } = await api.post("/api/payments/free-plan");
+  return data;
 }
 
 export interface ReferralValidationResult {

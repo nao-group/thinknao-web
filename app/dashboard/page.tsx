@@ -337,6 +337,7 @@ function LearningActivity() {
 
 function SubscriptionCard({ subscription }: { subscription: Subscription | null | undefined }) {
   const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL ?? "";
+  const [renderedAt] = useState(() => Date.now());
 
   if (subscription === undefined) {
     return <Skeleton height={180} radius="md" />;
@@ -347,10 +348,10 @@ function SubscriptionCard({ subscription }: { subscription: Subscription | null 
   }
 
   const isActive = subscription.status === "active";
-  const expires = new Date(subscription.expires_at);
-  const daysLeft = Math.max(0, Math.ceil((expires.getTime() - Date.now()) / 86400000));
-  const expiresLabel = expires.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  const daysColor = daysLeft <= 7 ? "#EF4444" : daysLeft <= 30 ? "#F97316" : PRIMARY;
+  const expires = subscription.expires_at ? new Date(subscription.expires_at) : null;
+  const daysLeft = expires ? Math.max(0, Math.ceil((expires.getTime() - renderedAt) / 86400000)) : null;
+  const expiresLabel = expires ? expires.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Usage limited";
+  const daysColor = daysLeft !== null && daysLeft <= 7 ? "#EF4444" : daysLeft !== null && daysLeft <= 30 ? "#F97316" : PRIMARY;
 
   return (
     <Box p="lg" className={styles.subscriptionCard} style={{ backgroundColor: INK }}>
@@ -382,13 +383,15 @@ function SubscriptionCard({ subscription }: { subscription: Subscription | null 
           </Group>
         </Group>
         <Group justify="space-between">
-          <Text size="xs" c="rgba(255,255,255,0.5)">Expires</Text>
+          <Text size="xs" c="rgba(255,255,255,0.5)">{expires ? "Expires" : "Access"}</Text>
           <Text size="xs" fw={600} c="white">{expiresLabel}</Text>
         </Group>
-        <Group justify="space-between">
-          <Text size="xs" c="rgba(255,255,255,0.5)">Days remaining</Text>
-          <Text size="xs" fw={700} c={daysColor}>{daysLeft} days</Text>
-        </Group>
+        {daysLeft !== null && (
+          <Group justify="space-between">
+            <Text size="xs" c="rgba(255,255,255,0.5)">Days remaining</Text>
+            <Text size="xs" fw={700} c={daysColor}>{daysLeft} days</Text>
+          </Group>
+        )}
       </Stack>
       <Button
         component="a"

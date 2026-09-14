@@ -123,7 +123,7 @@ export function AnnouncementCarousel() {
                       c="white"
                       mb={8}
                       style={{
-                        fontFamily: 'Georgia, "Times New Roman", serif',
+                        fontFamily: "var(--font-poppins)",
                         fontSize: rem(22),
                         lineHeight: 1.25,
                         fontWeight: 600,

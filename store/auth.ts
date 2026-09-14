@@ -7,6 +7,7 @@ export interface AuthUser {
   full_name: string;
   email: string;
   avatar_url?: string | null;
+  onboarding_completed?: boolean;
 }
 
 interface AuthState {

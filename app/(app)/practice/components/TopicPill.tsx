@@ -8,6 +8,8 @@ export function TopicPill({
 }: { label: string; selected: boolean; onToggle: () => void; locked?: boolean }) {
   return (
     <UnstyledButton
+      role="tab"
+      aria-selected={selected}
       className="ui-pill landing-filter-pill"
       data-active={selected}
       onClick={onToggle}

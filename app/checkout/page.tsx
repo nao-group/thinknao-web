@@ -98,7 +98,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const { user, logout } = useAuthStore();
 
-  const planId = searchParams.get("plan") ?? "biannual";
+  const planId = searchParams.get("plan") ?? "THINK-3MONTH";
   const currentUrl = `/checkout?plan=${planId}`;
 
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -320,7 +320,7 @@ function CheckoutContent() {
           {/* Yang akan kamu dapatkan */}
           <Box className="checkout-section-card checkout-benefits-card">
             <Text className="checkout-heading" fw={700} size="lg" style={{ color: INK, marginBottom: rem(16) }}>
-              What you'll get
+              What you&apos;ll get
             </Text>
             <Stack className="checkout-feature-grid" gap={rem(11)}>
               {FEATURES.map((feature) => (
@@ -504,7 +504,7 @@ function CheckoutContent() {
                           input: {
                             borderRadius: rem(8),
                             fontSize: rem(13),
-                            fontFamily: "monospace",
+                            fontFamily: "var(--font-poppins)",
                             letterSpacing: "0.06em",
                             textTransform: "uppercase",
                           },

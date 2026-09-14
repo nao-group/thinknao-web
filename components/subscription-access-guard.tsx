@@ -11,7 +11,7 @@ import { INK, MUTED } from "@/constants/colors";
 function hasAccess(subscription: Subscription | null) {
   return Boolean(
     subscription?.status === "active" &&
-    new Date(subscription.expires_at).getTime() > Date.now()
+    (!subscription.expires_at || new Date(subscription.expires_at).getTime() > Date.now())
   );
 }
 

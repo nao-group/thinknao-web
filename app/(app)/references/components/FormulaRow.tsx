@@ -40,7 +40,7 @@ export function FormulaRow({ entry, onClick }: { entry: FormulaEntry; onClick: (
         <SubjectBadge subject={entry.subject} />
       </Box>
       <Box px="xs" py={3} style={{ backgroundColor: meta.iconBg, borderRadius: rem(6), flexShrink: 0, maxWidth: rem(240) }}>
-        <Text size="xs" fw={700} c={meta.iconColor} style={{ fontFamily: "monospace" }} lineClamp={1}>
+        <Text size="xs" fw={700} c={meta.iconColor} style={{ fontFamily: "var(--font-poppins)" }} lineClamp={1}>
           <LatexText>{entry.formula}</LatexText>
         </Text>
       </Box>

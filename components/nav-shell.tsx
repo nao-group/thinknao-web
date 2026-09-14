@@ -181,6 +181,7 @@ function getBreadcrumbs(pathname: string, sessionName?: string | null, problemCo
 }
 
 export function NavShell({ children }: { children: React.ReactNode }) {
+  const [renderedAt] = useState(() => Date.now());
   const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
   const [collapsed, setCollapsed] = useState(false);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -219,7 +220,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
 
   const navbarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
   const breadcrumbs = getBreadcrumbs(pathname, storeSessionName, storeProblemCode);
-  const expiryRemaining = subscription ? new Date(subscription.expires_at).getTime() - Date.now() : 0;
+  const expiryRemaining = subscription?.expires_at ? new Date(subscription.expires_at).getTime() - renderedAt : 0;
   const showExpiryBanner = Boolean(
     !expiryBannerDismissed &&
     subscription?.status === "active" &&
@@ -235,6 +236,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AppShell
+      className={styles.shell}
       header={{ height: HEADER_HEIGHT }}
       navbar={{
         width: navbarWidth,
@@ -440,7 +442,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
           flexDirection: "column",
         }}
       >
-        {showExpiryBanner && subscription && (
+        {showExpiryBanner && subscription?.expires_at && (
           <SubscriptionExpiryBanner
             expiresAt={subscription.expires_at}
             onDismiss={() => setExpiryBannerDismissed(true)}
