@@ -14,5 +14,9 @@ export interface UserProfile {
   linkedin: string | null;
   avatar_url: string | null;
   banner_url: string | null;
+  profile_completed_at: string | null;
+  onboarding_completed_at: string | null;
+  selected_plan_id: string | null;
+  free_plan_started_at: string | null;
   created_at: string;
 }
