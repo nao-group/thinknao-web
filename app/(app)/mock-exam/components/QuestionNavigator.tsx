@@ -8,7 +8,7 @@ import type { MockQ } from "../types";
 interface QuestionNavigatorProps {
   questions: MockQ[];
   current: number;
-  answers: Record<number, string>;
+  answers: Record<string, string>;
   onSelect: (index: number) => void;
 }
 

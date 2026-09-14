@@ -765,6 +765,7 @@ export default function PracticeDetailPage() {
   const [finishing, setFinishing] = useState(false);
   const [finishModalOpen, setFinishModalOpen] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
+  const [lastXpGained, setLastXpGained] = useState<number | null>(null);
   const [subjectCode, setSubjectCode] = useState(subjectParam);
   const zhOnly = subjectCode === "WH" || subjectCode === "LH";
   const [lang, setLang] = useState<Lang>(subjectParam === "WH" || subjectParam === "LH" ? "zh" : "en");
@@ -828,6 +829,11 @@ export default function PracticeDetailPage() {
   const activeGroup: QuestionGroup | null = questionGroups[currentQ] ?? null;
   const activeType = activeGroup?.type ?? "JF";
 
+  // Clear the per-question EXP pill when navigating away from the question it belongs to
+  useEffect(() => {
+    setLastXpGained(null);
+  }, [currentQ, currentSubQ]);
+
   function updateFillAnswer(questionId: string, blankIdx: string, choiceKey: string) {
     setFillAnswers((prev) => ({
       ...prev,
@@ -858,7 +864,7 @@ export default function PracticeDetailPage() {
 
     setSubmitting(true);
     try {
-      const { results, explanation, explanation_en, explanation_alignment } = await submitQuestionGroup(sessionId, groupId, answersMap);
+      const { results, explanation, explanation_en, explanation_alignment, xpAwarded } = await submitQuestionGroup(sessionId, groupId, answersMap);
       if (explanation || explanation_en || explanation_alignment) {
         setQuestionGroups((prev) => prev.map((g, gi) => {
           if (gi !== groupIdx) return g;
@@ -874,6 +880,7 @@ export default function PracticeDetailPage() {
         }));
       }
       setSubmitResults((prev) => ({ ...prev, ...results }));
+      setLastXpGained(xpAwarded || null);
     } catch (err) {
       console.error("Group submit failed:", err);
     } finally {
@@ -896,7 +903,7 @@ export default function PracticeDetailPage() {
 
     setSubmitting(true);
     try {
-      const { results, explanation, explanation_en, explanation_alignment } = await submitQuestionGroup(sessionId, groupId, answersMap);
+      const { results, explanation, explanation_en, explanation_alignment, xpAwarded } = await submitQuestionGroup(sessionId, groupId, answersMap);
       if (explanation || explanation_en || explanation_alignment) {
         setQuestionGroups((prev) => prev.map((g, gi) => {
           if (gi !== groupIdx) return g;
@@ -912,6 +919,7 @@ export default function PracticeDetailPage() {
         }));
       }
       setSubmitResults((prev) => ({ ...prev, ...results }));
+      setLastXpGained(xpAwarded || null);
     } catch (err) {
       console.error("DT submit failed:", err);
     } finally {
@@ -951,6 +959,7 @@ export default function PracticeDetailPage() {
         })));
       }
       setSubmitResults((prev) => ({ ...prev, [questionId]: result }));
+      setLastXpGained(result.xp_awarded || null);
       // Mark the group as submitted when all its questions are answered
       const groupIdx = questionGroups.findIndex((g) => g.questions.some((q) => q.id === questionId));
       if (groupIdx >= 0) {
@@ -1136,6 +1145,11 @@ export default function PracticeDetailPage() {
                   </Badge>
                 </Group>
                 <Group gap={rem(6)} wrap="nowrap" style={{ flexShrink: 0 }}>
+                  {lastXpGained != null && lastXpGained > 0 && (
+                    <Box px="sm" py={4} style={{ backgroundColor: "#FFF9EC", border: `1.5px solid ${PRIMARY}`, borderRadius: rem(999) }}>
+                      <Text size="xs" fw={700} c={PRIMARY}>+{lastXpGained} XP</Text>
+                    </Box>
+                  )}
                   {!zhOnly && <LanguageToggle lang={lang} onChange={setLang} />}
                   {(() => {
                     const isFlaggedCurrent = flaggedSet.has(activeGroup?.questions[currentSubQ]?.id ?? "");

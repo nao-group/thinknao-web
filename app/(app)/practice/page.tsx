@@ -34,6 +34,7 @@ import { PaginationBtn } from "@/components/ui/pagination-btn";
 import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useSubscriptionAccessGuard } from "@/components/subscription-access-guard";
+import { useAccessTier } from "@/lib/free-tier";
 import { SubjectCard } from "./components/SubjectCard";
 import { QuestionCountPill } from "./components/QuestionCountPill";
 import { TopicPill } from "./components/TopicPill";
@@ -47,6 +48,9 @@ import { fetchAverageScoreOverview, fetchSessions, fetchTopics, generatePractice
 
 export default function PracticePage() {
   const subscriptionGuard = useSubscriptionAccessGuard();
+  const freeTierStatus = useAccessTier();
+  const tier = freeTierStatus?.tier ?? null;
+  const isFreeTier = tier === "free";
   const router = useRouter();
   const [selectedSubject, setSelectedSubject] = useState<SubjectKey>("math");
   const [activeTab, setActiveTab] = useState<"in-progress" | "completed">("in-progress");
@@ -174,12 +178,26 @@ export default function PracticePage() {
     try {
       const fetchedTopics = await fetchTopics(subject.subjectCode);
       setTopics(fetchedTopics);
+      if (isFreeTier) {
+        const freeTopic = fetchedTopics.find((t) => t.is_free_tier);
+        if (freeTopic) setModalTopic(freeTopic);
+      }
     } catch (err) {
       console.error("Failed to load topics:", err);
       setTopics([]);
     } finally {
       setTopicsLoading(false);
     }
+  }
+
+  function requireUnlockedAccess(action: () => void, actionIntent: string) {
+    if (tier === "lapsed" || tier === null) {
+      void subscriptionGuard.requireSubscription(action, actionIntent);
+      return;
+    }
+    // subscriber or free — free-tier restrictions (topic/question caps) are
+    // enforced inside the generate flow itself, not at this gate.
+    action();
   }
 
   async function handleGenerate() {
@@ -289,7 +307,7 @@ export default function PracticePage() {
                 <LandingActionButton
                   rightSection={<IconPlus size={15} stroke={2.2} />}
                   size="md"
-                  onClick={() => void subscriptionGuard.requireSubscription(openGenerateModal, "generate a new practice set")}
+                  onClick={() => requireUnlockedAccess(openGenerateModal, "generate a new practice set")}
                 >
                   Generate Practice Set
                 </LandingActionButton>
@@ -432,7 +450,7 @@ export default function PracticePage() {
                       key={session.id}
                       session={session}
                       action={activeTab === "completed" ? "Review" : "Continue"}
-                      onContinue={() => void subscriptionGuard.requireSubscription(() => {
+                      onContinue={() => requireUnlockedAccess(() => {
                         const params = new URLSearchParams({
                           name: session.name,
                           topic: session.topic_name,
@@ -703,6 +721,15 @@ export default function PracticePage() {
             size="lg"
             overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
           >
+            {isFreeTier && (
+              <Group gap={rem(6)} p="sm" mb="md" style={{ backgroundColor: CREAM, borderRadius: rem(8), border: `1px solid ${PRIMARY}` }}>
+                <IconStar size={14} stroke={1.5} color={PRIMARY} fill={PRIMARY} />
+                <Text size="sm" fw={600} c={PRIMARY}>
+                  Free plan: {Math.max(0, (freeTierStatus?.practice_questions_cap ?? 10) - (freeTierStatus?.practice_questions_used ?? 0))} of {freeTierStatus?.practice_questions_cap ?? 10} practice questions left
+                </Text>
+              </Group>
+            )}
+
             {/* Topics */}
             <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mb="sm">
               Topic
@@ -718,14 +745,24 @@ export default function PracticePage() {
               <EmptyState compact title="No topics available" description="Try selecting another subject." mb="xl" />
             ) : (
               <Box mb="xl" style={{ display: "flex", flexWrap: "wrap", gap: rem(8) }}>
-                {topics.map((t) => (
-                  <TopicPill
-                    key={t.id}
-                    label={t.name}
-                    selected={modalTopic?.id === t.id}
-                    onToggle={() => setModalTopic(modalTopic?.id === t.id ? null : t)}
-                  />
-                ))}
+                {topics.map((t) => {
+                  const locked = isFreeTier && !t.is_free_tier;
+                  return (
+                    <TopicPill
+                      key={t.id}
+                      label={t.name}
+                      selected={modalTopic?.id === t.id}
+                      locked={locked}
+                      onToggle={() => {
+                        if (locked) {
+                          void subscriptionGuard.requireSubscription(() => {}, "practice this topic");
+                          return;
+                        }
+                        setModalTopic(modalTopic?.id === t.id ? null : t);
+                      }}
+                    />
+                  );
+                })}
               </Box>
             )}
 
@@ -733,26 +770,32 @@ export default function PracticePage() {
             <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mb="sm">
               Number of Questions
             </Text>
-            <Group gap="sm" align="center" mb="xl">
-              {QUESTION_COUNTS.map((count) => (
-                <QuestionCountPill
-                  key={count}
-                  value={count}
-                  selected={modalCount === count}
-                  onSelect={() => setModalCount(count as number | "Custom")}
-                />
-              ))}
-              {modalCount === "Custom" && (
-                <NumberInput
-                  value={modalCustomCount}
-                  onChange={setModalCustomCount}
-                  placeholder="e.g. 15"
-                  min={1} max={200} size="xs" radius="xl"
-                  style={{ width: rem(90) }}
-                  styles={{ input: { textAlign: "center" } }}
-                />
-              )}
-            </Group>
+            {isFreeTier ? (
+              <Text size="sm" c={MUTED} mb="xl">
+                {Math.max(0, (freeTierStatus?.practice_questions_cap ?? 10) - (freeTierStatus?.practice_questions_used ?? 0))} question(s) remaining on the free plan
+              </Text>
+            ) : (
+              <Group gap="sm" align="center" mb="xl">
+                {QUESTION_COUNTS.map((count) => (
+                  <QuestionCountPill
+                    key={count}
+                    value={count}
+                    selected={modalCount === count}
+                    onSelect={() => setModalCount(count as number | "Custom")}
+                  />
+                ))}
+                {modalCount === "Custom" && (
+                  <NumberInput
+                    value={modalCustomCount}
+                    onChange={setModalCustomCount}
+                    placeholder="e.g. 15"
+                    min={1} max={200} size="xs" radius="xl"
+                    style={{ width: rem(90) }}
+                    styles={{ input: { textAlign: "center" } }}
+                  />
+                )}
+              </Group>
+            )}
 
             {generateError && (
               <Group gap={rem(6)} p="sm" mb="md"

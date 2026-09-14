@@ -7,7 +7,7 @@ export type Subject =
 export type Phase = "landing" | "generating" | "exam" | "results";
 
 export interface MockQ {
-  id: number;
+  id: string;
   subject: Subject;
   topic: string;
   text: string;
@@ -22,4 +22,6 @@ export interface ExamResult {
   passed: boolean;
   timeTaken: number;
   timedOut: boolean;
+  /** Populated once the real backend submit response comes back. */
+  xpAwarded?: number;
 }

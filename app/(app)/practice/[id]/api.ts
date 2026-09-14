@@ -303,6 +303,7 @@ export async function submitQuestionGroup(
   explanation?: string;
   explanation_en?: string;
   explanation_alignment?: Record<string, ExplanationAlignment>;
+  xpAwarded: number;
 }> {
   const { data } = await api.post<GroupSubmitResponse>(
     `/api/question-groups/${groupId}/submit`,
@@ -331,8 +332,10 @@ export async function submitQuestionGroup(
     resultMap[r.question_id].correct = r.correct;
   }
 
-  // Set overall correctness per question from blank results
-  // (xp_awarded is always null from the API — XP is computed in the background)
+  // Set overall correctness per question from blank results.
+  // xp_awarded is a GROUP-level total (data.xp_awarded), not per-question —
+  // the API has no per-sub-question breakdown, so it's surfaced once below
+  // rather than faked per question.
   for (const qid of Object.keys(resultMap)) {
     const blankResults = resultMap[qid].blank_results ?? [];
     resultMap[qid].correct = blankResults.every((b) => b.correct);
@@ -343,6 +346,7 @@ export async function submitQuestionGroup(
     explanation: data.explanation,
     explanation_en: data.explanation_en,
     explanation_alignment: data.explanation_alignment,
+    xpAwarded: data.xp_awarded ?? 0,
   };
 }
 
