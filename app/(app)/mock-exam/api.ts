@@ -1,14 +1,7 @@
 /**
- * API client for the real mock-exam backend. Adapts the grouped QuestionGroup
- * response (shared shape with practice sessions) into the flat MockQ[] this
- * page's UI already knows how to render.
- *
- * NOTE: the backend only samples UNGROUPED question types into exams (no
- * DT/XT/YL cloze/passage sets) since this page has no passage/word-bank
- * rendering — every group returned here has exactly one question, so
- * flattening one-group-per-question is safe. Per-question "topic" is not
- * returned by the API (only present in the practice-set UI); the topic code
- * segment of the question's `code` is used as a lightweight cosmetic label.
+ * API client for the mock-exam backend. Adapts the grouped QuestionGroup
+ * response into the flat MockQ[] this page renders. Every group has exactly
+ * one question (backend only samples ungrouped types — no passage UI here yet).
  */
 
 import api from "@/lib/api";
@@ -28,11 +21,8 @@ const NAME_TO_SUBJECT_CODE: Record<string, string> = Object.fromEntries(
 );
 
 interface RawContent {
-  // Real API: question is blank-indexed, e.g. { "1": "text" } — even for
-  // single-choice "standard" questions, matching every other question type.
-  // Choices live under "answer" (build_content only renames this to
-  // "options" for JF/YL types, and strips it for DT/XT — "standard" types,
-  // which is most of what exams sample, keep the raw "answer" key).
+  // question is blank-indexed ({ "1": "text" }) even for single-choice
+  // questions; choices live under "answer" for standard-type content.
   question?: string | Record<string, string>;
   answer?: Record<string, string>;
   choices?: Record<string, string>;

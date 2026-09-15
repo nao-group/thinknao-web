@@ -188,9 +188,7 @@ export default function PracticePage() {
         const freeTopic = fetchedTopics.find((t) => t.is_free_tier);
         if (freeTopic) {
           setModalTopic(freeTopic);
-          // Jump straight to whichever topic group contains the free topic,
-          // so the pre-selected topic is actually visible, not hidden behind
-          // the default first-group tab.
+          // Jump to the group containing the free topic so it's visible, not hidden behind the default tab.
           const normalize = (value: string) => value.trim().toLowerCase().replace(/[’‘]/g, "'");
           const definitions = TOPIC_GROUPS[subjectKey];
           const ownerGroup = definitions?.find((group) =>
@@ -212,9 +210,7 @@ export default function PracticePage() {
       void subscriptionGuard.requireSubscription(action, actionIntent);
       return;
     }
-    // subscriber or free — free-tier restrictions (topic/question caps) are
-    // enforced inside the generate flow itself, not at this gate.
-    action();
+    action(); // free-tier caps are enforced inside the generate flow, not here
   }
 
   const groupedTopics = useMemo(() => {
