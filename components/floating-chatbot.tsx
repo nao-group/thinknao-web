@@ -36,9 +36,7 @@ interface FloatingChatbotProps {
 }
 
 const GREETING = "Hi! I'm here to help you understand this problem. Feel free to ask anything about it.";
-// Subscribers warn once 5 messages remain of their daily allowance.
-// Free-tier's lifetime cap is small enough that it never shows this amber
-// warning state — see the plain "X of N free messages used" line instead.
+// Subscribers only — free tier's cap is too small to show this amber state.
 const WARNING_REMAINING_THRESHOLD = 5;
 
 interface ChatQuota {
@@ -155,8 +153,7 @@ function PracticeSetMessage({ text }: { text: string }) {
 // ─── Main component ─────────────────────────────────────────────────────────
 
 export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps) {
-  // Portal target isn't available during SSR — defer rendering the panel
-  // until after mount, once document.body exists.
+  // No document.body during SSR — defer the portal until mounted.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -496,9 +493,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
         throw new Error(detail);
       }
 
-      // The first message in a session can silently create a conversation
-      // (get_or_create_conversation) — refresh the real count after sending.
-      void fetchQuota();
+      void fetchQuota(); // a message may have just been sent — refresh the count
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -548,10 +543,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
 
   const isFreeTier = quota?.tier === "free";
   const quotaReached = quota !== null && quota.remaining <= 0;
-  // Subscribers get the amber "near the end" warning at the originally-specified
-  // threshold; free tier's cap is small enough (3 lifetime) that this would be
-  // shown almost permanently, so it gets a plain, non-alarming counter instead —
-  // see the notice block below.
+  // Free tier's cap is too small for the amber warning — see showFreeCounter below.
   const showWarningCard = !isFreeTier && quota !== null && !quotaReached && quota.remaining <= WARNING_REMAINING_THRESHOLD;
   const showFreeCounter = isFreeTier && quota !== null && !quotaReached;
   const showQuotaNotice = quotaReached || showWarningCard || showFreeCounter;
