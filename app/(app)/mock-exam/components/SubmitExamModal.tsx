@@ -10,11 +10,12 @@ interface SubmitExamModalProps {
   unanswered: number;
   totalQ: number;
   onConfirm: () => void;
+  loading?: boolean;
 }
 
 // ─── Submit confirmation modal (exam phase) ────────────────────────────────────
 
-export function SubmitExamModal({ opened, onClose, unanswered, totalQ, onConfirm }: SubmitExamModalProps) {
+export function SubmitExamModal({ opened, onClose, unanswered, totalQ, onConfirm, loading }: SubmitExamModalProps) {
   return (
     <Modal
       opened={opened}
@@ -31,8 +32,8 @@ export function SubmitExamModal({ opened, onClose, unanswered, totalQ, onConfirm
           <Text size="sm" c="dimmed">You have answered all {totalQ} questions. Ready to submit?</Text>
         )}
         <Group grow>
-          <Button variant="outline" color="dark" radius="xl" onClick={onClose}>Cancel</Button>
-          <Button radius="xl" style={{ backgroundColor: CORRECT_GREEN, color: "white", fontWeight: 600 }} onClick={onConfirm}>Confirm Submit</Button>
+          <Button variant="outline" color="dark" radius="xl" onClick={onClose} disabled={loading}>Cancel</Button>
+          <Button radius="xl" loading={loading} style={{ backgroundColor: CORRECT_GREEN, color: "white", fontWeight: 600 }} onClick={onConfirm}>Confirm Submit</Button>
         </Group>
       </Stack>
     </Modal>

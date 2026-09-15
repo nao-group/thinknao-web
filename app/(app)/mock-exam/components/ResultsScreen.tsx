@@ -9,7 +9,7 @@ import type { ExamResult, MockQ } from "../types";
 
 interface ResultsScreenProps {
   examQuestions: MockQ[];
-  answers: Record<number, string>;
+  answers: Record<string, string>;
   result: ExamResult;
   passMark: number;
   onBackToLanding: () => void;
@@ -27,8 +27,11 @@ export function ResultsScreen({
   onRetakeExam,
 }: ResultsScreenProps) {
   const totalQ = examQuestions.length;
-  const wrong = examQuestions.filter((q) => answers[q.id] && answers[q.id] !== q.correctAnswer).length;
   const skipped = totalQ - Object.keys(answers).length;
+  // Grading happens server-side now (correctAnswer isn't sent to the client
+  // before submission), so "wrong" is derived from the real score instead of
+  // a per-question comparison.
+  const wrong = Math.max(0, totalQ - result.correct - skipped);
   const subjectMeta = SUBJECT_META[examQuestions[0]?.subject ?? "Mathematics"];
   const SubjectResultIcon = subjectMeta.icon;
 
@@ -71,6 +74,11 @@ export function ResultsScreen({
           <Text size="sm" c="dimmed" ta="center">
             {result.passed ? "Congratulations! You passed the mock exam." : `You need ${passMark}% to pass. Keep practising!`}
           </Text>
+          {typeof result.xpAwarded === "number" && result.xpAwarded > 0 && (
+            <Badge size="lg" radius="xl" variant="light" color="yellow" style={{ fontWeight: 700 }}>
+              +{result.xpAwarded} XP
+            </Badge>
+          )}
         </Stack>
 
         <SimpleGrid cols={{ base: 2, xs: 4 }} style={{ width: "100%", maxWidth: rem(560) }}>
