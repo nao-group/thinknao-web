@@ -332,10 +332,7 @@ export async function submitQuestionGroup(
     resultMap[r.question_id].correct = r.correct;
   }
 
-  // Set overall correctness per question from blank results.
-  // xp_awarded is a GROUP-level total (data.xp_awarded), not per-question —
-  // the API has no per-sub-question breakdown, so it's surfaced once below
-  // rather than faked per question.
+  // xp_awarded is a group-level total, not per-question — surfaced once below.
   for (const qid of Object.keys(resultMap)) {
     const blankResults = resultMap[qid].blank_results ?? [];
     resultMap[qid].correct = blankResults.every((b) => b.correct);

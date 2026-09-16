@@ -19,7 +19,7 @@ export async function fetchFreeTierStatus(): Promise<FreeTierStatus> {
   return data;
 }
 
-/** null while loading; the fetched status once resolved (or on error, a lapsed-like fully-locked fallback is NOT assumed — callers should treat null as "unknown, don't gate yet"). */
+/** null while loading or on error — treat as "unknown, don't gate yet". */
 export function useAccessTier() {
   const [status, setStatus] = useState<FreeTierStatus | null>(null);
 
