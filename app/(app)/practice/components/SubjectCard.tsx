@@ -22,24 +22,24 @@ export function SubjectCard({
       className="landing-filter-card"
       data-active={selected}
       style={{
-        width: "100%", height: "100%", padding: rem(20),
+        width: "100%", minHeight: rem(80), height: "100%", padding: `${rem(14)} ${rem(16)}`,
         borderRadius: rem(12),
         border: `2px solid ${selected ? PRIMARY : "#E2E8F0"}`,
         backgroundColor: selected ? CREAM : "#FFFDF8",
-        display: "flex", flexDirection: "column", alignItems: "center",
-        gap: rem(10), transition: "border-color 150ms ease, background-color 150ms ease",
+        display: "flex", flexDirection: "row", alignItems: "center",
+        gap: rem(14), transition: "border-color 150ms ease, background-color 150ms ease",
         cursor: "pointer",
       }}
     >
       <Box style={{
-        width: rem(48), height: rem(48), borderRadius: rem(12),
+        width: rem(48), height: rem(48), borderRadius: rem(12), flexShrink: 0,
         backgroundColor: subject.iconBg,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
         <Icon size={22} stroke={1.5} color={subject.iconColor} />
       </Box>
       <Text size="sm" fw={selected ? 700 : 500} c={selected ? PRIMARY : INK}
-        style={{ transition: "color 150ms ease", textAlign: "center" }}>
+        style={{ transition: "color 150ms ease", textAlign: "left", lineHeight: 1.35 }}>
         {subject.label}
       </Text>
     </UnstyledButton>
