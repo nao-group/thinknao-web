@@ -22,6 +22,8 @@ import {
 import { useAuthStore } from "@/store/auth";
 import { INK, PRIMARY, SURFACE, MUTED, CORRECT_DARK, WRONG_RED, WRONG_BG } from "@/constants/colors";
 import { MarkdownLatexText } from "@/components/markdown-latex-text";
+import { useSubscriptionAccessGuard } from "@/components/subscription-access-guard";
+import { useFreeTierWarning } from "@/components/free-tier-warning-modal";
 
 interface Message {
   role: "user" | "assistant";
@@ -156,6 +158,9 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
   // No document.body during SSR — defer the portal until mounted.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  const subscriptionGuard = useSubscriptionAccessGuard();
+  const freeTierWarning = useFreeTierWarning();
 
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"chat" | "history">("chat");
@@ -458,6 +463,24 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
     }
   }
 
+  /** Gate for "+ New Chat" — warns while the free tier's message quota isn't used up, upgrade CTA once it is. */
+  function requireChatAccess(action: () => void) {
+    if (!quota) { action(); return; } // not loaded yet — backend still enforces the real cap
+    if (quota.tier === "lapsed") {
+      void subscriptionGuard.requireSubscription(action, "start a new chat");
+      return;
+    }
+    if (quota.tier !== "free") {
+      action();
+      return;
+    }
+    if (quota.remaining <= 0) {
+      subscriptionGuard.showUpgradeModal("start a new chat");
+      return;
+    }
+    freeTierWarning.warnBeforeAction(action, { remaining: quota.remaining, cap: quota.limit, unit: "messages" });
+  }
+
   async function handleSend(overrideText?: string) {
     const text = (overrideText ?? input).trim();
     const quotaReached = quota !== null && quota.remaining <= 0;
@@ -493,8 +516,6 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
         throw new Error(detail);
       }
 
-      void fetchQuota(); // a message may have just been sent — refresh the count
-
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       const replyTimestamp = new Date();
@@ -521,6 +542,13 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
           });
         }
       }
+
+      // Wait until the stream fully finishes before refreshing — the user's
+      // message (and its count) is only guaranteed saved server-side once the
+      // response is complete. Refreshing on headers-received (before) raced
+      // ahead of that save for free-tier students, since response headers go
+      // out before services.member.chatbot.answer()'s generator body runs.
+      void fetchQuota();
     } catch (err) {
       const errorText = err instanceof Error && err.message
         ? err.message
@@ -548,6 +576,14 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
   const showFreeCounter = isFreeTier && quota !== null && !quotaReached;
   const showQuotaNotice = quotaReached || showWarningCard || showFreeCounter;
   const canSend = !!input.trim() && !loading && !quotaReached;
+
+  function handleSendClick() {
+    if (quotaReached) {
+      if (isFreeTier) subscriptionGuard.showUpgradeModal("send more chat messages");
+      return;
+    }
+    void handleSend();
+  }
 
   if (!mounted) return null;
 
@@ -647,7 +683,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                 <>
                   <Tooltip label="New chat" position="bottom" withArrow>
                     <UnstyledButton
-                      onClick={startNewChat}
+                      onClick={() => requireChatAccess(startNewChat)}
                       style={{
                         width: rem(30), height: rem(30), borderRadius: rem(8),
                         border: "1px solid #E2E8F0",
@@ -970,10 +1006,11 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
             <Box px="md" py="md" style={{ borderTop: "1px solid #F1F5F9", backgroundColor: "white", flexShrink: 0 }}>
               {showQuotaNotice && quota && (
                 <Box
-                  role="status"
+                  role={quotaReached && isFreeTier ? "button" : "status"}
                   aria-live="polite"
                   mb="sm"
                   p="sm"
+                  onClick={quotaReached && isFreeTier ? () => subscriptionGuard.showUpgradeModal("send more chat messages") : undefined}
                   style={{
                     borderRadius: rem(12),
                     borderLeft: quotaReached ? `3px solid ${WRONG_RED}` : undefined,
@@ -987,6 +1024,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                       : showWarningCard
                         ? "linear-gradient(135deg, #FFF9EA 0%, #F8EED2 100%)"
                         : SURFACE,
+                    cursor: quotaReached && isFreeTier ? "pointer" : "default",
                   }}
                 >
                   <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
@@ -1017,7 +1055,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                         <Text size="xs" c={quotaReached ? WRONG_RED : showWarningCard ? "#8C7132" : MUTED} mt={2} lh={1.4}>
                           {quotaReached
                             ? isFreeTier
-                              ? "Upgrade for unlimited messages."
+                              ? "Tap to upgrade for unlimited messages."
                               : `You’ve used all ${quota.limit}. Your access resets at midnight.`
                             : isFreeTier
                               ? "Upgrade for unlimited messages."
@@ -1090,8 +1128,8 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                 />
                 <Group justify="flex-end" px="sm" pb="sm" pt={2}>
                   <UnstyledButton
-                    onClick={() => handleSend()}
-                    disabled={!canSend}
+                    onClick={handleSendClick}
+                    disabled={!quotaReached && !canSend}
                     style={{
                       display: "flex", alignItems: "center", gap: rem(5),
                       padding: `${rem(6)} ${rem(12)}`,
@@ -1148,6 +1186,8 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
           40% { opacity: 1; transform: scale(1); }
         }
       `}</style>
+      {subscriptionGuard.modal}
+      {freeTierWarning.modal}
     </>,
     document.body
   );

@@ -33,6 +33,7 @@ import { ExamStructureTable } from "./components/ExamStructureTable";
 import { RecentAttempts } from "./components/RecentAttempts";
 import { SetupModal } from "./components/SetupModal";
 import { useSubscriptionAccessGuard } from "@/components/subscription-access-guard";
+import { useFreeTierWarning } from "@/components/free-tier-warning-modal";
 import { useAccessTier } from "@/lib/free-tier";
 import { GeneratingScreen } from "./components/GeneratingScreen";
 import { ExamTopBar } from "./components/ExamTopBar";
@@ -47,6 +48,7 @@ const PASS_MARK = 60;
 
 export default function MockExamPage() {
   const subscriptionGuard = useSubscriptionAccessGuard();
+  const freeTierWarning = useFreeTierWarning();
   const freeTierStatus = useAccessTier();
   const tier = freeTierStatus?.tier ?? null;
   const [phase, setPhase] = useState<Phase>("landing");
@@ -143,9 +145,27 @@ export default function MockExamPage() {
       void subscriptionGuard.requireSubscription(action, actionIntent);
       return;
     }
-    // subscriber or free — the free tier's 1-exam lifetime cap is enforced
-    // server-side by POST /api/exam, surfaced as generateError on failure.
     action();
+  }
+
+  /** Gate for starting a new attempt — warns while the free tier's 1-exam cap isn't used yet, upgrade CTA once it is. */
+  function requireExamAccess(action: () => void, actionIntent: string) {
+    if (tier === "lapsed" || tier === null) {
+      void subscriptionGuard.requireSubscription(action, actionIntent);
+      return;
+    }
+    if (tier !== "free") {
+      action();
+      return;
+    }
+    const cap = freeTierStatus?.mock_exam_cap ?? 1;
+    const used = freeTierStatus?.mock_exam_used ?? 0;
+    const remaining = Math.max(0, cap - used);
+    if (remaining <= 0) {
+      subscriptionGuard.showUpgradeModal(actionIntent);
+      return;
+    }
+    freeTierWarning.warnBeforeAction(action, { remaining, cap, unit: "mock exam attempts" });
   }
 
   function doSubmit() {
@@ -180,7 +200,7 @@ export default function MockExamPage() {
             size="md"
             rightSection={<IconPlus size={15} stroke={2.2} />}
             style={{ flexShrink: 0 }}
-            onClick={() => requireUnlockedAccess(() => setSetupOpen(true), "start a new mock exam")}
+            onClick={() => requireExamAccess(() => setSetupOpen(true), "start a new mock exam")}
           >
             Start New Exam
           </LandingActionButton>
@@ -240,6 +260,7 @@ export default function MockExamPage() {
           passMark={PASS_MARK}
         />
         {subscriptionGuard.modal}
+        {freeTierWarning.modal}
       </Box>
     );
   }

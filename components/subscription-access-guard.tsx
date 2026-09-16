@@ -104,8 +104,18 @@ export function useSubscriptionAccessGuard() {
     return false;
   }, [subscription]);
 
+  // Unlike requireSubscription, this always shows the upgrade modal — for a
+  // free-tier user who HAS a valid (free-trial) subscription per hasAccess()
+  // above but has exhausted their usage cap, requireSubscription would let
+  // them straight through since it only guards lapsed/no-subscription users.
+  const showUpgradeModal = useCallback((actionIntent: string) => {
+    setIntent(actionIntent);
+    setOpened(true);
+  }, []);
+
   return {
     requireSubscription,
+    showUpgradeModal,
     modal: <SubscriptionRequiredModal opened={opened} intent={intent} onClose={() => setOpened(false)} />,
   };
 }
