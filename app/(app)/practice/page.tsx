@@ -36,6 +36,7 @@ import { PaginationBtn } from "@/components/ui/pagination-btn";
 import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useSubscriptionAccessGuard } from "@/components/subscription-access-guard";
+import { useFreeTierWarning } from "@/components/free-tier-warning-modal";
 import { useAccessTier } from "@/lib/free-tier";
 import { SubjectCard } from "./components/SubjectCard";
 import { QuestionCountPill } from "./components/QuestionCountPill";
@@ -50,6 +51,7 @@ import { fetchAverageScoreOverview, fetchSessions, fetchTopics, generatePractice
 
 export default function PracticePage() {
   const subscriptionGuard = useSubscriptionAccessGuard();
+  const freeTierWarning = useFreeTierWarning();
   const freeTierStatus = useAccessTier();
   const tier = freeTierStatus?.tier ?? null;
   const isFreeTier = tier === "free";
@@ -213,6 +215,26 @@ export default function PracticePage() {
     action(); // free-tier caps are enforced inside the generate flow, not here
   }
 
+  /** Same as requireUnlockedAccess, plus a free-tier warning/upgrade step for actions that consume the question cap. */
+  function requireGenerateAccess(action: () => void, actionIntent: string) {
+    if (tier === "lapsed" || tier === null) {
+      void subscriptionGuard.requireSubscription(action, actionIntent);
+      return;
+    }
+    if (tier !== "free") {
+      action();
+      return;
+    }
+    const cap = freeTierStatus?.practice_questions_cap ?? 10;
+    const used = freeTierStatus?.practice_questions_used ?? 0;
+    const remaining = Math.max(0, cap - used);
+    if (remaining <= 0) {
+      subscriptionGuard.showUpgradeModal(actionIntent);
+      return;
+    }
+    freeTierWarning.warnBeforeAction(action, { remaining, cap, unit: "practice questions" });
+  }
+
   const groupedTopics = useMemo(() => {
     const definitions = TOPIC_GROUPS[selectedSubject];
     if (!definitions) return [{ label: "All Topics", topics }];
@@ -332,7 +354,7 @@ export default function PracticePage() {
                     <SubjectCard
                       subject={s}
                       selected={selectedSubject === s.key}
-                      onSelect={() => requireUnlockedAccess(
+                      onSelect={() => requireGenerateAccess(
                         () => openGenerateModal(s.key),
                         `generate a ${s.label} practice set`,
                       )}
@@ -906,6 +928,7 @@ export default function PracticePage() {
         );
       })()}
       {subscriptionGuard.modal}
+      {freeTierWarning.modal}
     </Box>
   );
 }
