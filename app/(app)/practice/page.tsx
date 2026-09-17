@@ -10,6 +10,7 @@ import {
   Group,
   Modal,
   NumberInput,
+  SimpleGrid,
   Stack,
   Text,
   TextInput,
@@ -348,20 +349,19 @@ export default function PracticePage() {
               <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mt="lg" mb="sm">
                 Select Subject
               </Text>
-              <Box mb="lg" style={{ display: "flex", gap: rem(12), overflowX: "auto", paddingBottom: rem(4), paddingTop: rem(4), paddingLeft: rem(4), paddingRight: rem(4) }}>
+              <SimpleGrid cols={{ base: 1, xs: 2, md: 3 }} spacing={rem(12)} mb="lg" style={{ padding: rem(4) }}>
                 {SUBJECTS.map((s) => (
-                  <Box key={s.key} style={{ width: rem(150), flex: "0 0 auto", alignSelf: "stretch" }}>
-                    <SubjectCard
-                      subject={s}
-                      selected={selectedSubject === s.key}
-                      onSelect={() => requireGenerateAccess(
-                        () => openGenerateModal(s.key),
-                        `generate a ${s.label} practice set`,
-                      )}
-                    />
-                  </Box>
+                  <SubjectCard
+                    key={s.key}
+                    subject={s}
+                    selected={selectedSubject === s.key}
+                    onSelect={() => requireGenerateAccess(
+                      () => openGenerateModal(s.key),
+                      `generate a ${s.label} practice set`,
+                    )}
+                  />
                 ))}
-              </Box>
+              </SimpleGrid>
             </Card>
 
             {/* My Practice Sets */}
