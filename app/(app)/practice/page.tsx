@@ -25,6 +25,7 @@ import {
   IconCheck,
   IconChevronLeft,
   IconChevronRight,
+  IconLock,
   IconPlus,
   IconSearch,
   IconStar,
@@ -36,6 +37,8 @@ import { PaginationBtn } from "@/components/ui/pagination-btn";
 import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useSubscriptionAccessGuard } from "@/components/subscription-access-guard";
+import { useFreeTierWarning } from "@/components/free-tier-warning-modal";
+import { useAccessTier } from "@/lib/free-tier";
 import { SubjectCard } from "./components/SubjectCard";
 import { QuestionCountPill } from "./components/QuestionCountPill";
 import { TopicPill } from "./components/TopicPill";
@@ -49,6 +52,10 @@ import { fetchAverageScoreOverview, fetchSessions, fetchTopics, generatePractice
 
 export default function PracticePage() {
   const subscriptionGuard = useSubscriptionAccessGuard();
+  const freeTierWarning = useFreeTierWarning();
+  const freeTierStatus = useAccessTier();
+  const tier = freeTierStatus?.tier ?? null;
+  const isFreeTier = tier === "free";
   const router = useRouter();
   const [selectedSubject, setSelectedSubject] = useState<SubjectKey>("math");
   const [activeTab, setActiveTab] = useState<"in-progress" | "completed">("in-progress");
@@ -180,12 +187,53 @@ export default function PracticePage() {
     try {
       const fetchedTopics = await fetchTopics(subject.subjectCode);
       setTopics(fetchedTopics);
+      if (isFreeTier) {
+        const freeTopic = fetchedTopics.find((t) => t.is_free_tier);
+        if (freeTopic) {
+          setModalTopic(freeTopic);
+          // Jump to the group containing the free topic so it's visible, not hidden behind the default tab.
+          const normalize = (value: string) => value.trim().toLowerCase().replace(/[’‘]/g, "'");
+          const definitions = TOPIC_GROUPS[subjectKey];
+          const ownerGroup = definitions?.find((group) =>
+            group.topics.some((name) => normalize(name) === normalize(freeTopic.name))
+          );
+          setActiveTopicGroup(ownerGroup?.label ?? "Other Topics");
+        }
+      }
     } catch (err) {
       console.error("Failed to load topics:", err);
       setTopics([]);
     } finally {
       setTopicsLoading(false);
     }
+  }
+
+  function requireUnlockedAccess(action: () => void, actionIntent: string) {
+    if (tier === "lapsed" || tier === null) {
+      void subscriptionGuard.requireSubscription(action, actionIntent);
+      return;
+    }
+    action(); // free-tier caps are enforced inside the generate flow, not here
+  }
+
+  /** Same as requireUnlockedAccess, plus a free-tier warning/upgrade step for actions that consume the question cap. */
+  function requireGenerateAccess(action: () => void, actionIntent: string) {
+    if (tier === "lapsed" || tier === null) {
+      void subscriptionGuard.requireSubscription(action, actionIntent);
+      return;
+    }
+    if (tier !== "free") {
+      action();
+      return;
+    }
+    const cap = freeTierStatus?.practice_questions_cap ?? 10;
+    const used = freeTierStatus?.practice_questions_used ?? 0;
+    const remaining = Math.max(0, cap - used);
+    if (remaining <= 0) {
+      subscriptionGuard.showUpgradeModal(actionIntent);
+      return;
+    }
+    freeTierWarning.warnBeforeAction(action, { remaining, cap, unit: "practice questions" });
   }
 
   const groupedTopics = useMemo(() => {
@@ -307,7 +355,7 @@ export default function PracticePage() {
                     key={s.key}
                     subject={s}
                     selected={selectedSubject === s.key}
-                    onSelect={() => void subscriptionGuard.requireSubscription(
+                    onSelect={() => requireGenerateAccess(
                       () => openGenerateModal(s.key),
                       `generate a ${s.label} practice set`,
                     )}
@@ -452,7 +500,7 @@ export default function PracticePage() {
                       key={session.id}
                       session={session}
                       action={activeTab === "completed" ? "Review" : "Continue"}
-                      onContinue={() => void subscriptionGuard.requireSubscription(() => {
+                      onContinue={() => requireUnlockedAccess(() => {
                         const params = new URLSearchParams({
                           name: session.name,
                           topic: session.topic_name,
@@ -724,6 +772,15 @@ export default function PracticePage() {
             overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
             styles={{ body: { maxHeight: "calc(100dvh - 140px)", overflowY: "auto" } }}
           >
+            {isFreeTier && (
+              <Group gap={rem(6)} p="sm" mb="md" style={{ backgroundColor: CREAM, borderRadius: rem(8), border: `1px solid ${PRIMARY}` }}>
+                <IconStar size={14} stroke={1.5} color={PRIMARY} fill={PRIMARY} />
+                <Text size="sm" fw={600} c={PRIMARY}>
+                  Free plan: {Math.max(0, (freeTierStatus?.practice_questions_cap ?? 10) - (freeTierStatus?.practice_questions_used ?? 0))} of {freeTierStatus?.practice_questions_cap ?? 10} practice questions left
+                </Text>
+              </Group>
+            )}
+
             {/* Topic groups */}
             <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mb="sm">
               Topic Group
@@ -770,10 +827,15 @@ export default function PracticePage() {
                 <Stack gap={8} mb="xl">
                   {visibleTopics.map((topic, index) => {
                     const selected = modalTopic?.id === topic.id;
+                    const locked = isFreeTier && !topic.is_free_tier;
                     return (
                       <UnstyledButton
                         key={topic.id}
                         onClick={() => {
+                          if (locked) {
+                            void subscriptionGuard.requireSubscription(() => {}, "practice this topic");
+                            return;
+                          }
                           setModalTopic(selected ? null : topic);
                           setGenerateError(null);
                         }}
@@ -783,6 +845,7 @@ export default function PracticePage() {
                           borderRadius: rem(10), border: `1.5px solid ${selected ? subject.iconColor : "#E2E8F0"}`,
                           backgroundColor: selected ? subject.iconBg : "#FFFDF8",
                           display: "flex", alignItems: "center", gap: rem(12),
+                          opacity: locked ? 0.55 : 1,
                           transition: "border-color 150ms ease, background-color 150ms ease, transform 150ms ease",
                         }}
                       >
@@ -792,7 +855,7 @@ export default function PracticePage() {
                           backgroundColor: selected ? subject.iconColor : SURFACE,
                           color: selected ? "white" : MUTED, fontSize: rem(12), fontWeight: 700,
                         }}>
-                          {selected ? <IconCheck size={15} stroke={2.5} /> : index + 1}
+                          {locked ? <IconLock size={13} stroke={2} /> : selected ? <IconCheck size={15} stroke={2.5} /> : index + 1}
                         </Box>
                         <Text size="sm" fw={selected ? 700 : 500} c={INK} style={{ textAlign: "left" }}>
                           {topic.name}
@@ -813,26 +876,32 @@ export default function PracticePage() {
             <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mb="sm">
               Number of Questions
             </Text>
-            <Group gap="sm" align="center" mb="xl">
-              {QUESTION_COUNTS.map((count) => (
-                <QuestionCountPill
-                  key={count}
-                  value={count}
-                  selected={modalCount === count}
-                  onSelect={() => setModalCount(count as number | "Custom")}
-                />
-              ))}
-              {modalCount === "Custom" && (
-                <NumberInput
-                  value={modalCustomCount}
-                  onChange={setModalCustomCount}
-                  placeholder="e.g. 15"
-                  min={1} max={200} size="xs" radius="xl"
-                  style={{ width: rem(90) }}
-                  styles={{ input: { textAlign: "center" } }}
-                />
-              )}
-            </Group>
+            {isFreeTier ? (
+              <Text size="sm" c={MUTED} mb="xl">
+                {Math.max(0, (freeTierStatus?.practice_questions_cap ?? 10) - (freeTierStatus?.practice_questions_used ?? 0))} question(s) remaining on the free plan
+              </Text>
+            ) : (
+              <Group gap="sm" align="center" mb="xl">
+                {QUESTION_COUNTS.map((count) => (
+                  <QuestionCountPill
+                    key={count}
+                    value={count}
+                    selected={modalCount === count}
+                    onSelect={() => setModalCount(count as number | "Custom")}
+                  />
+                ))}
+                {modalCount === "Custom" && (
+                  <NumberInput
+                    value={modalCustomCount}
+                    onChange={setModalCustomCount}
+                    placeholder="e.g. 15"
+                    min={1} max={200} size="xs" radius="xl"
+                    style={{ width: rem(90) }}
+                    styles={{ input: { textAlign: "center" } }}
+                  />
+                )}
+              </Group>
+            )}
 
             {generateError && (
               <Group gap={rem(6)} p="sm" mb="md"
@@ -859,6 +928,7 @@ export default function PracticePage() {
         );
       })()}
       {subscriptionGuard.modal}
+      {freeTierWarning.modal}
     </Box>
   );
 }

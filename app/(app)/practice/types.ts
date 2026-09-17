@@ -26,6 +26,7 @@ export interface Topic {
   id: string;
   name: string;
   code: string;
+  is_free_tier?: boolean;
 }
 
 export interface TopicScoreOverview {

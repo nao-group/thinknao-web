@@ -14,7 +14,7 @@ import {
 } from "@mantine/core";
 import { INK, SURFACE, PRIMARY, CREAM, MUTED, VIOLET } from "@/constants/colors";
 import type { Lang } from "@/components/language-toggle";
-import { ALL_QUESTIONS, ALL_SUBJECTS, SUBJECT_CONFIG, SUBJECT_META } from "../data";
+import { ALL_SUBJECTS, SUBJECT_CONFIG, SUBJECT_META } from "../data";
 import type { Subject } from "../types";
 
 interface SetupModalProps {
@@ -140,7 +140,7 @@ export function SetupModal({
         <Box pt="xs" style={{ borderTop: "1px solid #F1F5F9" }}>
           <Group justify="space-between" align="center">
             <Text size="xs" c="dimmed">
-              {ALL_QUESTIONS.filter((q) => q.subject === setupSubject).length} questions (mock) · {cfg.duration / 60} min · {passMark}% to pass
+              {cfg.questionCount} questions · {cfg.duration / 60} min · {passMark}% to pass
             </Text>
             <Button
               radius="xl"

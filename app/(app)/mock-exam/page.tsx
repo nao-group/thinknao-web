@@ -27,52 +27,52 @@ import type { Lang } from "@/components/language-toggle";
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 import { INK, SURFACE, PRIMARY, CREAM, MUTED, CORRECT_GREEN } from "@/constants/colors";
-import { ALL_QUESTIONS, SUBJECT_CONFIG, SUBJECT_META } from "./data";
+import { SUBJECT_CONFIG, SUBJECT_META } from "./data";
 import type { ExamResult, MockQ, Phase, Subject } from "./types";
 import { ExamStructureTable } from "./components/ExamStructureTable";
 import { RecentAttempts } from "./components/RecentAttempts";
 import { SetupModal } from "./components/SetupModal";
 import { useSubscriptionAccessGuard } from "@/components/subscription-access-guard";
+import { useFreeTierWarning } from "@/components/free-tier-warning-modal";
+import { useAccessTier } from "@/lib/free-tier";
 import { GeneratingScreen } from "./components/GeneratingScreen";
 import { ExamTopBar } from "./components/ExamTopBar";
 import { QuestionNavigator } from "./components/QuestionNavigator";
 import { SubmitExamModal } from "./components/SubmitExamModal";
 import { ResultsScreen } from "./components/ResultsScreen";
+import { createExam, submitExam, NAME_TO_SUBJECT_CODE } from "./api";
 
 const PASS_MARK = 60;
-
-// ─── Helpers ───────────────────────────────────────────────────────────────────
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function MockExamPage() {
   const subscriptionGuard = useSubscriptionAccessGuard();
+  const freeTierWarning = useFreeTierWarning();
+  const freeTierStatus = useAccessTier();
+  const tier = freeTierStatus?.tier ?? null;
   const [phase, setPhase] = useState<Phase>("landing");
   const [setupOpen, setSetupOpen] = useState(false);
   const [setupLang, setSetupLang] = useState<Lang>("en");
   const [setupSubject, setSetupSubject] = useState<Subject>("Mathematics");
   const [lang, setLang] = useState<Lang>("en");
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [examQuestions, setExamQuestions] = useState<MockQ[]>([]);
   const [examDuration, setExamDuration] = useState(60 * 60);
   const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [timeLeft, setTimeLeft] = useState(60 * 60);
   const [timedOut, setTimedOut] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [result, setResult] = useState<ExamResult | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  const [submittingExam, setSubmittingExam] = useState(false);
 
   const answersRef = useRef(answers);
   answersRef.current = answers;
+  const sessionIdRef = useRef(sessionId);
+  sessionIdRef.current = sessionId;
   const examQRef = useRef(examQuestions);
   examQRef.current = examQuestions;
   const timeLeftRef = useRef(timeLeft);
@@ -80,23 +80,36 @@ export default function MockExamPage() {
   const examDurationRef = useRef(examDuration);
   examDurationRef.current = examDuration;
 
-  // Simulate AI generation then start exam
+  // Create the real exam session, then start it
   useEffect(() => {
     if (phase !== "generating") return;
+    let cancelled = false;
     const cfg = SUBJECT_CONFIG[setupSubject];
-    const duration = cfg.duration;
     const effectiveLang = cfg.langFixed ?? setupLang;
-    const id = setTimeout(() => {
-      setExamQuestions(shuffle(ALL_QUESTIONS.filter((q) => q.subject === setupSubject)));
-      setExamDuration(duration);
-      setAnswers({});
-      setCurrent(0);
-      setTimeLeft(duration);
-      setTimedOut(false);
-      setLang(effectiveLang);
-      setPhase("exam");
-    }, 2500);
-    return () => clearTimeout(id);
+    const subjectCode = NAME_TO_SUBJECT_CODE[setupSubject];
+
+    createExam(subjectCode, effectiveLang)
+      .then(({ sessionId: newSessionId, timeLimitMinutes, questions }) => {
+        if (cancelled) return;
+        const duration = timeLimitMinutes * 60;
+        setSessionId(newSessionId);
+        setExamQuestions(questions);
+        setExamDuration(duration);
+        setAnswers({});
+        setCurrent(0);
+        setTimeLeft(duration);
+        setTimedOut(false);
+        setLang(effectiveLang);
+        setPhase("exam");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("Failed to create exam:", err);
+        setGenerateError(err?.response?.data?.detail || "Failed to generate the exam. Please try again.");
+        setPhase("landing");
+      });
+
+    return () => { cancelled = true; };
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Countdown timer
@@ -114,22 +127,58 @@ export default function MockExamPage() {
   // Auto-submit when time runs out
   useEffect(() => {
     if (!timedOut) return;
-    const q = examQRef.current;
     const a = answersRef.current;
     const t = timeLeftRef.current;
     const dur = examDurationRef.current;
-    const correct = q.filter((qu) => a[qu.id] === qu.correctAnswer).length;
-    const pct = q.length > 0 ? Math.round((correct / q.length) * 100) : 0;
-    setResult({ correct, pct, passed: pct >= PASS_MARK, timeTaken: dur - t, timedOut: true });
-    setPhase("results");
+    const sid = sessionIdRef.current;
+    if (!sid) return;
+    submitExam(sid, a, dur - t)
+      .then(({ score, total, percentage, xpAwarded }) => {
+        setResult({ correct: score, pct: percentage, passed: percentage >= PASS_MARK, timeTaken: dur - t, timedOut: true, xpAwarded });
+        setPhase("results");
+      })
+      .catch((err) => console.error("Auto-submit failed:", err));
   }, [timedOut]);
 
+  function requireUnlockedAccess(action: () => void, actionIntent: string) {
+    if (tier === "lapsed" || tier === null) {
+      void subscriptionGuard.requireSubscription(action, actionIntent);
+      return;
+    }
+    action();
+  }
+
+  /** Gate for starting a new attempt — warns while the free tier's 1-exam cap isn't used yet, upgrade CTA once it is. */
+  function requireExamAccess(action: () => void, actionIntent: string) {
+    if (tier === "lapsed" || tier === null) {
+      void subscriptionGuard.requireSubscription(action, actionIntent);
+      return;
+    }
+    if (tier !== "free") {
+      action();
+      return;
+    }
+    const cap = freeTierStatus?.mock_exam_cap ?? 1;
+    const used = freeTierStatus?.mock_exam_used ?? 0;
+    const remaining = Math.max(0, cap - used);
+    if (remaining <= 0) {
+      subscriptionGuard.showUpgradeModal(actionIntent);
+      return;
+    }
+    freeTierWarning.warnBeforeAction(action, { remaining, cap, unit: "mock exam attempts" });
+  }
+
   function doSubmit() {
-    const correct = examQuestions.filter((q) => answers[q.id] === q.correctAnswer).length;
-    const pct = examQuestions.length > 0 ? Math.round((correct / examQuestions.length) * 100) : 0;
-    setResult({ correct, pct, passed: pct >= PASS_MARK, timeTaken: examDuration - timeLeft, timedOut: false });
-    setPhase("results");
-    setSubmitOpen(false);
+    if (!sessionId || submittingExam) return;
+    setSubmittingExam(true);
+    submitExam(sessionId, answers, examDuration - timeLeft)
+      .then(({ score, total: _total, percentage, xpAwarded }) => {
+        setResult({ correct: score, pct: percentage, passed: percentage >= PASS_MARK, timeTaken: examDuration - timeLeft, timedOut: false, xpAwarded });
+        setPhase("results");
+        setSubmitOpen(false);
+      })
+      .catch((err) => console.error("Submit failed:", err))
+      .finally(() => setSubmittingExam(false));
   }
 
   // ── Landing ──────────────────────────────────────────────────────────────────
@@ -151,11 +200,19 @@ export default function MockExamPage() {
             size="md"
             rightSection={<IconPlus size={15} stroke={2.2} />}
             style={{ flexShrink: 0 }}
-            onClick={() => void subscriptionGuard.requireSubscription(() => setSetupOpen(true), "start a new mock exam")}
+            onClick={() => requireExamAccess(() => setSetupOpen(true), "start a new mock exam")}
           >
             Start New Exam
           </LandingActionButton>
         </Group>
+
+        {generateError && (
+          <Group gap={rem(6)} p="sm" mb="md"
+            style={{ backgroundColor: "#FEF2F2", borderRadius: rem(8), border: "1px solid #FECACA" }}>
+            <IconAlertCircle size={16} color="#EF4444" />
+            <Text size="sm" c="#EF4444">{generateError}</Text>
+          </Group>
+        )}
 
         <Group align="flex-start" gap="xl" wrap="nowrap">
           {/* Left: subject table + rules */}
@@ -199,10 +256,11 @@ export default function MockExamPage() {
           onSetupSubjectChange={setSetupSubject}
           setupLang={setupLang}
           onSetupLangChange={setSetupLang}
-          onStart={() => void subscriptionGuard.requireSubscription(() => { setSetupOpen(false); setPhase("generating"); }, "generate and start this mock exam")}
+          onStart={() => requireUnlockedAccess(() => { setSetupOpen(false); setPhase("generating"); }, "generate and start this mock exam")}
           passMark={PASS_MARK}
         />
         {subscriptionGuard.modal}
+        {freeTierWarning.modal}
       </Box>
     );
   }
@@ -358,6 +416,7 @@ export default function MockExamPage() {
           unanswered={unanswered}
           totalQ={totalQ}
           onConfirm={doSubmit}
+          loading={submittingExam}
         />
       </Box>
     );

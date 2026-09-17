@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import {
   Box,
@@ -43,6 +43,9 @@ import { DragDropParagraph } from "./components/DragDropParagraph";
 import { WordBankSet } from "./components/WordBankSet";
 import { PassageQuestionGroup } from "./components/PassageQuestionGroup";
 import { AlignedText } from "./components/AlignedText";
+import { XpGainBadge } from "./components/XpGainBadge";
+import { XpCelebrationOverlay } from "./components/XpCelebrationOverlay";
+import { playXpChime } from "@/lib/xp-sound";
 import { FinishPracticeModal } from "./components/FinishPracticeModal";
 import type { ApiQuestion, QuestionGroup, FillAnswerMap, SubmitResult } from "./types";
 import { vocabEnToVocab } from "./types";
@@ -765,6 +768,10 @@ export default function PracticeDetailPage() {
   const [finishing, setFinishing] = useState(false);
   const [finishModalOpen, setFinishModalOpen] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
+  const [lastXpGained, setLastXpGained] = useState<number | null>(null);
+  const [xpGainId, setXpGainId] = useState(0); // bumped on every gain so the badge remounts and replays its animation
+  const [showXpCelebration, setShowXpCelebration] = useState(false);
+  const xpCelebrationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [subjectCode, setSubjectCode] = useState(subjectParam);
   const zhOnly = subjectCode === "WH" || subjectCode === "LH";
   const [lang, setLang] = useState<Lang>(subjectParam === "WH" || subjectParam === "LH" ? "zh" : "en");
@@ -828,6 +835,26 @@ export default function PracticeDetailPage() {
   const activeGroup: QuestionGroup | null = questionGroups[currentQ] ?? null;
   const activeType = activeGroup?.type ?? "JF";
 
+  // Clear the per-question EXP pill when navigating away from the question it belongs to
+  useEffect(() => {
+    setLastXpGained(null);
+  }, [currentQ, currentSubQ]);
+
+  function triggerXpGain(xp: number | null | undefined) {
+    if (!xp) return;
+    setLastXpGained(xp);
+    setXpGainId((id) => id + 1);
+    playXpChime();
+
+    setShowXpCelebration(true);
+    if (xpCelebrationTimeout.current) clearTimeout(xpCelebrationTimeout.current);
+    xpCelebrationTimeout.current = setTimeout(() => setShowXpCelebration(false), 1000);
+  }
+
+  useEffect(() => () => {
+    if (xpCelebrationTimeout.current) clearTimeout(xpCelebrationTimeout.current);
+  }, []);
+
   function updateFillAnswer(questionId: string, blankIdx: string, choiceKey: string) {
     setFillAnswers((prev) => ({
       ...prev,
@@ -858,7 +885,7 @@ export default function PracticeDetailPage() {
 
     setSubmitting(true);
     try {
-      const { results, explanation, explanation_en, explanation_alignment } = await submitQuestionGroup(sessionId, groupId, answersMap);
+      const { results, explanation, explanation_en, explanation_alignment, xpAwarded } = await submitQuestionGroup(sessionId, groupId, answersMap);
       if (explanation || explanation_en || explanation_alignment) {
         setQuestionGroups((prev) => prev.map((g, gi) => {
           if (gi !== groupIdx) return g;
@@ -874,6 +901,7 @@ export default function PracticeDetailPage() {
         }));
       }
       setSubmitResults((prev) => ({ ...prev, ...results }));
+      triggerXpGain(xpAwarded);
     } catch (err) {
       console.error("Group submit failed:", err);
     } finally {
@@ -896,7 +924,7 @@ export default function PracticeDetailPage() {
 
     setSubmitting(true);
     try {
-      const { results, explanation, explanation_en, explanation_alignment } = await submitQuestionGroup(sessionId, groupId, answersMap);
+      const { results, explanation, explanation_en, explanation_alignment, xpAwarded } = await submitQuestionGroup(sessionId, groupId, answersMap);
       if (explanation || explanation_en || explanation_alignment) {
         setQuestionGroups((prev) => prev.map((g, gi) => {
           if (gi !== groupIdx) return g;
@@ -912,6 +940,7 @@ export default function PracticeDetailPage() {
         }));
       }
       setSubmitResults((prev) => ({ ...prev, ...results }));
+      triggerXpGain(xpAwarded);
     } catch (err) {
       console.error("DT submit failed:", err);
     } finally {
@@ -951,6 +980,7 @@ export default function PracticeDetailPage() {
         })));
       }
       setSubmitResults((prev) => ({ ...prev, [questionId]: result }));
+      triggerXpGain(result.xp_awarded);
       // Mark the group as submitted when all its questions are answered
       const groupIdx = questionGroups.findIndex((g) => g.questions.some((q) => q.id === questionId));
       if (groupIdx >= 0) {
@@ -1135,7 +1165,13 @@ export default function PracticeDetailPage() {
                     {topicName || activeType}
                   </Badge>
                 </Group>
+                {showXpCelebration && lastXpGained != null && lastXpGained > 0 && (
+                  <XpCelebrationOverlay key={xpGainId} xp={lastXpGained} />
+                )}
                 <Group gap={rem(6)} wrap="nowrap" style={{ flexShrink: 0 }}>
+                  {lastXpGained != null && lastXpGained > 0 && (
+                    <XpGainBadge key={xpGainId} xp={lastXpGained} />
+                  )}
                   {!zhOnly && <LanguageToggle lang={lang} onChange={setLang} />}
                   {(() => {
                     const isFlaggedCurrent = flaggedSet.has(activeGroup?.questions[currentSubQ]?.id ?? "");

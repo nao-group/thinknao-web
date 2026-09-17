@@ -1,15 +1,44 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Badge, Box, Group, Stack, Text, rem } from "@mantine/core";
 import { CORRECT_GREEN, INK, WRONG_RED } from "@/constants/colors";
-import { PAST_EXAMS, SUBJECT_META } from "../data";
+import { SUBJECT_META } from "../data";
+import { fetchRecentExamAttempts, type ExamAttemptSummary } from "../api";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // ─── Recent attempts sidebar (landing phase) ───────────────────────────────────
 
 export function RecentAttempts() {
+  const [attempts, setAttempts] = useState<ExamAttemptSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    fetchRecentExamAttempts()
+      .then((result) => { if (active) setAttempts(result); })
+      .catch((err) => console.error("Failed to load recent exam attempts:", err))
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  if (loading) {
+    return (
+      <Stack gap="xs">
+        {Array.from({ length: 2 }, (_, i) => (
+          <Box key={i} p="md" style={{ borderRadius: rem(14), backgroundColor: "#F8FAFC", height: rem(84) }} />
+        ))}
+      </Stack>
+    );
+  }
+
+  if (attempts.length === 0) {
+    return <EmptyState compact title="No attempts yet" description="Your completed exams will show up here." />;
+  }
+
   return (
     <Stack gap="xs">
-      {PAST_EXAMS.map((exam) => {
+      {attempts.map((exam) => {
         const meta = SUBJECT_META[exam.subject];
         const Icon = meta.icon;
         return (
