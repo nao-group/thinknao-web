@@ -232,7 +232,7 @@
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, .7);
   border-radius: 30px;
-  background: var(--paper);
+  background: transparent;
   box-shadow: 0 30px 90px rgba(22, 35, 49, .22), inset 0 1px rgba(255, 255, 255, .9);
 }
 
@@ -283,7 +283,21 @@
   margin-top: -30px;
   padding: 54px clamp(28px, 6vw, 58px) 40px;
   border-radius: 50% 50% 0 0 / 30px 30px 0 0;
-  background: rgba(255, 253, 248, .99);
+  border-top: 1px solid rgba(255, 255, 255, .88);
+  background: rgba(255, 253, 248, .94);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .58);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .formBody {
+    background: linear-gradient(180deg,
+      #fffdf8 0,
+      #fffdf8 34px,
+      rgba(255, 253, 248, .94) 72px,
+      rgba(247, 250, 252, .68) 100%);
+    backdrop-filter: blur(22px) saturate(1.18);
+    -webkit-backdrop-filter: blur(22px) saturate(1.18);
+  }
 }
 
 .backgroundFields { display: grid; gap: 20px; margin-bottom: 20px; }
@@ -354,6 +368,9 @@
 .planCard[data-active] .planCheck { border-color: var(--gold); background: var(--gold); }
 .recommended { position: absolute; top: -9px; left: 12px; padding: 4px 8px; border-radius: 999px; color: #fff; background: var(--ink); font-size: 8px; font-weight: 800; letter-spacing: .08em; }
 .planPrice { margin-top: 20px; color: var(--ink); font-size: clamp(18px, 2vw, 24px); font-weight: 750; letter-spacing: -.035em; }
+.planOldPrice { margin-top: 17px; color: #697586; font-size: 12px; line-height: 1.2; }
+.planOldPrice + .planPrice { margin-top: 3px; }
+.planMonthly { margin: 2px 0 5px; color: #8a650c; font-size: 12px; font-weight: 700; }
 .planAccess { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(15, 23, 42, .08); }
 .planAccessLabel { margin-bottom: 8px; color: #334155; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .planAccess ul { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
@@ -493,6 +510,6 @@
 @media (prefers-reduced-transparency: reduce) {
   .progressWrap { backdrop-filter: none; }
   .formHero { background: #10243d; }
-  .progressWrap, .formBody { background: #fffdf8; }
+  .progressWrap, .formBody { background: #fffdf8; backdrop-filter: none; -webkit-backdrop-filter: none; }
   .wash { backdrop-filter: none; }
 }
