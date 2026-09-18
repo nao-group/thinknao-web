@@ -70,7 +70,7 @@ function AmbientSky() {
   );
 }
 
-function PageBackdrop({ loading = false }: { loading?: boolean }) {
+function PageBackdrop() {
   return (
     <>
       <Image
@@ -79,19 +79,18 @@ function PageBackdrop({ loading = false }: { loading?: boolean }) {
         fill
         preload
         sizes="100vw"
-        className={`${styles.landscape} ${loading ? styles.loadingLandscape : ""}`}
+        className={styles.landscape}
       />
-      <div className={`${styles.wash} ${loading ? styles.loadingWash : ""}`} />
+      <div className={styles.wash} />
       <AmbientSky />
     </>
   );
 }
 
-function JourneyLoader() {
+function JourneyLoader({ exiting = false }: { exiting?: boolean }) {
   return (
-    <main className={`${styles.page} ${styles.loadingPage}`}>
-      <PageBackdrop loading />
-      <div className={styles.loadingExperience} role="status" aria-live="polite">
+    <div className={`${styles.loadingOverlay} ${exiting ? styles.loadingExit : ""}`}>
+      <div className={styles.loadingExperience} role="status" aria-live="polite" aria-hidden={exiting}>
         <div className={styles.orbit} aria-hidden="true">
           <span className={styles.orbitTrack} />
           <span className={styles.orbitComet} />
@@ -104,7 +103,7 @@ function JourneyLoader() {
         <h1 className={styles.loadingTitle}>Preparing your journey</h1>
         <div className={styles.loadingDots} aria-hidden="true"><span /><span /><span /></div>
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -117,6 +116,7 @@ function OnboardingContent() {
 
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showLoader, setShowLoader] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [grade, setGrade] = useState<string | null>("Grade 12");
   const [province, setProvince] = useState<string | null>("DKI Jakarta");
@@ -171,6 +171,12 @@ function OnboardingContent() {
     return () => { active = false; };
   }, [router, safeNext]);
 
+  useEffect(() => {
+    if (loading) return;
+    const timeout = window.setTimeout(() => setShowLoader(false), 680);
+    return () => window.clearTimeout(timeout);
+  }, [loading]);
+
   const selected = useMemo(() => plans.find((plan) => plan.id === selectedPlan), [plans, selectedPlan]);
   const canContinueBackground = Boolean(grade && province && school.trim());
   const canContinueDream = Boolean(university.trim());
@@ -210,14 +216,12 @@ function OnboardingContent() {
     }
   }
 
-  if (loading) {
-    return <JourneyLoader />;
-  }
-
   return (
     <main className={styles.page}>
       <PageBackdrop />
 
+      {!loading && (
+      <>
       <header className={styles.header}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/images/logo/think_nao_dark.png" alt="ThinkNAO" className={styles.logo} />
@@ -231,7 +235,7 @@ function OnboardingContent() {
       </header>
 
       <section className={`${styles.stage} ${step === 0 ? styles.introStage : ""}`}>
-        <div key={step} className={`${styles.panel} ${step === 0 ? styles.introPanel : styles.formPanel}`}>
+        <div key={step} className={`${styles.panel} ${step === 0 ? `${styles.introPanel} ${styles.introFirstEnter}` : styles.formPanel}`}>
           {step === 0 && (
             <Stack align="center" gap={0} ta="center" className={styles.introContent}>
               <div className={styles.introInvitation}><IconSparkles size={14} stroke={1.8} aria-hidden="true" /> YOUR JOURNEY BEGINS</div>
@@ -346,13 +350,16 @@ function OnboardingContent() {
           )}
         </div>
       </section>
+      </>
+      )}
+      {showLoader && <JourneyLoader exiting={!loading} />}
     </main>
   );
 }
 
 export default function OnboardingPage() {
   return (
-    <Suspense fallback={<JourneyLoader />}>
+    <Suspense fallback={<main className={styles.page}><PageBackdrop /><JourneyLoader /></main>}>
       <OnboardingContent />
     </Suspense>
   );
