@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Badge,
   Box,
@@ -718,30 +719,53 @@ export default function PracticePage() {
       <Modal
         opened={deleteTarget !== null}
         onClose={() => !deleting && setDeleteTarget(null)}
-        title={<Text fw={700} size="md" c={INK}>Delete Practice Set</Text>}
-        radius="md"
-        size="sm"
-        overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
+        centered
+        size={480}
+        radius={24}
+        padding={0}
+        withCloseButton={!deleting}
+        closeOnClickOutside={!deleting}
+        closeOnEscape={!deleting}
+        aria-labelledby="delete-practice-title"
+        overlayProps={{ backgroundOpacity: 0.45, blur: 4 }}
+        classNames={{
+          content: "delete-practice-modal",
+          header: "delete-practice-modal__header",
+          close: "delete-practice-modal__close",
+          body: "delete-practice-modal__body",
+        }}
       >
-        <Text size="sm" c="dimmed" mb="xl">
-          Are you sure you want to delete{" "}
-          <Text span fw={600} c={INK}>&quot;{deleteTarget?.name}&quot;</Text>?
-          This action cannot be undone.
-        </Text>
-        <Group justify="flex-end">
-          <Button variant="outline" color="dark" radius="md" disabled={deleting} onClick={() => setDeleteTarget(null)}>
-            Cancel
-          </Button>
-          <Button
-            radius="md"
-            color="red"
-            loading={deleting}
-            onClick={handleDelete}
-            style={{ fontWeight: 600 }}
-          >
-            Delete
-          </Button>
-        </Group>
+        <Box className="delete-practice-modal__visual">
+          <Image
+            src="/images/practice/delete-confirmation-transparent.png"
+            alt="A practice notebook being closed and set aside"
+            width={1536}
+            height={1024}
+            className="delete-practice-modal__illustration"
+          />
+        </Box>
+        <Stack className="delete-practice-modal__content" gap={0} align="center">
+          <Box className="delete-practice-modal__eyebrow">Final decision</Box>
+          <Text id="delete-practice-title" className="checkout-heading" fz={26} fw={800} ta="center" c={INK}>
+            Delete this practice set?
+          </Text>
+          <Text mt={10} size="sm" ta="center" c={MUTED} lh={1.65} maw={390}>
+            You&apos;re about to permanently remove this practice set from your list.
+          </Text>
+          <Box className="delete-practice-modal__target">
+            <Text size="xs" fw={800} tt="uppercase" c={MUTED}>Practice set</Text>
+            <Text size="sm" fw={750} c={INK}>{deleteTarget?.name}</Text>
+          </Box>
+          <Text mt={11} size="xs" ta="center" c={MUTED}>This action cannot be undone.</Text>
+          <Group grow w="100%" mt={22} gap={12} className="delete-practice-modal__actions">
+            <LandingActionButton presentation="compact" radius="xl" disabled={deleting} onClick={() => setDeleteTarget(null)}>
+              Keep practice set
+            </LandingActionButton>
+            <Button variant="outline" radius="xl" color="red" loading={deleting} onClick={handleDelete} className="delete-practice-modal__delete">
+              Yes, delete
+            </Button>
+          </Group>
+        </Stack>
       </Modal>
 
       {/* ── Generate modal ── */}
