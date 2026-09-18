@@ -42,15 +42,19 @@ export default function LearningStatsPage() {
   if (loading) return <main className={styles.page} aria-busy="true"><div className={styles.skeleton} /><div className={styles.skeletonGrid}>{[0, 1, 2, 3].map((i) => <div key={i} className={styles.skeleton} />)}</div></main>;
   if (error || !data) return <main className={styles.page}><section className={styles.panel}><h1>Learning Stats</h1><p>We couldn&apos;t load your learning history right now.</p><button className={styles.retry} onClick={() => window.location.reload()}>Try again</button></section></main>;
 
-  // Use the returned daily series as the source of truth while older API instances
-  // are still serving the previous 28-day response shape.
-  const activityWindowDays = data.days.length || 30;
-  const activeDays = data.days.filter((day) => day.answers > 0).length;
+  const daysByDate = new Map(data.days.map((day) => [day.date, day]));
+  const endDate = new Date(`${data.days.at(-1)?.date ?? new Date().toISOString().slice(0, 10)}T00:00:00Z`);
+  const activityDays = Array.from({ length: 30 }, (_, index) => {
+    const date = new Date(endDate.getTime() - (29 - index) * 86_400_000).toISOString().slice(0, 10);
+    return { date, activity: daysByDate.get(date) ?? null };
+  });
+  const activeDays = activityDays.filter(({ activity }) => activity !== null && activity.answers > 0).length;
+  const missingDays = activityDays.filter(({ activity }) => activity === null).length;
 
   const cards = [
     { label: "Current streak", value: `${data.current_streak} days`, detail: `Longest: ${data.longest_streak} days`, info: "Consecutive UTC days with at least one answered question. A streak through yesterday still counts until today ends.", icon: IconFlame },
     { label: "Answer accuracy", value: percent(data.total_answers ? data.answer_accuracy : null), detail: `${number.format(data.correct_answers)} of ${number.format(data.total_answers)} correct`, info: "Correct answers divided by all answers submitted in practice and mock exams, including repeat attempts.", icon: IconTarget },
-    { label: "Study days", value: `${activeDays} / ${activityWindowDays}`, detail: "Days with answered questions", info: `Number of days you answered at least one question in the last ${activityWindowDays} UTC calendar days, including today.`, icon: IconChartBar },
+    { label: "Study days", value: `${activeDays} / 30`, detail: "Days with answered questions", info: `Days with at least one answered question in the last 30 UTC calendar days, including today.${missingDays ? ` Activity data for ${missingDays} older days is not yet available from the service.` : ""}`, icon: IconChartBar },
     { label: "XP earned", value: number.format(data.total_xp), detail: "All-time learning XP", info: "Total learning XP awarded for your answers across all time.", icon: IconBolt },
   ];
 
@@ -67,10 +71,14 @@ export default function LearningStatsPage() {
 
       <div className={styles.twoColumns}>
         <section className={styles.panel}>
-          <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>CONSISTENCY</span><h2>Learning frequency</h2></div><span>Last {activityWindowDays} days · UTC</span></div>
-          <p className={styles.caption}>A filled day means you answered at least one question.</p>
-          <div className={styles.heatmap} role="list" aria-label={`Answers per day over the last ${activityWindowDays} days`}>
-            {data.days.map((day) => <div key={day.date} role="listitem" className={styles.heatCell} data-level={day.answers === 0 ? 0 : day.answers < 5 ? 1 : day.answers < 15 ? 2 : 3} title={`${day.date}: ${day.answers} answers, ${day.completed_sets} completed sets`} aria-label={`${day.date}: ${day.answers} answers, ${day.completed_sets} completed sets`} />)}
+          <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>CONSISTENCY</span><h2>Learning frequency</h2></div><span>Last 30 days · UTC</span></div>
+          <p className={styles.caption}>A filled day means you answered at least one question.{missingDays ? ` ${missingDays} older days are awaiting activity data.` : ""}</p>
+          <div className={styles.heatmap} role="list" aria-label="Answers per day over the last 30 days">
+            {activityDays.map(({ date, activity }) => {
+              const dateLabel = new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+              const summary = activity ? `${activity.answers} answers · ${activity.completed_sets} completed sets` : "Activity data not yet available";
+              return <div key={date} role="listitem"><Tooltip label={<span className={styles.heatTooltip}><strong>{dateLabel}</strong><span>{summary}</span></span>} withArrow position="top" openDelay={120} events={{ hover: true, focus: true, touch: true }}><button type="button" className={styles.heatCell} data-level={activity === null ? "missing" : activity.answers === 0 ? 0 : activity.answers < 5 ? 1 : activity.answers < 15 ? 2 : 3} aria-label={`${dateLabel}: ${summary}`} /></Tooltip></div>;
+            })}
           </div>
           <div className={styles.heatLegend}><span>Less</span><i data-level="0" /><i data-level="1" /><i data-level="2" /><i data-level="3" /><span>More</span></div>
           <h3 className={styles.smallHeading}>Answers by weekday</h3>
