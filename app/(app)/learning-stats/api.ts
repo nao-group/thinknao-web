@@ -36,7 +36,9 @@ export interface LearningOverview {
   average_mock_score: number | null;
   best_mock_score: number | null;
   total_xp: number;
-  active_days_28: number;
+  // Older running API instances can still return active_days_28 and 28 day rows.
+  active_days_30?: number;
+  active_days_28?: number;
   days: DailyLearning[];
   subjects: SubjectAccuracy[];
   recent_sessions: {

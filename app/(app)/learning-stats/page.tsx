@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { IconArrowRight, IconBolt, IconChartBar, IconFlame, IconTarget } from "@tabler/icons-react";
+import { Tooltip } from "@mantine/core";
+import { IconArrowRight, IconBolt, IconChartBar, IconFlame, IconInfoCircle, IconTarget } from "@tabler/icons-react";
 import { fetchLearningOverview, type LearningOverview } from "./api";
 import styles from "./stats.module.css";
 
@@ -41,11 +42,16 @@ export default function LearningStatsPage() {
   if (loading) return <main className={styles.page} aria-busy="true"><div className={styles.skeleton} /><div className={styles.skeletonGrid}>{[0, 1, 2, 3].map((i) => <div key={i} className={styles.skeleton} />)}</div></main>;
   if (error || !data) return <main className={styles.page}><section className={styles.panel}><h1>Learning Stats</h1><p>We couldn&apos;t load your learning history right now.</p><button className={styles.retry} onClick={() => window.location.reload()}>Try again</button></section></main>;
 
+  // Use the returned daily series as the source of truth while older API instances
+  // are still serving the previous 28-day response shape.
+  const activityWindowDays = data.days.length || 30;
+  const activeDays = data.days.filter((day) => day.answers > 0).length;
+
   const cards = [
-    { label: "Current streak", value: `${data.current_streak} days`, detail: `Longest: ${data.longest_streak} days`, icon: IconFlame },
-    { label: "Answer accuracy", value: percent(data.total_answers ? data.answer_accuracy : null), detail: `${number.format(data.correct_answers)} of ${number.format(data.total_answers)} correct`, icon: IconTarget },
-    { label: "Study days", value: `${data.active_days_28} / 28`, detail: "Days with answered questions", icon: IconChartBar },
-    { label: "XP earned", value: number.format(data.total_xp), detail: "All-time learning XP", icon: IconBolt },
+    { label: "Current streak", value: `${data.current_streak} days`, detail: `Longest: ${data.longest_streak} days`, info: "Consecutive UTC days with at least one answered question. A streak through yesterday still counts until today ends.", icon: IconFlame },
+    { label: "Answer accuracy", value: percent(data.total_answers ? data.answer_accuracy : null), detail: `${number.format(data.correct_answers)} of ${number.format(data.total_answers)} correct`, info: "Correct answers divided by all answers submitted in practice and mock exams, including repeat attempts.", icon: IconTarget },
+    { label: "Study days", value: `${activeDays} / ${activityWindowDays}`, detail: "Days with answered questions", info: `Number of days you answered at least one question in the last ${activityWindowDays} UTC calendar days, including today.`, icon: IconChartBar },
+    { label: "XP earned", value: number.format(data.total_xp), detail: "All-time learning XP", info: "Total learning XP awarded for your answers across all time.", icon: IconBolt },
   ];
 
   return (
@@ -56,14 +62,14 @@ export default function LearningStatsPage() {
       </header>
 
       <section className={styles.metrics} aria-label="Learning summary">
-        {cards.map(({ label, value, detail, icon: Icon }) => <article className={styles.metric} key={label}><div className={styles.metricTop}><span>{label}</span><Icon size={21} stroke={1.7} aria-hidden="true" /></div><strong>{value}</strong><small>{detail}</small></article>)}
+        {cards.map(({ label, value, detail, info, icon: Icon }) => <article className={styles.metric} key={label}><div className={styles.metricTop}><span className={styles.metricLabel}>{label}<Tooltip label={info} multiline w={250} withArrow position="top" openDelay={150} events={{ hover: true, focus: true, touch: true }}><button type="button" className={styles.metricInfo} aria-label={`About ${label}`}><IconInfoCircle size={17} stroke={1.8} aria-hidden="true" /></button></Tooltip></span><Icon size={21} stroke={1.7} aria-hidden="true" /></div><strong>{value}</strong><small>{detail}</small></article>)}
       </section>
 
       <div className={styles.twoColumns}>
         <section className={styles.panel}>
-          <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>CONSISTENCY</span><h2>Learning frequency</h2></div><span>Last 28 days · UTC</span></div>
+          <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>CONSISTENCY</span><h2>Learning frequency</h2></div><span>Last {activityWindowDays} days · UTC</span></div>
           <p className={styles.caption}>A filled day means you answered at least one question.</p>
-          <div className={styles.heatmap} role="list" aria-label="Answers per day over the last 28 days">
+          <div className={styles.heatmap} role="list" aria-label={`Answers per day over the last ${activityWindowDays} days`}>
             {data.days.map((day) => <div key={day.date} role="listitem" className={styles.heatCell} data-level={day.answers === 0 ? 0 : day.answers < 5 ? 1 : day.answers < 15 ? 2 : 3} title={`${day.date}: ${day.answers} answers, ${day.completed_sets} completed sets`} aria-label={`${day.date}: ${day.answers} answers, ${day.completed_sets} completed sets`} />)}
           </div>
           <div className={styles.heatLegend}><span>Less</span><i data-level="0" /><i data-level="1" /><i data-level="2" /><i data-level="3" /><span>More</span></div>
