@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rtk curl *)",
+      "Bash(python -c \"from PIL import Image; im=Image.open\\('/tmp/think_nao_dark.png'\\); print\\(im.size\\)\")"
+    ]
+  }
+}

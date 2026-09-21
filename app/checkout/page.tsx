@@ -414,6 +414,7 @@ function CheckoutContent() {
                   <Text fw={800} size="xl" style={{ color: INK }}>
                     {formatIDR(plan.price_per_month_idr)}
                   </Text>
+                  <Text size="sm" style={{ color: MUTED }}>/month</Text>
                 </Group>
               </Box>
 

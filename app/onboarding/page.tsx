@@ -23,7 +23,7 @@ const GRADES = [
   "Grade 7", "Grade 8", "Grade 9", "Grade 10",
   "Grade 11", "Grade 12", "Others",
 ];
-const PROGRESS = [25, 50, 75, 100];
+const PROGRESS = [20, 40, 60, 80, 100];
 const FREE_ACCESS = [
   "10 fixed questions total across all subjects",
   "1 topic per subject",
@@ -56,6 +56,12 @@ const fieldStyles = {
 function formatIDR(value: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
 }
+
+const ORIGINAL_PLAN_PRICES: Record<string, number> = {
+  "THINK-1MONTH": 129000,
+  "THINK-3MONTH": 329000,
+  "THINK-6MONTH": 549000,
+};
 
 function AmbientSky() {
   return (
@@ -97,7 +103,14 @@ function JourneyLoader({ exiting = false }: { exiting?: boolean }) {
           <div className={styles.orbitParticles}>
             {Array.from({ length: 10 }, (_, index) => <span key={index} />)}
           </div>
-          <div className={styles.loaderMark} />
+          <div className={styles.loaderLogo}>
+            <span className={`${styles.logoPiece} ${styles.logoPieceLeft}`} />
+            <span className={`${styles.logoPiece} ${styles.logoPieceTop}`} />
+            <span className={`${styles.logoPiece} ${styles.logoPieceGold}`} />
+            <span className={`${styles.logoPiece} ${styles.logoPieceSpark}`} />
+            <span className={`${styles.logoPiece} ${styles.logoPieceDrop}`} />
+            <span className={styles.logoWhole} />
+          </div>
         </div>
         <Text className={styles.loadingEyebrow}>THINKNAO · YOUR CSCA JOURNEY</Text>
         <h1 className={styles.loadingTitle}>Preparing your journey</h1>
@@ -131,6 +144,7 @@ function OnboardingContent() {
   ]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState("THINK-3MONTH");
+  const firstName = user?.full_name?.trim().split(/\s+/)[0] || "friend";
 
   useEffect(() => {
     let active = true;
@@ -164,7 +178,7 @@ function OnboardingContent() {
       setProvinces(provinceOptions.some((item) => item.value === jakarta) ? provinceOptions : [{ value: jakarta, label: jakarta }, ...provinceOptions]);
       setCampuses(campusOptions.some((item) => item.value === tsinghua) ? campusOptions : [{ value: tsinghua, label: tsinghua }, ...campusOptions]);
       setPlans(planRows);
-      if (profile.profile_completed_at) setStep(3);
+      if (profile.profile_completed_at) setStep(4);
     }).catch(() => {
       notifications.show({ title: "Unable to load onboarding", message: "Please refresh and try again.", color: "red" });
     }).finally(() => active && setLoading(false));
@@ -189,7 +203,7 @@ function OnboardingContent() {
         grade, province, current_school: school.trim(),
         dream_university: university.trim(), target_major: major.trim() || null,
       });
-      setStep(3);
+      setStep(4);
     } catch {
       notifications.show({ title: "Could not save your profile", message: "Check your details and try again.", color: "red" });
     } finally {
@@ -227,7 +241,7 @@ function OnboardingContent() {
         <img src="/images/logo/think_nao_dark.png" alt="ThinkNAO" className={styles.logo} />
         <div className={styles.progressWrap} aria-label={`Onboarding ${PROGRESS[step]}% complete`}>
           <Group justify="space-between" mb={7} gap="md">
-            <Text size="xs" fw={700} c={INK}>{step === 0 ? "Registration complete" : `Step ${step} of 3`}</Text>
+            <Text size="xs" fw={700} c={INK}>{step === 0 ? "Registration complete" : `Step ${step} of 4`}</Text>
             <Text size="xs" fw={700} c={PRIMARY}>{PROGRESS[step]}%</Text>
           </Group>
           <div className={styles.progressTrack}><div className={styles.progressFill} style={{ width: `${PROGRESS[step]}%` }} /></div>
@@ -235,7 +249,7 @@ function OnboardingContent() {
       </header>
 
       <section className={`${styles.stage} ${step === 0 ? styles.introStage : ""}`}>
-        <div key={step} className={`${styles.panel} ${step === 0 ? `${styles.introPanel} ${styles.introFirstEnter}` : styles.formPanel}`}>
+        <div key={step} className={`${styles.panel} ${step === 0 ? `${styles.introPanel} ${styles.introFirstEnter}` : step === 1 ? "" : styles.formPanel}`}>
           {step === 0 && (
             <Stack align="center" gap={0} ta="center" className={styles.introContent}>
               <div className={styles.introInvitation}><IconSparkles size={14} stroke={1.8} aria-hidden="true" /> YOUR JOURNEY BEGINS</div>
@@ -251,10 +265,40 @@ function OnboardingContent() {
               <LandingActionButton presentation="auth" className={styles.introButton} rightSection={<IconArrowRight size={17} />} onClick={() => setStep(1)}>
                 Begin my journey
               </LandingActionButton>
+              <button type="button" className={styles.skipIntro} onClick={() => setStep(2)}>Skip introduction</button>
             </Stack>
           )}
 
           {step === 1 && (
+            <div className={styles.chatPanel}>
+              <div className={styles.chatHeading}>
+                <span className={styles.chatEyebrow}><IconSparkles size={15} aria-hidden="true" /> A NOTE FROM THINKNAO</span>
+                <h1>Let&apos;s get to know each other.</h1>
+                <p>Your CSCA journey starts with a conversation, not a checklist.</p>
+              </div>
+              <div className={styles.chatThread} aria-label="Welcome conversation">
+                <div className={styles.chatMessage}>
+                  <span className={styles.chatAvatar} aria-hidden="true"><Image src="/images/logo/nao_icon_dark.png" alt="" width={38} height={38} /></span>
+                  <p className={styles.chatBubble}>Hi, {firstName}! So glad you&apos;re here.</p>
+                </div>
+                <div className={`${styles.chatMessage} ${styles.chatFollowup}`}>
+                  <p className={styles.chatBubble}>Studying in China is a big dream. We&apos;ll help you prepare for CSCA one lesson at a time.</p>
+                </div>
+                <div className={`${styles.chatMessage} ${styles.chatFollowup}`}>
+                  <p className={styles.chatBubble}>First, tell us a little about where you are now. Then we&apos;ll explore where you want to go.</p>
+                </div>
+              </div>
+              <div className={styles.chatFooter}>
+                <span>YOUR BACKGROUND <IconArrowRight size={14} aria-hidden="true" /> YOUR FUTURE DREAM <IconArrowRight size={14} aria-hidden="true" /> YOUR PLAN</span>
+                <div className={styles.actions}>
+                  <Button variant="subtle" color="dark" leftSection={<IconArrowLeft size={16} />} onClick={() => setStep(0)}>Back</Button>
+                  <LandingActionButton presentation="auth" rightSection={<IconArrowRight size={16} />} onClick={() => setStep(2)}>Let&apos;s begin</LandingActionButton>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
             <>
               <div className={styles.formHero}>
                 <Text className={styles.eyebrow}>YOUR BACKGROUND</Text>
@@ -262,6 +306,7 @@ function OnboardingContent() {
                 <Text className={styles.formCopy}>A little context helps ThinkNAO shape a more relevant study journey.</Text>
               </div>
               <div className={styles.formBody}>
+                <div className={styles.formPrompt}><span className={styles.chatAvatar} aria-hidden="true"><Image src="/images/logo/nao_icon_dark.png" alt="" width={38} height={38} /></span><p>Nice to meet you, {firstName}. Could you share your grade, province, and current school? We&apos;d love to get to know you a little better.</p></div>
                 <div className={styles.backgroundFields}>
                   <fieldset className={styles.gradeField}>
                     <legend><IconSchool size={16} aria-hidden="true" /> Grade / Year Level</legend>
@@ -277,14 +322,14 @@ function OnboardingContent() {
                 </div>
                 <TextInput label="Current School" placeholder="e.g. Manila Science High School" value={school} onChange={(event) => setSchool(event.currentTarget.value)} leftSection={<IconHome size={16} color={MUTED} />} styles={fieldStyles} />
                 <div className={styles.actions}>
-                  <Button variant="subtle" color="dark" leftSection={<IconArrowLeft size={16} />} onClick={() => setStep(0)}>Back</Button>
-                  <LandingActionButton presentation="auth" rightSection={<IconArrowRight size={16} />} disabled={!canContinueBackground} onClick={() => setStep(2)}>Continue</LandingActionButton>
+                  <Button variant="subtle" color="dark" leftSection={<IconArrowLeft size={16} />} onClick={() => setStep(1)}>Back</Button>
+                  <LandingActionButton presentation="auth" rightSection={<IconArrowRight size={16} />} disabled={!canContinueBackground} onClick={() => setStep(3)}>Continue</LandingActionButton>
                 </div>
               </div>
             </>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <>
               <div className={styles.formHero}>
                 <Text className={styles.eyebrow}>YOUR FUTURE DREAM</Text>
@@ -292,19 +337,20 @@ function OnboardingContent() {
                 <Text className={styles.formCopy}>Name the destination. We&apos;ll help turn it into a study plan.</Text>
               </div>
               <div className={styles.formBody}>
+                <div className={styles.formPrompt}><span className={styles.chatAvatar} aria-hidden="true"><Image src="/images/logo/nao_icon_dark.png" alt="" width={38} height={38} /></span><p>Which Chinese university are you aiming for, {firstName}?</p></div>
                 <Stack gap="md">
                   <Select label="Dream University" placeholder="Search a university in China" data={campuses} value={university} onChange={(value) => setUniversity(value ?? "")} searchable nothingFoundMessage="No China campus found" leftSection={<IconStar size={16} color={MUTED} />} styles={fieldStyles} />
                   <TextInput label="Target Major (Optional)" placeholder="e.g. Computer Science" value={major} onChange={(event) => setMajor(event.currentTarget.value)} leftSection={<IconPencil size={16} color={MUTED} />} styles={fieldStyles} />
                 </Stack>
                 <div className={styles.actions}>
-                  <Button variant="subtle" color="dark" leftSection={<IconArrowLeft size={16} />} onClick={() => setStep(1)}>Back</Button>
+                  <Button variant="subtle" color="dark" leftSection={<IconArrowLeft size={16} />} onClick={() => setStep(2)}>Back</Button>
                   <LandingActionButton presentation="auth" loading={submitting} disabled={!canContinueDream} rightSection={<IconArrowRight size={16} />} onClick={saveProfile}>Save &amp; continue</LandingActionButton>
                 </div>
               </div>
             </>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <>
               <div className={styles.formHero}>
                 <Text className={styles.eyebrow}>CHOOSE YOUR PLAN</Text>
@@ -316,12 +362,15 @@ function OnboardingContent() {
                 {plans.map((plan) => {
                   const active = plan.id === selectedPlan;
                   const isTrial = plan.id === "THINK-FREE-TRIAL";
+                  const originalPrice = ORIGINAL_PLAN_PRICES[plan.id];
                   return (
                     <button key={plan.id} type="button" role="radio" aria-checked={active} className={styles.planCard} data-active={active || undefined} onClick={() => setSelectedPlan(plan.id)}>
                       {plan.id === "THINK-3MONTH" && <span className={styles.recommended}>RECOMMENDED</span>}
                       <span className={styles.planCheck}>{active && <IconCheck size={14} stroke={2.5} />}</span>
                       <Text fw={700} c={INK}>{plan.name}</Text>
+                      {originalPrice > plan.total_price_idr && <Text className={styles.planOldPrice}><s>{formatIDR(originalPrice)}</s></Text>}
                       <Text className={styles.planPrice}>{isTrial ? "Free" : formatIDR(plan.total_price_idr)}</Text>
+                      {!isTrial && plan.duration_months > 1 && <Text className={styles.planMonthly}>{formatIDR(Math.round(plan.total_price_idr / plan.duration_months / 100) * 100)} / month</Text>}
                       <Text size="xs" c={MUTED}>{isTrial ? "No expiry — access ends when usage limits are reached" : plan.billing_note ?? `One-time payment for ${plan.duration_months} months access`}</Text>
                       {plan.savings_badge && <Text size="xs" fw={700} c={PRIMARY} mt={5}>{plan.savings_badge}</Text>}
                       <div className={styles.planAccess}>
@@ -340,7 +389,7 @@ function OnboardingContent() {
                 })}
                 </div>
                 <div className={styles.actions}>
-                  <Button variant="subtle" color="dark" leftSection={<IconArrowLeft size={16} />} onClick={() => setStep(2)}>Back</Button>
+                  <Button variant="subtle" color="dark" leftSection={<IconArrowLeft size={16} />} onClick={() => setStep(3)}>Back</Button>
                   <LandingActionButton presentation="auth" loading={submitting} disabled={!selected} rightSection={<IconArrowRight size={16} />} onClick={finishOnboarding}>
                     {selected?.id === "THINK-FREE-TRIAL" ? "Start free access" : "Continue to payment"}
                   </LandingActionButton>
