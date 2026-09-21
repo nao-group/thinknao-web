@@ -399,10 +399,13 @@
 .planCheck { position: absolute; top: 12px; right: 12px; display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid rgba(15, 23, 42, .12); border-radius: 999px; color: white; }
 .planCard[data-active] .planCheck { border-color: var(--gold); background: var(--gold); }
 .recommended { position: absolute; top: -9px; left: 12px; padding: 4px 8px; border-radius: 999px; color: #fff; background: var(--ink); font-size: 8px; font-weight: 800; letter-spacing: .08em; }
+.planName { display: block; min-height: 20px; color: var(--ink); }
+.planPriceBlock { display: flex; flex-direction: column; min-height: 56px; justify-content: flex-end; }
 .planPrice { margin-top: 20px; color: var(--ink); font-size: clamp(18px, 2vw, 24px); font-weight: 750; letter-spacing: -.035em; }
 .planOldPrice { margin-top: 17px; color: #697586; font-size: 12px; line-height: 1.2; }
 .planOldPrice + .planPrice { margin-top: 3px; }
 .planMonthly { margin: 2px 0 5px; color: #8a650c; font-size: 12px; font-weight: 700; }
+.planNote { display: block; min-height: 30px; }
 .planAccess { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(15, 23, 42, .08); }
 .planAccessLabel { margin-bottom: 8px; color: #334155; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .planAccess ul { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
@@ -570,8 +573,11 @@
   background: #193e48;
 }
 
+:global(html[data-mantine-color-scheme="dark"]) .planName,
 :global(html[data-mantine-color-scheme="dark"]) .planPrice,
 :global(html[data-mantine-color-scheme="dark"]) .planAccessLabel { color: #f2f6f7; }
+
+:global(html[data-mantine-color-scheme="dark"]) .recommended { background: var(--gold); color: #1c1408; }
 :global(html[data-mantine-color-scheme="dark"]) .planOldPrice,
 :global(html[data-mantine-color-scheme="dark"]) .planAccess li { color: #aebdc2; }
 

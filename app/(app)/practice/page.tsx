@@ -804,7 +804,7 @@ export default function PracticePage() {
             styles={{ body: { maxHeight: "calc(100dvh - 140px)", overflowY: "auto" } }}
           >
             {isFreeTier && (
-              <Group gap={rem(6)} p="sm" mb="md" style={{ backgroundColor: CREAM, borderRadius: rem(8), border: `1px solid ${PRIMARY}` }}>
+              <Group gap={rem(6)} p="sm" mb="md" className="practice-freetier-banner" style={{ backgroundColor: CREAM, borderRadius: rem(8), border: `1px solid ${PRIMARY}` }}>
                 <IconStar size={14} stroke={1.5} color={PRIMARY} fill={PRIMARY} />
                 <Text size="sm" fw={600} c={PRIMARY}>
                   Free plan: {Math.max(0, (freeTierStatus?.practice_questions_cap ?? 10) - (freeTierStatus?.practice_questions_used ?? 0))} of {freeTierStatus?.practice_questions_cap ?? 10} practice questions left

@@ -7,7 +7,7 @@ import { Box, Button, Stack, Text, rem } from "@mantine/core";
 import { IconArrowRight, IconBrandWhatsapp, IconCircleCheck } from "@tabler/icons-react";
 import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { useAuthStore } from "@/store/auth";
-import { INK, PRIMARY, MUTED } from "@/constants/colors";
+import { PRIMARY } from "@/constants/colors";
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
@@ -80,7 +80,7 @@ export default function PaymentSuccessPage() {
               Payment Confirmed
             </Box>
 
-            <Text className="checkout-heading" fw={800} fz={27} style={{ color: INK }}>
+            <Text className="checkout-heading" fw={800} fz={27} style={{ color: "var(--ck-ink)" }}>
               You&apos;re all set!
             </Text>
           </Box>
@@ -89,7 +89,7 @@ export default function PaymentSuccessPage() {
           <Text
             size="sm"
             ta="center"
-            style={{ color: MUTED, lineHeight: 1.7, marginBottom: rem(28) }}
+            style={{ color: "var(--ck-muted)", lineHeight: 1.7, marginBottom: rem(28) }}
           >
             Your payment was successful and your ThinkNao subscription is now active.
             An invoice has been sent to your email.
@@ -105,7 +105,7 @@ export default function PaymentSuccessPage() {
               textAlign: "center",
             }}
           >
-            <Text size="xs" style={{ color: MUTED, marginBottom: rem(4) }}>
+            <Text size="xs" style={{ color: "var(--ck-muted)", marginBottom: rem(4) }}>
               Your access is now active. Start learning right away from your dashboard.
             </Text>
             <Text size="xs" fw={600} style={{ color: PRIMARY }}>
@@ -134,10 +134,11 @@ export default function PaymentSuccessPage() {
             fullWidth
             size="sm"
             leftSection={<IconBrandWhatsapp size={16} />}
+            classNames={{ root: "checkout-outline-btn" }}
             styles={{
               root: {
                 borderColor: "rgba(15,23,42,0.16)",
-                color: INK,
+                color: "var(--ck-ink)",
                 borderRadius: rem(10),
                 fontWeight: 500,
               },

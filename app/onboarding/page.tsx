@@ -377,11 +377,13 @@ function OnboardingContent() {
                     <button key={plan.id} type="button" role="radio" aria-checked={active} className={styles.planCard} data-active={active || undefined} onClick={() => setSelectedPlan(plan.id)}>
                       {plan.id === "THINK-3MONTH" && <span className={styles.recommended}>RECOMMENDED</span>}
                       <span className={styles.planCheck}>{active && <IconCheck size={14} stroke={2.5} />}</span>
-                      <Text fw={700} c={INK}>{plan.name}</Text>
-                      {originalPrice > plan.total_price_idr && <Text className={styles.planOldPrice}><s>{formatIDR(originalPrice)}</s></Text>}
-                      <Text className={styles.planPrice}>{isTrial ? "Free" : formatIDR(plan.total_price_idr)}</Text>
-                      {!isTrial && plan.duration_months > 1 && <Text className={styles.planMonthly}>{formatIDR(Math.round(plan.total_price_idr / plan.duration_months / 100) * 100)} / month</Text>}
-                      <Text size="xs" c={MUTED}>{isTrial ? "No expiry — access ends when usage limits are reached" : plan.billing_note ?? `One-time payment for ${plan.duration_months} months access`}</Text>
+                      <Text fw={700} className={styles.planName}>{plan.name}</Text>
+                      <div className={styles.planPriceBlock}>
+                        {originalPrice > plan.total_price_idr && <Text className={styles.planOldPrice}><s>{formatIDR(originalPrice)}</s></Text>}
+                        <Text className={styles.planPrice}>{isTrial ? "Free" : formatIDR(plan.total_price_idr)}</Text>
+                        {!isTrial && plan.duration_months > 1 && <Text className={styles.planMonthly}>{formatIDR(Math.round(plan.total_price_idr / plan.duration_months / 100) * 100)} / month</Text>}
+                      </div>
+                      <Text size="xs" c={MUTED} className={styles.planNote}>{isTrial ? "No expiry — access ends when usage limits are reached" : plan.billing_note ?? `One-time payment for ${plan.duration_months} months access`}</Text>
                       {plan.savings_badge && <Text size="xs" fw={700} c={PRIMARY} mt={5}>{plan.savings_badge}</Text>}
                       <div className={styles.planAccess}>
                         <Text className={styles.planAccessLabel}>{isTrial ? "Free plan limits" : "Full access"}</Text>

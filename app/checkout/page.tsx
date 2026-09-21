@@ -29,7 +29,7 @@ import {
 import { notifications } from "@mantine/notifications";
 import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { useAuthStore } from "@/store/auth";
-import { INK, PRIMARY, MUTED, CREAM } from "@/constants/colors";
+import { PRIMARY, CREAM } from "@/constants/colors";
 import { fetchPlans, validateReferral, createPayment, type Plan } from "./api";
 
 const FEATURES = [
@@ -190,12 +190,12 @@ function CheckoutContent() {
     return (
       <Box style={{ minHeight: "100vh", background: "#F3F5F7", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Stack align="center" gap={rem(12)}>
-          <Text fw={600} style={{ color: INK }}>Failed to load plan data.</Text>
+          <Text fw={600} style={{ color: "var(--ck-ink)" }}>Failed to load plan data.</Text>
           <Button
             variant="outline"
             size="sm"
             onClick={() => { setPlansError(false); setPlansLoading(true); fetchPlans().then(setPlans).catch(() => setPlansError(true)).finally(() => setPlansLoading(false)); }}
-            style={{ borderColor: INK, color: INK }}
+            style={{ borderColor: "var(--ck-ink)", color: "var(--ck-ink)" }}
           >
             Try again
           </Button>
@@ -231,11 +231,11 @@ function CheckoutContent() {
             size="sm"
             leftSection={<IconArrowLeft size={15} stroke={2} />}
             onClick={() => router.back()}
-            style={{ color: MUTED, paddingLeft: rem(4) }}
+            style={{ color: "var(--ck-muted)", paddingLeft: rem(4) }}
           >
             Back
           </Button>
-          <Text className="checkout-heading" fw={700} size="lg" style={{ color: INK }}>
+          <Text className="checkout-heading" fw={700} size="lg" style={{ color: "var(--ck-ink)" }}>
             Draft Invoice
           </Text>
           {plan?.savings_badge && (
@@ -267,10 +267,10 @@ function CheckoutContent() {
 
           {/* Detail pemesanan */}
           <Box className="checkout-section-card">
-            <Text className="checkout-heading" fw={700} size="xl" style={{ color: INK, marginBottom: rem(6) }}>
+            <Text className="checkout-heading" fw={700} size="xl" style={{ color: "var(--ck-ink)", marginBottom: rem(6) }}>
               Order Details
             </Text>
-            <Text size="sm" style={{ color: MUTED, lineHeight: 1.6, marginBottom: rem(20) }}>
+            <Text size="sm" style={{ color: "var(--ck-muted)", lineHeight: 1.6, marginBottom: rem(20) }}>
               Please review and confirm your selected plan.
               Once payment is made, we are unable to issue refunds for any reason.
             </Text>
@@ -319,7 +319,7 @@ function CheckoutContent() {
 
           {/* Yang akan kamu dapatkan */}
           <Box className="checkout-section-card checkout-benefits-card">
-            <Text className="checkout-heading" fw={700} size="lg" style={{ color: INK, marginBottom: rem(16) }}>
+            <Text className="checkout-heading" fw={700} size="lg" style={{ color: "var(--ck-ink)", marginBottom: rem(16) }}>
               What you&apos;ll get
             </Text>
             <Stack className="checkout-feature-grid" gap={rem(11)}>
@@ -340,7 +340,7 @@ function CheckoutContent() {
                   >
                     <IconCheck size={12} stroke={2.5} color={PRIMARY} />
                   </Box>
-                  <Text size="sm" style={{ color: INK, lineHeight: 1.5 }}>
+                  <Text size="sm" style={{ color: "var(--ck-ink)", lineHeight: 1.5 }}>
                     {feature}
                   </Text>
                 </Group>
@@ -374,10 +374,10 @@ function CheckoutContent() {
                     {user.full_name?.[0]?.toUpperCase() ?? user.email[0].toUpperCase()}
                   </Box>
                   <Box style={{ flex: 1, minWidth: 0 }}>
-                    <Text size="xs" fw={600} style={{ color: INK }} truncate>
+                    <Text size="xs" fw={600} style={{ color: "var(--ck-ink)" }} truncate>
                       Signed in as {user.full_name ?? user.email.split("@")[0]}
                     </Text>
-                    <Text size="xs" style={{ color: MUTED }} truncate>
+                    <Text size="xs" style={{ color: "var(--ck-muted)" }} truncate>
                       {user.email}
                     </Text>
                   </Box>
@@ -404,22 +404,23 @@ function CheckoutContent() {
                   marginBottom: rem(14),
                 }}
               >
-                <Text fw={700} size="sm" style={{ color: INK, marginBottom: rem(2) }}>
+                <Text fw={700} size="sm" style={{ color: "var(--ck-ink)", marginBottom: rem(2) }}>
                   {plan.name}
                 </Text>
-                <Text size="xs" style={{ color: MUTED, marginBottom: rem(10) }}>
+                <Text size="xs" style={{ color: "var(--ck-muted)", marginBottom: rem(10) }}>
                   Full access for {plan.name_short} ({plan.duration_months * 30} days)
                 </Text>
                 <Group gap={rem(4)} align="baseline">
-                  <Text fw={800} size="xl" style={{ color: INK }}>
+                  <Text fw={800} size="xl" style={{ color: "var(--ck-ink)" }}>
                     {formatIDR(plan.price_per_month_idr)}
                   </Text>
-                  <Text size="sm" style={{ color: MUTED }}>/month</Text>
+                  <Text size="sm" style={{ color: "var(--ck-muted)" }}>/month</Text>
                 </Group>
               </Box>
 
               {/* Referral code section */}
               <Box
+                className="checkout-referral-box"
                 style={{
                   border: "1px solid rgba(15, 23, 42, 0.08)",
                   borderRadius: rem(12),
@@ -446,7 +447,7 @@ function CheckoutContent() {
                       variant="subtle"
                       size="compact-xs"
                       onClick={handleRemoveReferral}
-                      style={{ color: MUTED, minWidth: "auto", padding: rem(2) }}
+                      style={{ color: "var(--ck-muted)", minWidth: "auto", padding: rem(2) }}
                     >
                       <IconX size={14} />
                     </Button>
@@ -469,7 +470,7 @@ function CheckoutContent() {
                     }
                     onClick={() => setShowReferralInput(!showReferralInput)}
                     style={{
-                      color: INK,
+                      color: "var(--ck-ink)",
                       padding: `${rem(13)} ${rem(14)}`,
                       height: "auto",
                       borderRadius: 0,
@@ -483,6 +484,7 @@ function CheckoutContent() {
 
                 {showReferralInput && !referralCode && (
                   <Box
+                    className="checkout-referral-expand"
                     style={{
                       padding: `${rem(12)} ${rem(14)}`,
                       borderTop: "1px solid rgba(15, 23, 42, 0.07)",
@@ -517,7 +519,7 @@ function CheckoutContent() {
                         disabled={!referralInput.trim()}
                         onClick={handleApplyReferral}
                         style={{
-                          backgroundColor: INK,
+                          backgroundColor: "var(--ck-ink)",
                           color: "white",
                           borderRadius: rem(8),
                           fontWeight: 600,
@@ -534,10 +536,10 @@ function CheckoutContent() {
               {/* Line items */}
               <Stack gap={rem(9)} mb={rem(12)}>
                 <Group justify="space-between">
-                  <Text size="sm" style={{ color: MUTED }}>
+                  <Text size="sm" style={{ color: "var(--ck-muted)" }}>
                     {plan.name_short} plan
                   </Text>
-                  <Text size="sm" style={{ color: INK, fontWeight: 500 }}>
+                  <Text size="sm" style={{ color: "var(--ck-ink)", fontWeight: 500 }}>
                     {formatIDR(plan.total_price_idr)}
                   </Text>
                 </Group>
@@ -553,10 +555,10 @@ function CheckoutContent() {
                 )}
               </Stack>
 
-              <Divider color="rgba(15, 23, 42, 0.07)" mb={rem(12)} />
+              <Divider className="checkout-divider" color="rgba(15, 23, 42, 0.07)" mb={rem(12)} />
 
               <Group justify="space-between" mb={rem(20)}>
-                <Text fw={700} size="md" style={{ color: INK }}>
+                <Text fw={700} size="md" style={{ color: "var(--ck-ink)" }}>
                   Total
                 </Text>
                 <Text fw={800} size="xl" style={{ color: PRIMARY }}>
@@ -577,7 +579,7 @@ function CheckoutContent() {
                 Pay now
               </LandingActionButton>
 
-              <Text size="xs" ta="center" style={{ color: MUTED, marginBottom: rem(10) }}>
+              <Text size="xs" ta="center" style={{ color: "var(--ck-muted)", marginBottom: rem(10) }}>
                 Not sure yet?
               </Text>
 
@@ -590,10 +592,11 @@ function CheckoutContent() {
                 fullWidth
                 size="sm"
                 leftSection={<IconBrandWhatsapp size={16} />}
+                classNames={{ root: "checkout-outline-btn" }}
                 styles={{
                   root: {
                     borderColor: "rgba(15, 23, 42, 0.16)",
-                    color: INK,
+                    color: "var(--ck-ink)",
                     borderRadius: rem(10),
                     fontWeight: 500,
                   },
@@ -639,10 +642,10 @@ function CheckoutContent() {
               <IconCheck size={12} stroke={2.5} />
               Your plan stays selected
             </Box>
-            <Text className="checkout-heading" fw={800} fz={23} style={{ color: INK, lineHeight: 1.2 }}>
+            <Text className="checkout-heading" fw={800} fz={23} style={{ color: "var(--ck-ink)", lineHeight: 1.2 }}>
               We want to know you more first
             </Text>
-            <Text size="sm" mt={8} style={{ color: MUTED, lineHeight: 1.65 }}>
+            <Text size="sm" mt={8} style={{ color: "var(--ck-muted)", lineHeight: 1.65 }}>
               Create an account to continue with payment. It only takes a minute,
               and your selected plan will be saved automatically.
             </Text>
@@ -660,11 +663,11 @@ function CheckoutContent() {
             Create Account
           </LandingActionButton>
 
-          <Text size="sm" ta="center" style={{ color: MUTED }}>
+          <Text size="sm" ta="center" style={{ color: "var(--ck-muted)" }}>
             Already have an account?{" "}
             <Anchor
               fw={700}
-              style={{ color: INK }}
+              style={{ color: "var(--ck-ink)" }}
               component={Link}
               href={`/login?redirect=${encodeURIComponent(currentUrl)}`}
             >

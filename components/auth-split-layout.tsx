@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Box, Text } from "@mantine/core";
+import { ColorSchemeToggle } from "@/components/color-scheme-toggle";
 import styles from "./auth-split-layout.module.css";
 
 // Resets on a full document load; survives client-side route changes.
@@ -163,6 +164,7 @@ export function AuthSplitLayout({
       {CEREMONIAL_GATE_ENABLED && gateState === "ready" && (
         <GateEntrance onComplete={() => setGateState("skip")} />
       )}
+      <ColorSchemeToggle className={styles.themeToggle} />
     </main>
   );
 }
