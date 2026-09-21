@@ -78,6 +78,8 @@ function ClozeBlank({
   if (!isCurrentBlank) {
     return (
       <span
+        className="saved-answer-highlight"
+        data-state="neutral"
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -112,6 +114,8 @@ function ClozeBlank({
       }}
     >
       <span
+        className="saved-answer-highlight"
+        data-state={isCorrect ? "correct" : selectedKey ? "wrong" : "neutral"}
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -163,7 +167,7 @@ function ParagraphClozeView({
   const segments = parseClozeSegments(text);
 
   return (
-    <div style={{ fontSize: rem(16), lineHeight: 2.2, color: INK }}>
+    <div className="saved-question-copy" style={{ fontSize: rem(16), lineHeight: 2.2, color: INK }}>
       {segments.map((seg, i) =>
         seg.type === "text" ? (
           <span key={i}>{seg.value}</span>
@@ -205,6 +209,7 @@ function SentenceClozeView({
 
   return (
     <div
+      className="saved-question-copy"
       style={{
         display: "flex",
         alignItems: "baseline",
@@ -423,7 +428,7 @@ export default function SavedProblemDetailPage() {
         <Stack align="center" gap="md">
           <IconAlertCircle size={40} color={PRIMARY} stroke={1.5} />
           <Text size="sm" c={INK} fw={600}>{loadError ?? "Saved question not found."}</Text>
-          <Button variant="outline" color="dark" radius="md" onClick={() => router.push("/practice/saved-problems")}>
+          <Button className="dark-bright-secondary" variant="outline" color="dark" radius="md" onClick={() => router.push("/practice/saved-problems")}>
             Back to Saved Problems
           </Button>
         </Stack>
@@ -448,27 +453,27 @@ export default function SavedProblemDetailPage() {
   const correctKey = problem.answer;
 
   return (
-    <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+    <Box className="saved-problem-detail-page" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <Box p={{ base: "md", sm: "xl" }} style={{ flex: 1 }}>
         <Group align="flex-start" gap="xl" wrap="nowrap" style={{ alignItems: "stretch" }}>
           {/* ── Main column ── */}
           <Stack style={{ flex: 1, minWidth: 0 }} gap="md">
-            <Card p="lg" className="no-select">
+            <Card p="lg" className="no-select saved-problem-detail-card">
               {/* Header */}
               <Group justify="space-between" align="center" mb="md" wrap="nowrap">
                 <Group gap={rem(8)} wrap="nowrap" style={{ minWidth: 0 }}>
                   {problem.problem_number != null && (
-                    <Badge size="sm" style={{ backgroundColor: INK, color: "white", fontWeight: 700, borderRadius: rem(999), flexShrink: 0 }}>
+                    <Badge className="saved-detail-pill" data-tone="dark" size="sm" style={{ backgroundColor: INK, color: "white", fontWeight: 700, borderRadius: rem(999), flexShrink: 0 }}>
                       Problem {problem.problem_number}
                     </Badge>
                   )}
                   {problem.part_index != null && problem.part_total != null && (
-                    <Badge size="sm" style={{ backgroundColor: SURFACE, color: MUTED, fontWeight: 600, borderRadius: rem(999), flexShrink: 0 }}>
+                    <Badge className="saved-detail-pill" data-tone="neutral" size="sm" style={{ backgroundColor: SURFACE, color: MUTED, fontWeight: 600, borderRadius: rem(999), flexShrink: 0 }}>
                       {problem.part_index}/{problem.part_total}
                     </Badge>
                   )}
                   {problem.topic_name && (
-                    <Badge size="sm" style={{ backgroundColor: CREAM, color: PRIMARY, fontWeight: 600, borderRadius: rem(999), flexShrink: 0 }}>
+                    <Badge className="saved-detail-pill" data-tone="gold" size="sm" style={{ backgroundColor: CREAM, color: PRIMARY, fontWeight: 600, borderRadius: rem(999), flexShrink: 0 }}>
                       {problem.topic_name}
                     </Badge>
                   )}
@@ -478,6 +483,8 @@ export default function SavedProblemDetailPage() {
                   <LanguageToggle lang={lang} onChange={setLang} />
                   {answered && (
                     <Badge
+                      className="saved-detail-pill"
+                      data-tone={problem.answer_state!.correct ? "correct" : "wrong"}
                       size="sm"
                       style={{
                         backgroundColor: problem.answer_state!.correct ? CORRECT_BG : WRONG_BG,
@@ -489,7 +496,7 @@ export default function SavedProblemDetailPage() {
                       {problem.answer_state!.correct ? "Answered correctly" : "Answered incorrectly"}
                     </Badge>
                   )}
-                  <Badge size="sm" style={{ backgroundColor: diff.bg, color: diff.color, fontWeight: 600, borderRadius: rem(999) }}>
+                  <Badge className="saved-detail-pill" data-tone="difficulty" size="sm" style={{ backgroundColor: diff.bg, color: diff.color, fontWeight: 600, borderRadius: rem(999) }}>
                     {DIFFICULTY_LABEL[problem.difficulty]}
                   </Badge>
                   <Tooltip label="Remove bookmark" withArrow>
@@ -594,7 +601,7 @@ export default function SavedProblemDetailPage() {
           {/* ── Right panel ── */}
           <Box visibleFrom="lg" style={{ width: rem(272), flexShrink: 0 }}>
             <Stack gap="md">
-              <Card p="lg">
+              <Card p="lg" className="saved-problem-detail-card">
                 <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: "0.06em" }} c="dimmed" mb="md">
                   Practice Set
                 </Text>
@@ -657,6 +664,7 @@ export default function SavedProblemDetailPage() {
               </Card>
 
               <Button
+                className="dark-bright-secondary"
                 variant="outline"
                 color="dark"
                 radius="md"

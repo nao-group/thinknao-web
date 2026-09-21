@@ -16,6 +16,7 @@ export function StatCard({ icon: Icon, iconBg, iconColor, label, value }: StatCa
   return (
     <Card
       p="md"
+      className="dark-glass-card profile-stat-card"
       style={{
         display: "flex",
         alignItems: "center",

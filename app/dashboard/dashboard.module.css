@@ -53,6 +53,50 @@
     border-color 220ms ease;
 }
 
+.skeletonCard { border-radius: 18px !important; }
+
+:global(html[data-mantine-color-scheme="dark"]) .practiceCard,
+:global(html[data-mantine-color-scheme="dark"]) .progressCard,
+:global(html[data-mantine-color-scheme="dark"]) .activityCard,
+:global(html[data-mantine-color-scheme="dark"]) .skeletonCard {
+  color: #eef3f4;
+  border: 1.5px solid var(--app-glass-card-border) !important;
+  background: var(--app-glass-card-bg) !important;
+  box-shadow: var(--app-glass-card-shadow);
+  backdrop-filter: blur(18px) saturate(1.08);
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .skeletonCard :global(.mantine-Skeleton-root)::before,
+:global(html[data-mantine-color-scheme="dark"]) .dashboardSkeleton::before {
+  background: #173b48 !important;
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .skeletonCard :global(.mantine-Skeleton-root)::after,
+:global(html[data-mantine-color-scheme="dark"]) .dashboardSkeleton::after {
+  background: #2b5663 !important;
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .sectionTitle,
+:global(html[data-mantine-color-scheme="dark"]) .cardTitle {
+  color: #f4f7f8 !important;
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .page {
+  color: #eef3f4;
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .practiceCard :global(.mantine-Text-root[data-dimmed]),
+:global(html[data-mantine-color-scheme="dark"]) .progressCard :global(.mantine-Text-root[data-dimmed]),
+:global(html[data-mantine-color-scheme="dark"]) .activityCard :global(.mantine-Text-root[data-dimmed]) {
+  color: #a9b8be !important;
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .viewAll:hover,
+:global(html[data-mantine-color-scheme="dark"]) .viewAll:focus-visible {
+  color: #f4d778;
+  background: rgba(212, 160, 23, 0.12);
+}
+
 .practiceCard:hover,
 .progressCard:hover {
   border-color: rgba(212, 160, 23, 0.24);
@@ -71,7 +115,7 @@
   border-radius: 18px;
   background-image:
     radial-gradient(circle at 100% 0%, rgba(212, 160, 23, 0.2), transparent 45%),
-    linear-gradient(145deg, #0f172a, #172033);
+    linear-gradient(145deg, #173d48, #244f58);
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14);
 }
 
@@ -102,9 +146,10 @@
 }
 
 .rightRail {
-  position: sticky;
-  top: 104px;
+  position: static;
   align-self: flex-start;
+  /* Align the first rail card with the announcement banner rather than its heading. */
+  padding-top: 37px;
 }
 
 @media (max-width: 900px) {

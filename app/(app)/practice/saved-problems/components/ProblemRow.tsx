@@ -42,7 +42,7 @@ export function ProblemRow({
 
   return (
     <Box
-      className="hover-zoom"
+      className="hover-zoom saved-problem-row"
       onClick={() => onView(problem.question_id)}
       style={{
         display: "flex",

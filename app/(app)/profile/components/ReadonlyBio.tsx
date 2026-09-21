@@ -10,6 +10,7 @@ export function ReadonlyBio({ value }: { value: string }) {
         Bio
       </Text>
       <Box
+        className="profile-readonly-surface"
         px="sm"
         py="xs"
         style={{

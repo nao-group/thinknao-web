@@ -339,7 +339,7 @@ export default function PracticePage() {
           <Stack style={{ flex: 1, minWidth: 0 }} gap="md">
 
             {/* Generate Practice Set */}
-            <Card p="xl" className="warm-surface">
+            <Card p="xl" className="warm-surface practice-surface">
               <Group justify="space-between" align="flex-start" mb={rem(6)}>
                 <Box>
                   <Text className="editorial-section-title" size="lg" c={INK} mb={4}>Generate Practice Set</Text>
@@ -366,12 +366,14 @@ export default function PracticePage() {
             </Card>
 
             {/* My Practice Sets */}
-            <Card p="xl" className="warm-surface">
+            <Card p="xl" className="warm-surface practice-surface">
               <Group justify="space-between" align="center" mb="lg">
                 <Text className="editorial-section-title" size="lg" c={INK}>My Practice Sets</Text>
                 <Group gap="sm" align="center">
                   <Tooltip label="Search practice sets" position="bottom" withArrow>
                     <UnstyledButton
+                      className="glass-icon-button"
+                      data-active={searchQuery ? "true" : undefined}
                       onClick={() => { setSearchInput(searchQuery); setSearchOpen(true); }}
                       aria-label="Search practice sets"
                       style={{
@@ -389,6 +391,8 @@ export default function PracticePage() {
 
                   <Tooltip label="Filter practice sets" position="bottom" withArrow>
                     <UnstyledButton
+                      className="glass-icon-button"
+                      data-active={appliedSubjectCodes.length > 0 ? "true" : undefined}
                       onClick={openFilter}
                       aria-label="Filter practice sets"
                       style={{
@@ -404,10 +408,12 @@ export default function PracticePage() {
                     </UnstyledButton>
                   </Tooltip>
 
-                  <Group gap={0} style={{ borderRadius: rem(999), backgroundColor: SURFACE, padding: rem(4) }}>
+                  <Group className="practice-status-filter" gap={0} style={{ borderRadius: rem(999), backgroundColor: SURFACE, padding: rem(4) }}>
                     {(["in-progress", "completed"] as const).map((tab) => (
                       <UnstyledButton
                         key={tab}
+                        className="practice-status-filter__pill"
+                        data-active={activeTab === tab || undefined}
                         onClick={() => handleTabChange(tab)}
                         style={{
                           padding: `${rem(6)} ${rem(16)}`, borderRadius: rem(999),
@@ -481,10 +487,10 @@ export default function PracticePage() {
                       display: "flex", alignItems: "center", gap: rem(14),
                       padding: `${rem(16)} 0`, borderBottom: "1px solid #F1F5F9",
                     }}>
-                      <Box style={{ width: rem(40), height: rem(40), borderRadius: rem(10), backgroundColor: SURFACE, flexShrink: 0 }} />
+                      <Box className="custom-loading-skeleton" style={{ width: rem(40), height: rem(40), borderRadius: rem(10), backgroundColor: SURFACE, flexShrink: 0 }} />
                       <Stack gap={rem(6)} style={{ flex: 1 }}>
-                        <Box style={{ height: rem(14), width: "40%", backgroundColor: SURFACE, borderRadius: rem(4) }} />
-                        <Box style={{ height: rem(12), width: "25%", backgroundColor: SURFACE, borderRadius: rem(4) }} />
+                        <Box className="custom-loading-skeleton" style={{ height: rem(14), width: "40%", backgroundColor: SURFACE, borderRadius: rem(4) }} />
+                        <Box className="custom-loading-skeleton" style={{ height: rem(12), width: "25%", backgroundColor: SURFACE, borderRadius: rem(4) }} />
                       </Stack>
                     </Box>
                   ))}
@@ -562,7 +568,7 @@ export default function PracticePage() {
 
           {/* ── Right panel ── */}
           <Stack className="practice-insights-sidebar" gap="md">
-            <Box p="xl" style={{ backgroundColor: INK, borderRadius: rem(14) }}>
+            <Box className="practice-saved-problems-card" p="xl" style={{ backgroundColor: INK, borderRadius: rem(14) }}>
               <Group justify="space-between" align="flex-start" mb={rem(12)}>
                 <Box style={{
                   width: rem(40), height: rem(40), borderRadius: rem(10),
@@ -706,10 +712,10 @@ export default function PracticePage() {
         </Stack>
 
         <Group justify="space-between">
-          <Button variant="outline" color="dark" radius="md" onClick={clearFilter}>
+          <Button className="filter-clear-button" variant="outline" color="dark" radius="md" onClick={clearFilter}>
             Clear &amp; Close
           </Button>
-          <Button radius="md" style={{ backgroundColor: INK, color: "white", fontWeight: 600 }} onClick={applyFilter}>
+          <Button className="filter-apply-button" radius="md" style={{ backgroundColor: INK, color: "white", fontWeight: 600 }} onClick={applyFilter}>
             Apply Filter
           </Button>
         </Group>
@@ -793,6 +799,7 @@ export default function PracticePage() {
             }
             radius="lg"
             size="lg"
+            classNames={{ content: "practice-topic-modal", header: "practice-topic-modal__header", body: "practice-topic-modal__body" }}
             overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
             styles={{ body: { maxHeight: "calc(100dvh - 140px)", overflowY: "auto" } }}
           >
@@ -813,7 +820,7 @@ export default function PracticePage() {
             {topicsLoading ? (
               <Box py="md" mb="lg" style={{ display: "flex", gap: rem(8), overflow: "hidden" }}>
                 {Array.from({ length: 4 }, (_, i) => (
-                  <Box key={i} style={{ height: rem(32), width: rem(120), backgroundColor: SURFACE, borderRadius: rem(999) }} />
+                  <Box key={i} className="custom-loading-skeleton" style={{ height: rem(32), width: rem(120), backgroundColor: SURFACE, borderRadius: rem(999) }} />
                 ))}
               </Box>
             ) : topics.length === 0 ? (
@@ -854,6 +861,8 @@ export default function PracticePage() {
                     const locked = isFreeTier && !topic.is_free_tier;
                     return (
                       <UnstyledButton
+                        className="practice-topic-option"
+                        data-selected={selected}
                         key={topic.id}
                         onClick={() => {
                           if (locked) {
@@ -936,7 +945,7 @@ export default function PracticePage() {
             )}
 
             <Group justify="space-between">
-              <Button variant="outline" color="dark" radius="md" onClick={() => setGenerateOpen(false)}>
+              <Button className="dark-bright-secondary" variant="outline" color="dark" radius="md" onClick={() => setGenerateOpen(false)}>
                 Cancel
               </Button>
               <LandingActionButton

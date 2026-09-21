@@ -105,6 +105,7 @@ export function UserProfileDrawer({
       withCloseButton={false}
       overlayProps={{ backgroundOpacity: 0.25, blur: 1 }}
       transitionProps={{ transition: "slide-left", duration: 220 }}
+      classNames={{ content: "leaderboard-profile-drawer", body: "leaderboard-profile-drawer__body" }}
       styles={{
         body: { padding: 0, height: "100%", display: "flex", flexDirection: "column" },
         content: { borderRadius: `${rem(24)} 0 0 ${rem(24)}`, overflow: "hidden", display: "flex", flexDirection: "column", background: "#FFFDF8" },
@@ -246,6 +247,7 @@ export function UserProfileDrawer({
                     Bio
                   </Text>
                   <Box
+                    className="leaderboard-profile-bio"
                     px="sm"
                     py="xs"
                     mb="md"

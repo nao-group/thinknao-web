@@ -10,6 +10,7 @@ export function SubjectBadge({ subject }: { subject: Subject }) {
   return (
     <Group
       className="ui-pill reference-subject-badge"
+      data-subject={subject}
       gap={4}
       wrap="nowrap"
       style={{

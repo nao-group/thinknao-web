@@ -143,7 +143,7 @@ export default function SavedProblemsPage() {
   return (
     <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <Box p={{ base: "md", sm: "xl" }} style={{ flex: 1 }}>
-        <Card p="xl">
+        <Card p="xl" className="dark-glass-card saved-problems-card">
 
           {/* Header row */}
           <Group justify="space-between" align="center" mb="lg">
@@ -162,6 +162,8 @@ export default function SavedProblemsPage() {
               {/* Search icon */}
               <Tooltip label="Search problems" position="bottom" withArrow>
                 <UnstyledButton
+                  className="glass-icon-button"
+                  data-active={searchQuery ? "true" : undefined}
                   onClick={() => { setSearchInput(searchQuery); setSearchOpen(true); }}
                   aria-label="Search saved problems"
                   style={{
@@ -184,6 +186,8 @@ export default function SavedProblemsPage() {
               {/* Filter icon */}
               <Tooltip label="Filter problems" position="bottom" withArrow>
                 <UnstyledButton
+                  className="glass-icon-button"
+                  data-active={activeFilters > 0 ? "true" : undefined}
                   onClick={openFilter}
                   aria-label="Filter saved problems"
                   style={{
@@ -205,6 +209,7 @@ export default function SavedProblemsPage() {
 
               {/* Sort */}
               <Select
+                classNames={{ input: "glass-control" }}
                 value={sortOrder}
                 onChange={(val) => { setSortOrder((val as "newest" | "oldest") ?? "newest"); setPage(1); }}
                 data={[
@@ -278,14 +283,14 @@ export default function SavedProblemsPage() {
           {loading ? (
             <Stack gap={0}>
               {Array.from({ length: 3 }, (_, i) => (
-                <Box key={i} style={{
+                <Box key={i} className="saved-problems-skeleton-row" style={{
                   display: "flex", alignItems: "center", gap: rem(14),
                   padding: `${rem(16)} 0`, borderBottom: "1px solid #F1F5F9",
                 }}>
-                  <Box style={{ width: rem(40), height: rem(40), borderRadius: rem(10), backgroundColor: SURFACE, flexShrink: 0 }} />
+                  <Box className="custom-loading-skeleton" style={{ width: rem(40), height: rem(40), borderRadius: rem(10), backgroundColor: SURFACE, flexShrink: 0 }} />
                   <Stack gap={rem(6)} style={{ flex: 1 }}>
-                    <Box style={{ height: rem(14), width: "60%", backgroundColor: SURFACE, borderRadius: rem(4) }} />
-                    <Box style={{ height: rem(12), width: "25%", backgroundColor: SURFACE, borderRadius: rem(4) }} />
+                    <Box className="custom-loading-skeleton" style={{ height: rem(14), width: "60%", backgroundColor: SURFACE, borderRadius: rem(4) }} />
+                    <Box className="custom-loading-skeleton" style={{ height: rem(12), width: "25%", backgroundColor: SURFACE, borderRadius: rem(4) }} />
                   </Stack>
                 </Box>
               ))}
@@ -357,6 +362,7 @@ export default function SavedProblemsPage() {
         radius="md"
         size="md"
         overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
+        classNames={{ content: "saved-problems-filter-modal" }}
       >
         <Box p="md" style={{ borderBottom: "1px solid #F1F5F9" }}>
           <TextInput
@@ -423,6 +429,7 @@ export default function SavedProblemsPage() {
         radius="md"
         size="md"
         overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
+        classNames={{ content: "saved-problems-filter-modal" }}
       >
         <Text size="sm" c="dimmed" mb="md">Select the criteria to filter by:</Text>
 
@@ -476,10 +483,10 @@ export default function SavedProblemsPage() {
         </Group>
 
         <Group justify="space-between">
-          <Button variant="outline" color="dark" radius="md" onClick={clearFilter}>
+          <Button className="filter-clear-button" variant="outline" color="dark" radius="md" onClick={clearFilter}>
             Clear &amp; Close
           </Button>
-          <Button radius="md" style={{ backgroundColor: INK, color: "white", fontWeight: 600 }} onClick={applyFilter}>
+          <Button className="filter-apply-button" radius="md" style={{ backgroundColor: INK, color: "white", fontWeight: 600 }} onClick={applyFilter}>
             Apply Filter
           </Button>
         </Group>

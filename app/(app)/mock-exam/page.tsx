@@ -221,8 +221,8 @@ export default function MockExamPage() {
             <ExamStructureTable />
 
             {/* Rules */}
-            <Card p="lg">
-              <Text size="sm" fw={700} c={INK} mb="sm">Exam Rules</Text>
+            <Card p="lg" className="dark-adaptive-card exam-rules-card">
+              <Text className="dark-adaptive-title" size="sm" fw={700} c={INK} mb="sm">Exam Rules</Text>
               <Stack gap={8}>
                 {[
                   "Subject and language are chosen once before the exam and cannot be changed.",
@@ -243,7 +243,7 @@ export default function MockExamPage() {
 
           {/* Right: past attempts */}
           <Box visibleFrom="md" style={{ width: rem(300), flexShrink: 0 }}>
-            <Text fw={700} size="sm" c={INK} mb="sm">Recent Attempts</Text>
+            <Text className="mock-exam-recent-title" fw={700} size="sm" c={INK} mb="sm">Recent Attempts</Text>
             <RecentAttempts />
           </Box>
         </Group>

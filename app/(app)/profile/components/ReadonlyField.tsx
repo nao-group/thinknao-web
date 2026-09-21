@@ -15,6 +15,7 @@ export function ReadonlyField({ label, value }: ReadonlyFieldProps) {
         {label}
       </Text>
       <Box
+        className="profile-readonly-surface"
         px="sm"
         py="xs"
         style={{

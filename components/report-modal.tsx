@@ -83,6 +83,13 @@ export function ReportModal({
       radius="md"
       size="sm"
       overlayProps={{ backgroundOpacity: 0.3, blur: 2 }}
+      classNames={{
+        content: "report-problem-modal",
+        header: "report-problem-modal__header",
+        title: "report-problem-modal__title",
+        close: "report-problem-modal__close",
+        body: "report-problem-modal__body",
+      }}
     >
       {done ? (
         <Box py="xl" style={{ textAlign: "center" }}>
@@ -100,6 +107,8 @@ export function ReportModal({
               return (
                 <UnstyledButton
                   key={r}
+                  className="report-problem-option"
+                  data-active={active ? "true" : "false"}
                   onClick={() => setReason(r)}
                   style={{
                     display: "flex",
@@ -113,6 +122,7 @@ export function ReportModal({
                   }}
                 >
                   <Box
+                    className="report-problem-option__radio"
                     style={{
                       width: rem(16),
                       height: rem(16),
@@ -131,6 +141,7 @@ export function ReportModal({
 
           {reason === "Other" && (
             <Textarea
+              className="report-problem-textarea"
               autoFocus
               placeholder="Please describe the issue..."
               value={otherText}
@@ -151,10 +162,11 @@ export function ReportModal({
           )}
 
           <Group justify="space-between">
-            <Button variant="outline" color="dark" radius="md" onClick={handleClose}>
+            <Button className="report-problem-cancel" variant="outline" color="dark" radius="md" onClick={handleClose}>
               Cancel
             </Button>
             <Button
+              className="report-problem-submit"
               radius="md"
               disabled={!canSubmit}
               loading={submitting}

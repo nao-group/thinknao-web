@@ -116,7 +116,7 @@ function ProgressCard({
   const remainingPct = total > 0 ? (remaining / total) * 100 : 100;
 
   return (
-    <Card p="lg">
+    <Card p="lg" className="practice-detail-card">
       <Group justify="space-between" mb={rem(10)}>
         <Text size="sm" fw={700} c={INK}>Progress</Text>
         <Text size="sm" fw={700} c={PRIMARY}>{answered} / {total}</Text>
@@ -212,7 +212,7 @@ function QuestionNavigator({
   }
 
   return (
-    <Card p="lg">
+    <Card p="lg" className="practice-detail-card">
       <Text size="sm" fw={700} c={INK} mb="md">Questions</Text>
       <SimpleGrid cols={4} spacing={rem(8)}>
         {flatQ.map((fq, i) => (
@@ -330,7 +330,7 @@ function SummaryView({
   return (
     <Stack gap="md">
       {/* ── Score header ── */}
-      <Card p="xl">
+      <Card p="xl" className="practice-detail-card">
         <Group justify="space-between" align="flex-start" mb="lg" wrap="nowrap">
           <Box>
             <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.07em" }} mb={4}>
@@ -425,7 +425,7 @@ function SummaryView({
         const isFill = group.type === "DT" || group.type === "XT";
 
         return (
-          <Card key={group.group_id ?? gi} p="lg" className="no-select">
+          <Card key={group.group_id ?? gi} p="lg" className="no-select practice-detail-card">
 
             <Group justify="space-between" align="center" mb="md">
               <Group gap={8}>
@@ -514,12 +514,18 @@ function SummaryView({
                       const textColor = isCorrectOpt ? CORRECT_DARK : isUserWrong ? WRONG_DARK : submitted ? "#94A3B8" : INK;
 
                       return (
-                        <Box key={opt.key} style={{
+                        <Box
+                          key={opt.key}
+                          className="practice-option-row"
+                          data-state={isCorrectOpt ? "correct" : isUserWrong ? "wrong" : "neutral"}
+                          data-selected={opt.key === userKey ? "true" : "false"}
+                          style={{
                           display: "flex", alignItems: "center", gap: rem(10),
                           padding: `${rem(10)} ${rem(14)}`, borderRadius: rem(10),
                           border, backgroundColor: bg,
-                        }}>
-                          <Box style={{
+                          }}
+                        >
+                          <Box className="practice-option-marker" style={{
                             width: rem(28), height: rem(28), borderRadius: "50%", flexShrink: 0,
                             backgroundColor: isCorrectOpt ? CORRECT_GREEN : isUserWrong ? WRONG_RED : SURFACE,
                             display: "flex", alignItems: "center", justifyContent: "center",
@@ -532,16 +538,16 @@ function SummaryView({
                               ? <IconCircleX size={16} color="white" style={{ display: "block" }} />
                               : <Text size="xs" fw={700} style={{ color: "inherit" }}>{opt.key}</Text>}
                           </Box>
-                          <div style={{ flex: 1, color: textColor, fontWeight: 500, fontSize: rem(14) }}>
+                          <div className="practice-option-copy" style={{ flex: 1, color: textColor, fontWeight: 500, fontSize: rem(14) }}>
                             <AlignedText text={opt.text} vocab={q.alignment?.vocab ?? {}} mode={lang} />
                           </div>
                           {isCorrectOpt && (
-                            <Box style={{ padding: `${rem(2)} ${rem(8)}`, borderRadius: rem(999), backgroundColor: "#DCFCE7", flexShrink: 0 }}>
+                            <Box className="practice-option-status" data-state="correct" style={{ padding: `${rem(2)} ${rem(8)}`, borderRadius: rem(999), backgroundColor: "#DCFCE7", flexShrink: 0 }}>
                               <Text size="xs" fw={700} c={CORRECT_DARK}>CORRECT</Text>
                             </Box>
                           )}
                           {isUserWrong && (
-                            <Box style={{ padding: `${rem(2)} ${rem(8)}`, borderRadius: rem(999), backgroundColor: "#FEE2E2", flexShrink: 0 }}>
+                            <Box className="practice-option-status" data-state="wrong" style={{ padding: `${rem(2)} ${rem(8)}`, borderRadius: rem(999), backgroundColor: "#FEE2E2", flexShrink: 0 }}>
                               <Text size="xs" fw={700} c={WRONG_DARK}>YOUR ANSWER</Text>
                             </Box>
                           )}
@@ -682,6 +688,7 @@ function SummaryView({
       {/* ── Prev / Next navigation ── */}
       <Group justify="space-between" align="center">
         <Button
+          className="dark-bright-secondary"
           variant="outline"
           radius="xl"
           leftSection={<IconChevronLeft size={15} stroke={2} />}
@@ -1143,13 +1150,13 @@ export default function PracticeDetailPage() {
   }
 
   return (
-    <Box style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+    <Box className="practice-detail-page" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <Box p={{ base: "md", sm: "xl" }} style={{ flex: 1 }}>
         <Group align="flex-start" gap="xl" wrap="nowrap" style={{ alignItems: "stretch" }}>
           {/* ── Left column ── */}
           <Stack style={{ flex: 1, minWidth: 0 }} gap="md">
             {/* Question Card */}
-            <Card p="lg" className="no-select">
+            <Card p="lg" className="no-select practice-detail-card">
               {/* Header row */}
               <Group justify="space-between" align="center" mb="md" wrap="nowrap">
                 <Group gap={rem(8)} wrap="nowrap" style={{ minWidth: 0 }}>
@@ -1307,6 +1314,7 @@ export default function PracticeDetailPage() {
               return (
             <Group justify="space-between" align="center">
               <Button
+                className="dark-bright-secondary"
                 variant="outline"
                 radius="xl"
                 leftSection={<IconChevronLeft size={15} stroke={2} />}
