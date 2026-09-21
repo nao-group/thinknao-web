@@ -272,7 +272,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <Box className="editorial-page" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+    <Box className="editorial-page profile-page" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <input
         ref={avatarInputRef}
         type="file"
@@ -464,6 +464,7 @@ export default function ProfilePage() {
                   </Group>
                 ) : (
                   <Button
+                    className="profile-gold-action"
                     leftSection={<IconPencil size={13} stroke={1.5} />}
                     size="xs"
                     variant="default"
@@ -604,6 +605,7 @@ export default function ProfilePage() {
                 </SimpleGrid>
                 <Group justify="flex-end">
                   <Button
+                    className="profile-gold-action"
                     size="sm"
                     loading={passwordSaving}
                     onClick={handleChangePassword}
@@ -639,6 +641,7 @@ export default function ProfilePage() {
                   <Skeleton height={36} radius="sm" mb="sm" />
                 ) : (
                   <Box
+                    className="profile-readonly-surface"
                     onClick={() => setCampusPickerOpen(true)}
                     px="sm"
                     py="xs"
@@ -696,7 +699,7 @@ export default function ProfilePage() {
                     </Group>
                   </Stack>
                 ) : (
-                  <Box px="sm" py="xs" style={{ backgroundColor: SURFACE, borderRadius: rem(8) }}>
+                  <Box className="profile-readonly-surface" px="sm" py="xs" style={{ backgroundColor: SURFACE, borderRadius: rem(8) }}>
                     <Text size="sm" c={profile?.target_major ? INK : "dimmed"} fw={profile?.target_major ? 500 : 400}>
                       {profile?.target_major ?? "Not set"}
                     </Text>
@@ -825,7 +828,7 @@ export default function ProfilePage() {
                 const daysColor = daysLeft !== null && daysLeft <= 7 ? "#EF4444" : daysLeft !== null && daysLeft <= 30 ? "#F97316" : PRIMARY;
 
                 return (
-                  <Box p="lg" style={{ backgroundColor: INK, borderRadius: rem(14) }}>
+                  <Box className="profile-subscription-card" p="lg" style={{ backgroundColor: INK, borderRadius: rem(14) }}>
                     <Group justify="space-between" mb="md">
                       <Text fw={700} size="sm" c="white">Subscription</Text>
                       <Badge size="sm" style={{ backgroundColor: PRIMARY, color: "white" }} radius="sm">

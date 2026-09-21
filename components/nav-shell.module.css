@@ -1,7 +1,9 @@
 .shell {
   min-height: 100dvh;
   background-color: #f5f2eb;
-  background-image: url("/images/auth/thinknao-china-landscape.png");
+  background-image:
+    linear-gradient(rgba(245, 242, 235, .42), rgba(245, 242, 235, .42)),
+    url("/images/auth/thinknao-china-landscape.png");
   background-position: center bottom;
   background-repeat: no-repeat;
   background-size: cover;
@@ -25,6 +27,16 @@
 .header button :global(.mantine-Text-root) { color: rgba(238, 248, 249, 0.82) !important; }
 
 .header svg { color: rgba(238, 248, 249, 0.82); }
+
+.lightSchemeLogo { display: block; }
+.darkSchemeLogo { display: none; }
+
+.themeToggle {
+  color: rgba(238, 248, 249, 0.88) !important;
+  background: rgba(211, 237, 241, 0.08) !important;
+}
+
+.themeToggle:hover { background: rgba(211, 237, 241, 0.16) !important; }
 
 .greeting {
   font-family: var(--font-poppins);
@@ -164,7 +176,9 @@
 
 .innerCorner {
   position: fixed;
-  z-index: 1000;
+  /* Keep the decorative corner above the page surface, but below Mantine
+     modal/drawer overlays so it is dimmed with the rest of the workspace. */
+  z-index: 100;
   top: var(--app-shell-header-offset, 80px);
   left: var(--app-shell-navbar-offset, 240px);
   display: block;
@@ -172,6 +186,133 @@
   height: 36px;
   background: radial-gradient(circle at 100% 100%, transparent 0 35px, rgba(7, 38, 51, 0.98) 36px);
   pointer-events: none;
+}
+
+.pageTransition {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  animation: page-fade-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pageTransition > * {
+  animation: page-content-fade-in 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes page-content-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pageTransition,
+  .pageTransition > * {
+    animation: none;
+  }
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .shell {
+  color: #eef3f4;
+  background-color: #071d28;
+  background-image:
+    linear-gradient(rgba(7, 29, 40, .46), rgba(7, 29, 40, .46)),
+    url("/images/auth/thinknao-china-landscape-dark.png");
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .header {
+  border-bottom-color: rgba(92, 72, 34, 0.13);
+  background:
+    linear-gradient(115deg, rgba(255, 249, 235, 0.96), rgba(240, 226, 195, 0.9)),
+    rgba(247, 235, 210, 0.94);
+  box-shadow: 0 10px 34px rgba(0, 11, 18, 0.22), inset 0 -1px rgba(255, 255, 255, 0.5);
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .navbar {
+  border-right-color: rgba(92, 72, 34, 0.12);
+  background:
+    radial-gradient(circle at 12% 10%, rgba(212, 160, 23, 0.12), transparent 34%),
+    linear-gradient(165deg, rgba(255, 249, 235, 0.96), rgba(239, 224, 192, 0.92));
+  box-shadow: 12px 0 34px rgba(0, 11, 18, 0.18), inset -1px 0 rgba(255, 255, 255, 0.38);
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .logoButton {
+  border-right-color: rgba(92, 72, 34, 0.13);
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .lightSchemeLogo { display: none; }
+:global(html[data-mantine-color-scheme="dark"]) .darkSchemeLogo { display: block; }
+
+:global(html[data-mantine-color-scheme="dark"]) .header :global(.mantine-Text-root),
+:global(html[data-mantine-color-scheme="dark"]) .header button :global(.mantine-Text-root) {
+  color: #152238 !important;
+  text-shadow: none;
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .header svg,
+:global(html[data-mantine-color-scheme="dark"]) .themeToggle {
+  color: #152238 !important;
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .themeToggle {
+  background: rgba(21, 34, 56, 0.07) !important;
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .themeToggle:hover {
+  background: rgba(21, 34, 56, 0.13) !important;
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .sectionLabel {
+  color: rgba(21, 34, 56, 0.48) !important;
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .navItem {
+  color: rgba(21, 34, 56, 0.7);
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .navItem:hover,
+:global(html[data-mantine-color-scheme="dark"]) .navItem:focus-visible,
+:global(html[data-mantine-color-scheme="dark"]) .navItem[data-active] {
+  color: #0f172a;
+  background: linear-gradient(90deg, rgba(180, 137, 24, 0.17), rgba(255, 255, 255, 0.24));
+  box-shadow: 0 9px 26px rgba(69, 50, 15, 0.1), inset 0 1px rgba(255, 255, 255, 0.5);
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .profileButton :global(.mantine-Text-root),
+:global(html[data-mantine-color-scheme="dark"]) .collapseButton,
+:global(html[data-mantine-color-scheme="dark"]) .collapseButton :global(.mantine-Text-root) {
+  color: #24324a !important;
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .profileButton:hover,
+:global(html[data-mantine-color-scheme="dark"]) .collapseButton:hover {
+  background: rgba(180, 137, 24, 0.1);
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .sidebarFooter {
+  border-top-color: rgba(92, 72, 34, 0.12);
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .main {
+  color: #eef3f4;
+  background: rgba(4, 22, 31, 0.74);
+  box-shadow: -8px -8px 30px rgba(0, 8, 14, 0.28);
+}
+
+:global(html[data-mantine-color-scheme="dark"]) .innerCorner {
+  background: radial-gradient(circle at 100% 100%, transparent 0 35px, rgba(248, 238, 215, 0.98) 36px);
 }
 
 @media (max-width: 767px) {

@@ -51,7 +51,7 @@ const SUBJECT_META: Record<string, {
   LH: { icon: IconMicroscope,   iconBg: "#ECFDF5", iconColor: EMERALD },
 };
 
-const PROGRESS_COLORS = [INK, INDIGO, PANDA, VIOLET, EMERALD];
+const PROGRESS_COLORS = [PRIMARY, INDIGO, PANDA, VIOLET, EMERALD];
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -76,6 +76,7 @@ function ProblemSetCard({ session, onClick }: { session: Session; onClick: () =>
       onClick={onClick}
     >
       <Box
+        className={styles.subjectIcon}
         style={{
           width: rem(40),
           height: rem(40),
@@ -116,7 +117,7 @@ function ProblemSetCard({ session, onClick }: { session: Session; onClick: () =>
 
 function ProblemSetSkeleton() {
   return (
-    <Card p="lg" style={{ display: "flex", flexDirection: "column", gap: rem(12) }}>
+    <Card p="lg" className={styles.skeletonCard} style={{ display: "flex", flexDirection: "column", gap: rem(12) }}>
       <Skeleton height={40} width={40} radius={10} />
       <Box style={{ flex: 1 }}>
         <Skeleton height={14} width="70%" mb={6} radius="sm" />
@@ -158,6 +159,7 @@ function InProgressItem({
       onClick={onClick}
     >
       <Box
+        className={styles.subjectIcon}
         style={{
           width: rem(40),
           height: rem(40),
@@ -207,7 +209,7 @@ function InProgressItem({
 
 function InProgressSkeleton() {
   return (
-    <Card p="md" style={{ display: "flex", alignItems: "center", gap: rem(16) }}>
+    <Card p="md" className={styles.skeletonCard} style={{ display: "flex", alignItems: "center", gap: rem(16) }}>
       <Skeleton height={40} width={40} radius={10} style={{ flexShrink: 0 }} />
       <Box style={{ flex: 1 }}>
         <Group justify="space-between" mb={6}>
@@ -271,13 +273,13 @@ function LearningActivity() {
           {
             value: stat(activity?.rank, "#"),
             label: "Rank",
-            color: INK,
+            color: "var(--app-text-primary)",
             tip: `XP over the past 12 months${activity ? ` · ${activity.year_xp} XP` : ""}`,
           },
           {
             value: stat(activity?.monthly_rank, "#"),
             label: "Monthly Rank",
-            color: INK,
+            color: "var(--app-text-primary)",
             tip: `XP this month${activity ? ` · ${activity.month_xp} XP` : ""}`,
           },
         ].map(({ value, label, color, tip }) => (
@@ -316,13 +318,13 @@ function LearningActivity() {
                       width: rem(20),
                       height: rem(Math.max(4, (pct / 100) * 64)),
                       borderRadius: rem(4),
-                      backgroundColor: isHovered ? (current ? "#374151" : "#94A3B8") : current ? INK : "#E2E8F0",
+                      backgroundColor: isHovered ? (current ? "#E7BD4F" : "#94A3B8") : current ? PRIMARY : "#64747B",
                       transform: isHovered ? "scaleY(1.12) scaleX(1.08)" : "scaleY(1) scaleX(1)",
                       transformOrigin: "bottom",
                       transition: "transform 150ms ease, background-color 150ms ease",
                     }}
                   />
-                  <Text size="xs" fw={current || isHovered ? 700 : 400} c={current ? INK : isHovered ? "#475569" : "dimmed"}>
+                  <Text size="xs" fw={current || isHovered ? 700 : 400} c={current ? "var(--app-text-primary)" : isHovered ? "#CBD5D9" : "dimmed"}>
                     {day}
                   </Text>
                 </Stack>
@@ -340,7 +342,7 @@ function SubscriptionCard({ subscription }: { subscription: Subscription | null 
   const [renderedAt] = useState(() => Date.now());
 
   if (subscription === undefined) {
-    return <Skeleton height={180} radius="md" />;
+    return <Skeleton className={styles.dashboardSkeleton} height={180} radius="md" />;
   }
 
   if (!subscription) {

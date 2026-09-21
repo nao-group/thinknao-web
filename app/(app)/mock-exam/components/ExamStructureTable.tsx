@@ -9,12 +9,12 @@ import { ALL_SUBJECTS, SUBJECT_CONFIG, SUBJECT_META } from "../data";
 
 export function ExamStructureTable() {
   return (
-    <Card style={{ overflow: "hidden" }}>
+    <Card className="dark-adaptive-card exam-structure-card" style={{ overflow: "hidden" }}>
       <Box px="lg" py="md" style={{ borderBottom: "1px solid #F1F5F9" }}>
-        <Text size="sm" fw={700} c={INK}>CSCA Exam Structure</Text>
+        <Text className="dark-adaptive-title" size="sm" fw={700} c={INK}>CSCA Exam Structure</Text>
       </Box>
       {/* Table header */}
-      <Box px="lg" py="sm" style={{ backgroundColor: SURFACE, display: "grid", gridTemplateColumns: "2fr 1.4fr 1fr 1.2fr 0.6fr", gap: rem(8) }}>
+      <Box className="exam-structure-header" px="lg" py="sm" style={{ backgroundColor: SURFACE, display: "grid", gridTemplateColumns: "2fr 1.4fr 1fr 1.2fr 0.6fr", gap: rem(8) }}>
         {["Subject", "Language", "Duration", "Questions", "Score"].map((h) => (
           <Text key={h} size="xs" fw={700} c="dimmed" tt="uppercase" style={{ letterSpacing: "0.05em" }}>{h}</Text>
         ))}
@@ -25,6 +25,7 @@ export function ExamStructureTable() {
         const Icon = meta.icon;
         return (
           <Box
+            className="exam-structure-row"
             key={subj}
             px="lg"
             py="md"
@@ -40,7 +41,7 @@ export function ExamStructureTable() {
               <Box style={{ width: rem(24), height: rem(24), borderRadius: rem(6), backgroundColor: meta.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Icon size={13} stroke={1.5} color={meta.iconColor} />
               </Box>
-              <Text size="sm" fw={600} c={INK}>{subj}</Text>
+              <Text className="dark-adaptive-title" size="sm" fw={600} c={INK}>{subj}</Text>
             </Group>
             <Text size="sm" c="dimmed">{subCfg.langLabel}</Text>
             <Text size="sm" c="dimmed">{subCfg.duration / 60} min</Text>

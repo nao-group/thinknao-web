@@ -15,7 +15,8 @@ export function RankRow({ entry, index, isMe, onClick }: { entry: LeaderboardEnt
     <Box
       px={{ base: "md", sm: "xl" }}
       py="sm"
-      className="hover-zoom"
+      className="hover-zoom leaderboard-rank-row"
+      data-current-user={isMe || undefined}
       onClick={onClick}
       style={{
         display: "flex",

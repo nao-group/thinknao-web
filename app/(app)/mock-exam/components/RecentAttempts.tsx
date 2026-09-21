@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge, Box, Group, Stack, Text, rem } from "@mantine/core";
+import { Badge, Box, Group, Skeleton, Stack, Text, rem } from "@mantine/core";
 import { CORRECT_GREEN, INK, WRONG_RED } from "@/constants/colors";
 import { SUBJECT_META } from "../data";
 import { fetchRecentExamAttempts, type ExamAttemptSummary } from "../api";
@@ -26,7 +26,7 @@ export function RecentAttempts() {
     return (
       <Stack gap="xs">
         {Array.from({ length: 2 }, (_, i) => (
-          <Box key={i} p="md" style={{ borderRadius: rem(14), backgroundColor: "#F8FAFC", height: rem(84) }} />
+          <Skeleton key={i} className="mock-exam-attempt-skeleton" height={rem(84)} radius={rem(14)} />
         ))}
       </Stack>
     );

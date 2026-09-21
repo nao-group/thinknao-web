@@ -90,7 +90,7 @@ function PassageOption({
       circleStyle = { ...circleStyle, backgroundColor: CORRECT_GREEN, color: "white" };
       textColor = CORRECT_DARK;
       rightBadge = (
-        <Box style={{ marginLeft: "auto", padding: `${rem(2)} ${rem(8)}`, borderRadius: rem(999), backgroundColor: "#DCFCE7", flexShrink: 0 }}>
+        <Box className="practice-option-status" data-state="correct" style={{ marginLeft: "auto", padding: `${rem(2)} ${rem(8)}`, borderRadius: rem(999), backgroundColor: "#DCFCE7", flexShrink: 0 }}>
           <Text size="xs" fw={700} c={CORRECT_DARK}>CORRECT</Text>
         </Box>
       );
@@ -99,7 +99,7 @@ function PassageOption({
       circleStyle = { ...circleStyle, backgroundColor: WRONG_RED, color: "white" };
       textColor = WRONG_DARK;
       rightBadge = (
-        <Box style={{ marginLeft: "auto", padding: `${rem(2)} ${rem(8)}`, borderRadius: rem(999), backgroundColor: "#FEE2E2", flexShrink: 0 }}>
+        <Box className="practice-option-status" data-state="wrong" style={{ marginLeft: "auto", padding: `${rem(2)} ${rem(8)}`, borderRadius: rem(999), backgroundColor: "#FEE2E2", flexShrink: 0 }}>
           <Text size="xs" fw={700} c={WRONG_DARK}>YOUR ANSWER</Text>
         </Box>
       );
@@ -111,8 +111,14 @@ function PassageOption({
   }
 
   return (
-    <Box style={containerStyle} onClick={submitted ? undefined : onClick}>
-      <Box style={circleStyle}>
+    <Box
+      className="practice-option-row"
+      data-state={submitted && resultReady ? (isCorrect ? "correct" : isUserAnswer ? "wrong" : "neutral") : "neutral"}
+      data-selected={selected ? "true" : "false"}
+      style={containerStyle}
+      onClick={submitted ? undefined : onClick}
+    >
+      <Box className="practice-option-marker" style={circleStyle}>
         {submitted && resultReady && isCorrect ? (
           <IconCircleCheck size={18} stroke={2.5} color="white" style={{ display: "block" }} />
         ) : submitted && resultReady && isUserAnswer && !isCorrect ? (
@@ -121,7 +127,7 @@ function PassageOption({
           <Text size="xs" fw={700} style={{ color: "inherit" }}>{optKey}</Text>
         )}
       </Box>
-      <div style={{ flex: 1, color: textColor, fontWeight: 500 }}>
+      <div className="practice-option-copy" style={{ flex: 1, color: textColor, fontWeight: 500 }}>
         <AlignedText text={text} vocab={vocab} mode={mode} />
       </div>
       {rightBadge}
@@ -183,11 +189,11 @@ function PassageExplanationBox({
           {[80, 60, 90].map((w, i) => (
             <Box
               key={i}
+              className="custom-loading-skeleton"
               style={{
                 height: rem(14),
                 width: `${w}%`,
                 borderRadius: rem(6),
-                backgroundColor: "rgba(245,158,11,0.18)",
                 animation: "skeleton-pulse 1.4s ease-in-out infinite",
                 animationDelay: `${i * 0.15}s`,
               }}

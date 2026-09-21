@@ -1,12 +1,13 @@
 "use client";
 
-import { Avatar, Badge, Box, Group, Menu, Text, UnstyledButton, rem } from "@mantine/core";
+import { Avatar, Box, Group, Menu, Text, UnstyledButton, rem } from "@mantine/core";
 import { IconChevronDown, IconLogout, IconUser } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import api from "@/lib/api";
 import { getInitials } from "@/lib/format";
 import { INK } from "@/constants/colors";
+import { ColorSchemeMenuItem } from "@/components/color-scheme-toggle";
 
 export function ProfileMenu() {
   const router = useRouter();
@@ -68,6 +69,7 @@ export function ProfileMenu() {
         >
           Profile
         </Menu.Item>
+        <ColorSchemeMenuItem />
         <Menu.Divider />
         <Menu.Item
           leftSection={<IconLogout size={15} stroke={1.5} />}

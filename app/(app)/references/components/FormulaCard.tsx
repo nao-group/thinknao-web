@@ -3,7 +3,6 @@
 import { Box, Group, Text, rem } from "@mantine/core";
 import { Card } from "@/components/ui/card";
 import { LatexText } from "@/components/latex-text";
-import { MUTED } from "@/constants/colors";
 import type { FormulaEntry } from "../types";
 import { ChineseLabel } from "./ChineseLabel";
 import { SubjectBadge } from "./SubjectBadge";
@@ -14,7 +13,8 @@ export function FormulaCard({ entry, onClick }: { entry: FormulaEntry; onClick: 
   return (
     <Card
       p="md"
-      className="hover-zoom"
+      className="hover-zoom reference-card"
+      data-subject={entry.subject}
       onClick={onClick}
       style={{
         border: "1.5px solid #F1F5F9",
@@ -30,6 +30,7 @@ export function FormulaCard({ entry, onClick }: { entry: FormulaEntry; onClick: 
         <SubjectBadge subject={entry.subject} />
       </Group>
       <Box
+        className="reference-card__accent"
         px="sm"
         py="xs"
         style={{
@@ -42,7 +43,7 @@ export function FormulaCard({ entry, onClick }: { entry: FormulaEntry; onClick: 
           <LatexText>{entry.formula}</LatexText>
         </Text>
       </Box>
-      <Text size="xs" c={MUTED} lh={1.5}>
+      <Text size="xs" c="var(--app-text-muted)" lh={1.5}>
         {entry.description.length > 80 ? entry.description.slice(0, 80) + "…" : entry.description}
       </Text>
     </Card>

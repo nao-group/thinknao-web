@@ -12,10 +12,12 @@ export function ViewToggle({
   onChange: (v: "grid" | "list") => void;
 }) {
   return (
-    <Group gap={0} style={{ border: "1.5px solid #E2E8F0", borderRadius: rem(8), overflow: "hidden" }}>
+    <Group className="reference-view-toggle" gap={0} style={{ border: "1.5px solid #E2E8F0", borderRadius: rem(8), overflow: "hidden" }}>
       {(["grid", "list"] as const).map((v) => (
         <Tooltip key={v} label={v === "grid" ? "Card view" : "List view"} withArrow>
           <UnstyledButton
+            className="reference-view-toggle__button"
+            data-active={view === v || undefined}
             onClick={() => onChange(v)}
             style={{
               width: rem(34),

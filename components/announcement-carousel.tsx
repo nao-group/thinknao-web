@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Badge, Box, Button, Group, Text, Title, UnstyledButton, rem } from "@mantine/core";
 import { IconChevronLeft, IconChevronRight, IconPlayerPlayFilled } from "@tabler/icons-react";
 import { PaginationBtn } from "@/components/ui/pagination-btn";
-import { INK, PRIMARY, INDIGO, SURFACE } from "@/constants/colors";
+import { INK, PRIMARY, INDIGO } from "@/constants/colors";
 
 const SLIDES = [
   {
@@ -76,6 +76,8 @@ export function AnnouncementCarousel() {
             {SLIDES.map((slide, i) => (
               <Box
                 key={i}
+                className="dashboard-announcement-slide"
+                data-slide-index={i}
                 style={{
                   flex: `0 0 ${SLIDE_WIDTH}%`,
                   minHeight: rem(240),
@@ -171,7 +173,7 @@ export function AnnouncementCarousel() {
             bottom: 0,
             width: "22%",
             borderRadius: `0 ${rem(14)} ${rem(14)} 0`,
-            background: `linear-gradient(to right, transparent 0%, ${SURFACE} 100%)`,
+            background: "linear-gradient(to right, transparent 0%, var(--app-carousel-edge) 100%)",
             pointerEvents: "none",
           }}
         />
@@ -186,6 +188,8 @@ export function AnnouncementCarousel() {
         {SLIDES.map((_, i) => (
           <UnstyledButton
             key={i}
+            className="carousel-pagination-number"
+            data-active={i === current || undefined}
             onClick={() => setCurrent(i)}
             style={{
               width: rem(32),
@@ -193,9 +197,9 @@ export function AnnouncementCarousel() {
               borderRadius: rem(8),
               fontSize: rem(13),
               fontWeight: 600,
-              border: `1.5px solid ${i === current ? INK : "#D1D5DB"}`,
-              backgroundColor: i === current ? INK : "white",
-              color: i === current ? "white" : "#6B7280",
+              border: `1.5px solid ${i === current ? INK : "var(--app-control-border)"}`,
+              backgroundColor: i === current ? INK : "var(--app-control-bg)",
+              color: i === current ? "white" : "var(--app-control-text)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

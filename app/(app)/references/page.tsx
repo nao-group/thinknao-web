@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   Box,
   Button,
@@ -22,10 +23,9 @@ import type { WordEntry, FormulaEntry } from "./types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-import { INK, PRIMARY, MUTED } from "@/constants/colors";
+import { INK, MUTED } from "@/constants/colors";
 import { Pagination } from "@/components/ui/pagination";
 
-import { TabBar } from "./components/TabBar";
 import { SubjectChips, type SubjectFilter } from "./components/SubjectChips";
 import { ViewToggle } from "./components/ViewToggle";
 import { WordCard } from "./components/WordCard";
@@ -48,11 +48,14 @@ function normalizeForSearch(s: string): string {
 // ─── Pagination ──────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 10;
+const WORD_SUBJECTS: readonly SubjectFilter[] = ["All", "Mathematics", "Physics", "Chemistry", "Humanities Chinese", "STEM Chinese"];
+const FORMULA_SUBJECTS: readonly SubjectFilter[] = ["All", "Mathematics", "Physics", "Chemistry"];
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ReferencesPage() {
-  const [activeTab, setActiveTab] = useState<"words" | "formulas">("words");
+  const pathname = usePathname();
+  const activeTab: "words" | "formulas" = pathname.endsWith("/formulas") ? "formulas" : "words";
   const [subject, setSubject] = useState<SubjectFilter>("All");
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"grid" | "list">("grid");
@@ -66,11 +69,14 @@ export default function ReferencesPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const visibleSubjects = activeTab === "formulas" ? FORMULA_SUBJECTS : WORD_SUBJECTS;
+
+  useEffect(() => {
+    if (!visibleSubjects.includes(subject)) setSubject("All");
+  }, [activeTab, subject, visibleSubjects]);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setLoadError(false);
     Promise.all([fetchWords(), fetchFormulas()])
       .then(([w, f]) => {
         if (cancelled) return;
@@ -108,9 +114,6 @@ export default function ReferencesPage() {
     [formulas, subject, normalizedSearch]
   );
 
-  // Reset to page 1 whenever filters or tab change
-  useEffect(() => { setPage(1); }, [activeTab, subject, search]);
-
   const totalPages = Math.ceil(
     (activeTab === "words" ? filteredWords.length : filteredFormulas.length) / PAGE_SIZE
   );
@@ -143,10 +146,17 @@ export default function ReferencesPage() {
   }, [activeTab, filteredWords, filteredFormulas]);
 
   const activeCount = activeTab === "words" ? filteredWords.length : filteredFormulas.length;
+  const resultsAnimationKey = `${activeTab}-${subject}-${view}-${page}-${normalizedSearch}`;
 
-  function handleTabChange(tab: "words" | "formulas") {
-    setActiveTab(tab);
-    setSearch("");
+  function handleRetry() {
+    setLoading(true);
+    setLoadError(false);
+    setReloadKey((key) => key + 1);
+  }
+
+  function handleSubjectChange(nextSubject: SubjectFilter) {
+    setSubject(nextSubject);
+    setPage(1);
   }
 
   return (
@@ -155,20 +165,27 @@ export default function ReferencesPage() {
         {/* Page header */}
         <Group justify="space-between" align="flex-start" mb="lg" wrap="nowrap">
           <Box>
-            <Text className="editorial-page-title" mb={4}>References</Text>
-            <Text size="sm" c="dimmed">Study key vocabulary and formulas with flashcards.</Text>
+            <Text className="editorial-page-title" mb={4}>
+              {activeTab === "words" ? "Words" : "Formulas"}
+            </Text>
+            <Text size="sm" c="dimmed">
+              {activeTab === "words"
+                ? "Study key vocabulary with flashcards."
+                : "Study key formulas with flashcards."}
+            </Text>
           </Box>
           <Tooltip
             label={activeCount === 0 ? "No items to study" : `Study ${activeCount} ${activeTab} as flashcards`}
             withArrow
           >
             <Button
+              className="reference-flashcard-button"
               leftSection={<IconCards size={16} stroke={1.5} />}
               radius="md"
               disabled={activeCount === 0}
               onClick={() => setStudyMode(true)}
               style={{
-                backgroundColor: activeCount > 0 ? PRIMARY : undefined,
+                backgroundColor: activeCount > 0 ? INK : undefined,
                 color: "white",
                 fontWeight: 600,
                 flexShrink: 0,
@@ -181,29 +198,26 @@ export default function ReferencesPage() {
 
         {/* Main card */}
         <Box className="warm-surface">
-          {/* Tab bar */}
-          <Box px="lg" pt="md">
-            <TabBar
-              active={activeTab}
-              wordCount={filteredWords.length}
-              formulaCount={filteredFormulas.length}
-              onChange={handleTabChange}
-            />
-          </Box>
-
           {/* Toolbar */}
           <Box px="lg" py="md">
             <Group justify="space-between" wrap="nowrap" gap="sm">
               <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
                 {/* Search */}
                 <TextInput
+                  classNames={{ input: "glass-control" }}
                   placeholder={activeTab === "words" ? "Search terms…" : "Search formulas…"}
                   leftSection={<IconSearch size={14} stroke={1.5} color={MUTED} />}
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
                   rightSection={
                     search ? (
-                      <UnstyledButton onClick={() => setSearch("")}>
+                      <UnstyledButton onClick={() => {
+                        setSearch("");
+                        setPage(1);
+                      }}>
                         <IconX size={13} stroke={2} color={MUTED} />
                       </UnstyledButton>
                     ) : null
@@ -214,7 +228,7 @@ export default function ReferencesPage() {
                 />
                 {/* Subject chips */}
                 <Box visibleFrom="sm">
-                  <SubjectChips value={subject} onChange={setSubject} />
+                  <SubjectChips value={subject} onChange={handleSubjectChange} subjects={visibleSubjects} />
                 </Box>
               </Group>
 
@@ -224,7 +238,7 @@ export default function ReferencesPage() {
 
             {/* Subject chips (mobile) */}
             <Box hiddenFrom="sm" mt="sm">
-              <SubjectChips value={subject} onChange={setSubject} />
+              <SubjectChips value={subject} onChange={handleSubjectChange} subjects={visibleSubjects} />
             </Box>
           </Box>
 
@@ -233,12 +247,14 @@ export default function ReferencesPage() {
             {loading ? (
               <LoadingState />
             ) : loadError ? (
-              <ErrorState onRetry={() => setReloadKey((k) => k + 1)} />
+              <ErrorState onRetry={handleRetry} />
             ) : activeTab === "words" ? (
               filteredWords.length === 0 ? (
                 <EmptyState />
               ) : view === "grid" ? (
                 <Box
+                  key={resultsAnimationKey}
+                  className="reference-results-transition"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
@@ -250,7 +266,7 @@ export default function ReferencesPage() {
                   ))}
                 </Box>
               ) : (
-                <Stack gap={8}>
+                <Stack key={resultsAnimationKey} className="reference-results-transition" gap={8}>
                   {(pageSlice(filteredWords) as typeof filteredWords).map((w) => (
                     <WordRow key={w.id} entry={w} onClick={() => setSelectedWordIdx(filteredWords.findIndex((x) => x.id === w.id))} />
                   ))}
@@ -260,6 +276,8 @@ export default function ReferencesPage() {
               <EmptyState />
             ) : view === "grid" ? (
               <Box
+                key={resultsAnimationKey}
+                className="reference-results-transition"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
@@ -271,7 +289,7 @@ export default function ReferencesPage() {
                 ))}
               </Box>
             ) : (
-              <Stack gap={8}>
+              <Stack key={resultsAnimationKey} className="reference-results-transition" gap={8}>
                 {(pageSlice(filteredFormulas) as typeof filteredFormulas).map((f) => (
                   <FormulaRow key={f.id} entry={f} onClick={() => setSelectedFormulaIdx(filteredFormulas.findIndex((x) => x.id === f.id))} />
                 ))}

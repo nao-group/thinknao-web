@@ -44,6 +44,7 @@ export function Pagination({
   return (
     <Group justify="center" gap={4} mt="lg">
       <UnstyledButton
+        className="reference-pagination-control"
         onClick={() => onChange(page - 1)}
         disabled={page === 1}
         aria-label="Previous"
@@ -60,6 +61,8 @@ export function Pagination({
         ) : (
           <UnstyledButton
             key={p}
+            className="reference-pagination-control"
+            data-active={p === page ? "true" : undefined}
             onClick={() => onChange(p)}
             style={{
               ...btnBase,
@@ -77,6 +80,7 @@ export function Pagination({
       )}
 
       <UnstyledButton
+        className="reference-pagination-control"
         onClick={() => onChange(page + 1)}
         disabled={page === totalPages}
         aria-label="Next"

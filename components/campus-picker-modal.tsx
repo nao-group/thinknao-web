@@ -28,6 +28,8 @@ function CampusRow({
   const [hovered, setHovered] = useState(false);
   return (
     <UnstyledButton
+      className="campus-picker-row"
+      data-active={active}
       onClick={onSelect}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -112,6 +114,7 @@ export function CampusPickerModal({
       yOffset="10vh"
       overlayProps={{ backgroundOpacity: 0.45, blur: 6 }}
       transitionProps={{ transition: "slide-down", duration: 200 }}
+      classNames={{ content: "campus-picker-modal" }}
       styles={{ body: { padding: 0 }, content: { overflow: "hidden" } }}
     >
       <div

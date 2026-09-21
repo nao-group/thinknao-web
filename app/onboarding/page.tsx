@@ -85,7 +85,15 @@ function PageBackdrop() {
         fill
         preload
         sizes="100vw"
-        className={styles.landscape}
+        className={`${styles.landscape} ${styles.lightAsset}`}
+      />
+      <Image
+        src="/images/auth/thinknao-china-landscape-dark.png"
+        alt=""
+        fill
+        preload
+        sizes="100vw"
+        className={`${styles.landscape} ${styles.darkAsset}`}
       />
       <div className={styles.wash} />
       <AmbientSky />
@@ -238,7 +246,9 @@ function OnboardingContent() {
       <>
       <header className={styles.header}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/logo/think_nao_dark.png" alt="ThinkNAO" className={styles.logo} />
+        <img src="/images/logo/think_nao_dark.png" alt="ThinkNAO" className={`${styles.logo} ${styles.lightAsset}`} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/logo/think_nao_light.png" alt="" aria-hidden="true" className={`${styles.logo} ${styles.darkAsset}`} />
         <div className={styles.progressWrap} aria-label={`Onboarding ${PROGRESS[step]}% complete`}>
           <Group justify="space-between" mb={7} gap="md">
             <Text size="xs" fw={700} c={INK}>{step === 0 ? "Registration complete" : `Step ${step} of 4`}</Text>

@@ -19,6 +19,7 @@ import { useDisclosure } from "@mantine/hooks";
 import {
   IconAlignJustified,
   IconBook,
+  IconCalculator,
   IconChartBar,
   IconChartHistogram,
   IconChevronLeft,
@@ -29,6 +30,7 @@ import {
 } from "@tabler/icons-react";
 import { ProfileMenu } from "@/components/profile-menu";
 import { SubscriptionExpiryBanner } from "@/components/subscription-expiry-banner";
+import { ColorSchemeToggle } from "@/components/color-scheme-toggle";
 import { useAuthStore } from "@/store/auth";
 import { useNavStore } from "@/store/nav";
 import { INK } from "@/constants/colors";
@@ -47,7 +49,8 @@ const NAV_SECTIONS = [
   {
     label: "LEARNING",
     items: [
-      { label: "References", icon: IconBook, href: "/references" },
+      { label: "Words", icon: IconBook, href: "/references/words" },
+      { label: "Formulas", icon: IconCalculator, href: "/references/formulas" },
       { label: "Practice", icon: IconPencil, href: "/practice" },
       { label: "Mock Exam", icon: IconAlignJustified, href: "/mock-exam" },
       { label: "Learning Stats", icon: IconChartHistogram, href: "/learning-stats" },
@@ -63,23 +66,29 @@ const NAV_SECTIONS = [
 ];
 
 function LogoMark({ collapsed }: { collapsed?: boolean }) {
-  if (collapsed) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src="/images/logo/nao_icon_light.png"
-        alt="ThinkNAO"
-        style={{ width: rem(36), height: rem(36), objectFit: "contain", flexShrink: 0 }}
-      />
-    );
-  }
+  const source = collapsed ? "nao_icon" : "think_nao";
+  const size = collapsed
+    ? { width: rem(36), height: rem(36) }
+    : { width: rem(168), height: "auto", maxHeight: rem(46) };
+
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src="/images/logo/think_nao_light.png"
-      alt="ThinkNAO"
-      style={{ width: rem(168), height: "auto", maxHeight: rem(46), objectFit: "contain", flexShrink: 0 }}
-    />
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        className={styles.lightSchemeLogo}
+        src={`/images/logo/${source}_light.png`}
+        alt="ThinkNAO"
+        style={{ ...size, objectFit: "contain", flexShrink: 0 }}
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        className={styles.darkSchemeLogo}
+        src={`/images/logo/${source}_dark.png`}
+        alt=""
+        aria-hidden="true"
+        style={{ ...size, objectFit: "contain", flexShrink: 0 }}
+      />
+    </>
   );
 }
 
@@ -125,6 +134,8 @@ const GREETING_PREFIX: Record<string, string> = {
   "/dashboard":           "Welcome back",
   "/practice":            "Let's practice",
   "/references":          "Study time",
+  "/references/words":    "Study time",
+  "/references/formulas": "Study time",
   "/mock-exam":           "Test yourself",
   "/learning-stats":      "See your progress",
   "/leaderboard":         "How do you rank",
@@ -145,6 +156,8 @@ const PAGE_LABELS: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/practice": "Practice",
   "/references": "References",
+  "/references/words": "Words",
+  "/references/formulas": "Formulas",
   "/mock-exam": "Mock Exam",
   "/learning-stats": "Learning Stats",
   "/leaderboard": "Leaderboard",
@@ -302,6 +315,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
             </Box>
 
             <Group gap="sm" align="center" style={{ marginLeft: "auto" }}>
+              <ColorSchemeToggle className={styles.themeToggle} />
               <ProfileMenu />
             </Group>
           </Group>
@@ -440,7 +454,9 @@ export function NavShell({ children }: { children: React.ReactNode }) {
             onDismiss={() => setExpiryBannerDismissed(true)}
           />
         )}
-        {children}
+        <Box key={pathname} className={styles.pageTransition}>
+          {children}
+        </Box>
       </AppShell.Main>
       <span className={styles.innerCorner} aria-hidden="true" />
     </AppShell>

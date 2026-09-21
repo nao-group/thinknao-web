@@ -11,15 +11,16 @@ export function PaginationBtn({
 }) {
   return (
     <UnstyledButton
+      className="pagination-control"
       onClick={onClick}
       aria-label={ariaLabel}
       style={{
         width: rem(32),
         height: rem(32),
         borderRadius: rem(8),
-        border: "1.5px solid #D1D5DB",
-        backgroundColor: "white",
-        color: "#6B7280",
+        border: "1.5px solid var(--app-control-border)",
+        backgroundColor: "var(--app-control-bg)",
+        color: "var(--app-control-text)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Box, Group, Text, UnstyledButton, rem } from "@mantine/core";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Box, Group, Portal, Text, UnstyledButton, rem } from "@mantine/core";
 import { IconChevronLeft, IconChevronRight, IconX } from "@tabler/icons-react";
 import { PRIMARY } from "@/constants/colors";
 
@@ -37,7 +37,7 @@ export function GalleryShell({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [cw, setCw] = useState(680);
-  const [slideX, setSlideX] = useState(0);
+  const [slideX, setSlideX] = useState(-456);
   const [noTrans, setNoTrans] = useState(false);
   const [busy, setBusy] = useState(false);
   const [navDir, setNavDir] = useState<"prev" | "next" | null>(null);
@@ -50,13 +50,44 @@ export function GalleryShell({
   const step = cardW + G_GAP;
   const baseX = -step + peek; // centers slot-1 (current) in the container
 
-  // Measure once when gallery opens
-  useEffect(() => {
+  // Keep the active card centered from the first painted frame and after any
+  // viewport/sidebar resize. This matters when the gallery is opened from a
+  // full-width list row rather than the grid view.
+  useLayoutEffect(() => {
     if (!opened || !containerRef.current) return;
-    const w = containerRef.current.clientWidth;
-    setCw(w);
-    const p = Math.min(80, Math.floor(w * 0.12));
-    setSlideX(-(w - 2 * p + G_GAP) + p);
+    const container = containerRef.current;
+    const syncPosition = () => {
+      const w = container.clientWidth;
+      const p = Math.min(80, Math.floor(w * 0.12));
+      setCw(w);
+      if (!pendingDir.current) setSlideX(-(w - 2 * p + G_GAP) + p);
+    };
+    syncPosition();
+    const observer = new ResizeObserver(syncPosition);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [opened]);
+
+  // The gallery is a viewport-level dialog. Lock the document rather than only
+  // hiding overflow on the overlay so wheel/touch input cannot move the list
+  // behind it. Restoring the exact previous values keeps other dialogs safe.
+  useLayoutEffect(() => {
+    if (!opened) return;
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyOverscroll = body.style.overscrollBehavior;
+
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+
+    return () => {
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+      body.style.overscrollBehavior = previousBodyOverscroll;
+    };
   }, [opened]);
 
   function navigate(dir: "prev" | "next") {
@@ -144,7 +175,7 @@ export function GalleryShell({
         backgroundColor: "white",
         borderRadius: rem(16),
         padding: rem(24),
-        maxHeight: "78vh",
+        maxHeight: "calc(100dvh - 112px)",
         overflowY: isActive ? "auto" : "hidden",
         boxShadow: isActive ? "0 32px 80px rgba(0,0,0,0.55)" : "none",
       }),
@@ -160,11 +191,16 @@ export function GalleryShell({
   }
 
   return (
-    <Box
-      style={{ position: "fixed", inset: 0, zIndex: 300, backgroundColor: "rgba(15,23,42,0.88)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-    >
+    <Portal reuseTargetNode>
+      <Box
+        role="dialog"
+        aria-modal="true"
+        className="reference-gallery-overlay"
+        style={{ position: "fixed", inset: 0, width: "100vw", height: "100dvh", zIndex: 300, backgroundColor: "rgba(15,23,42,0.88)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", overscrollBehavior: "none" }}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onWheel={(event) => event.stopPropagation()}
+      >
       {/* Backdrop — click outside card to close */}
       <Box style={{ position: "absolute", inset: 0 }} onClick={onClose} />
 
@@ -244,6 +280,7 @@ export function GalleryShell({
           <IconChevronRight size={20} stroke={2} color="white" />
         </Box>
       )}
-    </Box>
+      </Box>
+    </Portal>
   );
 }

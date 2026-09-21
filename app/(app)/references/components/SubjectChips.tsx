@@ -35,13 +35,15 @@ function SubjectChip({
 export function SubjectChips({
   value,
   onChange,
+  subjects = SUBJECTS,
 }: {
   value: SubjectFilter;
   onChange: (s: SubjectFilter) => void;
+  subjects?: readonly SubjectFilter[];
 }) {
   return (
     <Group gap={6} wrap="nowrap">
-      {SUBJECTS.map((s) => (
+      {subjects.map((s) => (
         <SubjectChip key={s} label={s} active={value === s} onClick={() => onChange(s)} />
       ))}
     </Group>

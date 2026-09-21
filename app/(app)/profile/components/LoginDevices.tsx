@@ -181,6 +181,8 @@ export function LoginDevices() {
               const DeviceIcon = isMobileDevice(device.device) ? IconDeviceMobile : IconDeviceLaptop;
               return (
                 <Group
+                  className="login-device-card"
+                  data-current={device.is_current}
                   key={device.session_id}
                   justify="space-between"
                   wrap="nowrap"
@@ -238,6 +240,13 @@ export function LoginDevices() {
         centered
         radius="lg"
         title={selected?.is_current ? "Log out this device?" : "Forget this device?"}
+        classNames={{
+          content: "profile-information-modal",
+          header: "profile-information-modal__header",
+          title: "profile-information-modal__title",
+          close: "profile-information-modal__close",
+          body: "profile-information-modal__body",
+        }}
         styles={{ title: { fontWeight: 700, color: INK } }}
       >
         <Box
@@ -266,7 +275,7 @@ export function LoginDevices() {
             : `${selected ? deviceLabel(selected.device) : "This device"} will be signed out and must log in again to access ThinkNAO.`}
         </Text>
         <Group justify="flex-end" mt="xl">
-          <Button variant="default" onClick={() => setSelected(null)} disabled={revoking}>Cancel</Button>
+          <Button className="profile-information-modal__cancel" variant="default" onClick={() => setSelected(null)} disabled={revoking}>Cancel</Button>
           <Button color="red" loading={revoking} leftSection={<IconLogout size={16} />} onClick={() => void confirmRevoke()}>
             {selected?.is_current ? "Log out" : "Forget device"}
           </Button>

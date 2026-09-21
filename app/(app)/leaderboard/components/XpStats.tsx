@@ -16,8 +16,10 @@ export function XpStats({ yearlyXp, monthlyXp }: { yearlyXp: number; monthlyXp: 
   return (
     <Box>
       {/* Summary row */}
-      <Group gap={10} mb="md">
+      <Group className="leaderboard-profile-stats" gap={10} mb="md">
         <Box
+          className="leaderboard-profile-stat"
+          data-tone="gold"
           px="sm"
           py="xs"
           style={{
@@ -34,6 +36,8 @@ export function XpStats({ yearlyXp, monthlyXp }: { yearlyXp: number; monthlyXp: 
           <Text size="xs" c={PRIMARY} style={{ opacity: 0.7 }}>XP</Text>
         </Box>
         <Box
+          className="leaderboard-profile-stat"
+          data-tone="neutral"
           px="sm"
           py="xs"
           style={{
@@ -64,6 +68,8 @@ export function XpStats({ yearlyXp, monthlyXp }: { yearlyXp: number; monthlyXp: 
                 style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: rem(3), cursor: "default" }}
               >
                 <Box
+                  className="leaderboard-profile-chart-bar"
+                  data-current={isLast ? "true" : undefined}
                   style={{
                     width: "100%",
                     height: `${(m.xp / maxXp) * 40}px`,

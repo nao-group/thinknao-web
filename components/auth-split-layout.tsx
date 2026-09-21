@@ -25,9 +25,12 @@ const COPY = {
 
 function ThinkNaoLogo() {
   return (
-    // Existing brand asset; keep its original proportions.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src="/images/logo/think_nao_dark.png" alt="ThinkNAO" className={styles.logo} />
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/images/logo/think_nao_dark.png" alt="ThinkNAO" className={`${styles.logo} ${styles.lightAsset}`} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/images/logo/think_nao_light.png" alt="" aria-hidden="true" className={`${styles.logo} ${styles.darkAsset}`} />
+    </>
   );
 }
 
@@ -125,7 +128,15 @@ export function AuthSplitLayout({
           fill
           preload
           sizes="100vw"
-          className={styles.landscape}
+          className={`${styles.landscape} ${styles.lightAsset}`}
+        />
+        <Image
+          src="/images/auth/thinknao-china-landscape-dark.png"
+          alt=""
+          fill
+          preload
+          sizes="100vw"
+          className={`${styles.landscape} ${styles.darkAsset}`}
         />
         <div className={styles.wash} />
         <AmbientSky />
