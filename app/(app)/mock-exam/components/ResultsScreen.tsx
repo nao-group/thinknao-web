@@ -3,7 +3,7 @@
 import { Badge, Box, Button, Group, SimpleGrid, Stack, Text, rem } from "@mantine/core";
 import { IconClock, IconTrophy, IconX } from "@tabler/icons-react";
 import { CORRECT_GREEN, INK, MUTED, WRONG_RED } from "@/constants/colors";
-import { formatDuration } from "@/lib/format";
+import { formatDuration, formatXp } from "@/lib/format";
 import { SUBJECT_META } from "../data";
 import type { ExamResult, MockQ } from "../types";
 
@@ -76,7 +76,7 @@ export function ResultsScreen({
           </Text>
           {typeof result.xpAwarded === "number" && result.xpAwarded > 0 && (
             <Badge size="lg" radius="xl" variant="light" color="yellow" style={{ fontWeight: 700 }}>
-              +{result.xpAwarded} XP
+              +{formatXp(result.xpAwarded)} XP
             </Badge>
           )}
         </Stack>

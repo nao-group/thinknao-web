@@ -3,6 +3,7 @@
 import { Box, Text, rem } from "@mantine/core";
 import { IconStarFilled } from "@tabler/icons-react";
 import { PRIMARY } from "@/constants/colors";
+import { formatXp } from "@/lib/format";
 
 // Fixed angles (not random) so this stays deterministic and SSR-safe.
 const BURST_STARS = [
@@ -48,7 +49,7 @@ export function XpGainBadge({ xp }: { xp: number }) {
           position: "relative",
         }}
       >
-        <Text size="xs" fw={700} c={PRIMARY}>+{xp} XP</Text>
+        <Text size="xs" fw={700} c={PRIMARY}>+{formatXp(xp)} XP</Text>
       </Box>
 
       <style>{`

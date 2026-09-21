@@ -841,11 +841,17 @@ export default function PracticeDetailPage() {
 
   const activeGroup: QuestionGroup | null = questionGroups[currentQ] ?? null;
   const activeType = activeGroup?.type ?? "JF";
+  const currentQuestionId = activeGroup?.questions[currentSubQ]?.id;
 
-  // Clear the per-question EXP pill when navigating away from the question it belongs to
-  useEffect(() => {
-    setLastXpGained(null);
-  }, [currentQ, currentSubQ]);
+  // EXP pill for whatever's in view — read from submitResults (not a one-off
+  // "just submitted" flag) so it survives navigating to another question and
+  // coming back, or leaving the session and reopening it. DT/XT are scored as
+  // one exercise, so their total is summed across the whole group; everything
+  // else is scored per sub-question.
+  const isBlankGroupType = activeType === "DT" || activeType === "XT";
+  const persistedXp = isBlankGroupType
+    ? (activeGroup?.questions ?? []).reduce((sum, q) => sum + (submitResults[q.id]?.xp_awarded ?? 0), 0)
+    : (currentQuestionId ? submitResults[currentQuestionId]?.xp_awarded ?? 0 : 0);
 
   function triggerXpGain(xp: number | null | undefined) {
     if (!xp) return;
@@ -1176,8 +1182,8 @@ export default function PracticeDetailPage() {
                   <XpCelebrationOverlay key={xpGainId} xp={lastXpGained} />
                 )}
                 <Group gap={rem(6)} wrap="nowrap" style={{ flexShrink: 0 }}>
-                  {lastXpGained != null && lastXpGained > 0 && (
-                    <XpGainBadge key={xpGainId} xp={lastXpGained} />
+                  {persistedXp > 0 && (
+                    <XpGainBadge key={`${activeGroup?.group_id ?? currentQ}-${currentSubQ}`} xp={persistedXp} />
                   )}
                   {!zhOnly && <LanguageToggle lang={lang} onChange={setLang} />}
                   {(() => {

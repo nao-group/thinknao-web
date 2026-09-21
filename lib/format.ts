@@ -17,3 +17,9 @@ export function formatDuration(seconds: number): string {
   const s = seconds % 60;
   return `${m}m ${s.toString().padStart(2, "0")}s`;
 }
+
+// XP values carry up to 4 decimals server-side (and can pick up float dust when
+// summed client-side) — always display at most 1, and drop it entirely for whole numbers.
+export function formatXp(xp: number): string {
+  return xp.toLocaleString(undefined, { maximumFractionDigits: 1 });
+}

@@ -23,7 +23,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { INK, SURFACE, PRIMARY, CREAM, MUTED } from "@/constants/colors";
-import { getInitials } from "@/lib/format";
+import { getInitials, formatXp } from "@/lib/format";
 import { extractSocialHandle, buildSocialUrl } from "@/app/(app)/profile/components/SocialLink";
 import { avatarStyle, RANK_MEDAL } from "./avatarStyle";
 import { XpStats } from "./XpStats";
@@ -213,7 +213,7 @@ export function UserProfileDrawer({
                   radius="sm"
                   style={{ backgroundColor: CREAM, color: PRIMARY, fontWeight: 700, flexShrink: 0 }}
                 >
-                  {entry.yearly_xp.toLocaleString()} XP
+                  {formatXp(entry.yearly_xp)} XP
                 </Badge>
               </Group>
 

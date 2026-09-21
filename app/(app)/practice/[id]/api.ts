@@ -27,7 +27,7 @@ interface RawQuestion {
   image_url: string | null;
   content: { zh?: RawContent; en?: RawContent };
   /** Populated on /questions and /review endpoints */
-  answer_state?: { selected_key: string; correct: boolean } | null;
+  answer_state?: { selected_key: string; correct: boolean; xp_awarded?: number } | null;
   /** On /review, and on /questions once the question has been answered. */
   correct_answer?: string;
   explanation?: string;      // Chinese
@@ -82,6 +82,7 @@ interface GroupSubmitResponse {
     correct: boolean;
     correct_answer: string;
     user_answer: string;
+    xp_awarded?: number;
   }[];
   explanation?: string;
   explanation_en?: string;
@@ -185,7 +186,7 @@ function buildRestoredState(rawGroups: RawGroup[]): RestoredState {
     group.questions.forEach((q) => {
       if (!q.answer_state) return;
 
-      const { selected_key, correct } = q.answer_state;
+      const { selected_key, correct, xp_awarded = 0 } = q.answer_state;
 
       if (isGroupType) {
         // DT/XT: answers stored in fillAnswers — handled separately by caller
@@ -202,7 +203,7 @@ function buildRestoredState(rawGroups: RawGroup[]): RestoredState {
           correct,
           correct_answer: q.correct_answer ?? (correct ? selected_key : ""),
           difficulty: q.difficulty,
-          xp_awarded: 0,
+          xp_awarded,
           blank_results: [blankResult],
         };
       } else {
@@ -214,7 +215,7 @@ function buildRestoredState(rawGroups: RawGroup[]): RestoredState {
           correct,
           correct_answer: q.correct_answer ?? (correct ? selected_key : ""),
           difficulty: q.difficulty,
-          xp_awarded: 0,
+          xp_awarded,
         };
       }
     });
@@ -330,9 +331,9 @@ export async function submitQuestionGroup(
       user_answer: r.user_answer,
     });
     resultMap[r.question_id].correct = r.correct;
+    resultMap[r.question_id].xp_awarded = (resultMap[r.question_id].xp_awarded ?? 0) + (r.xp_awarded ?? 0);
   }
 
-  // xp_awarded is a group-level total, not per-question — surfaced once below.
   for (const qid of Object.keys(resultMap)) {
     const blankResults = resultMap[qid].blank_results ?? [];
     resultMap[qid].correct = blankResults.every((b) => b.correct);

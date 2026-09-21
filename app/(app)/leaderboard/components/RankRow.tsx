@@ -3,7 +3,7 @@
 import { Avatar, Badge, Box, Group, Text, rem } from "@mantine/core";
 import { IconMapPin, IconSchool } from "@tabler/icons-react";
 import { INK, SURFACE, PRIMARY, CREAM, MUTED } from "@/constants/colors";
-import { getInitials } from "@/lib/format";
+import { getInitials, formatXp } from "@/lib/format";
 import { avatarStyle } from "./avatarStyle";
 import type { LeaderboardEntry } from "../types";
 
@@ -91,7 +91,7 @@ export function RankRow({ entry, index, isMe, onClick }: { entry: LeaderboardEnt
           flexShrink: 0,
         }}
       >
-        {entry.yearly_xp.toLocaleString()} XP
+        {formatXp(entry.yearly_xp)} XP
       </Badge>
     </Box>
   );
