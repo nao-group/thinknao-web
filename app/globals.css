@@ -1236,6 +1236,35 @@ html[data-mantine-color-scheme="dark"] .payment-failed-info {
   background: linear-gradient(145deg, rgba(129,60,40,.22), rgba(129,60,40,.12));
 }
 
+/* ── Dark/light mode switch — smooth cross-fade via View Transitions API ──── */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: .45s;
+  animation-timing-function: ease;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) { animation-name: theme-fade-out; }
+::view-transition-new(root) { animation-name: theme-fade-in; }
+
+@keyframes theme-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes theme-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
 @keyframes tabFadeIn {
   from {
     opacity: 0;

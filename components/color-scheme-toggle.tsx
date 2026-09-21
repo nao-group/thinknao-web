@@ -13,10 +13,19 @@ function useThemeToggle() {
   // scheme is reflected after mount, avoiding a hydration mismatch.
   const isDark = mounted && colorScheme === "dark";
 
+  function toggle() {
+    const next = isDark ? "light" : "dark";
+    if (typeof document !== "undefined" && "startViewTransition" in document) {
+      document.startViewTransition(() => setColorScheme(next));
+    } else {
+      setColorScheme(next);
+    }
+  }
+
   return {
     isDark,
     label: isDark ? "Switch to light mode" : "Switch to dark mode",
-    toggle: () => setColorScheme(isDark ? "light" : "dark"),
+    toggle,
   };
 }
 
