@@ -31,7 +31,7 @@ import { ProfileMenu } from "@/components/profile-menu";
 import { SubscriptionExpiryBanner } from "@/components/subscription-expiry-banner";
 import { useAuthStore } from "@/store/auth";
 import { useNavStore } from "@/store/nav";
-import { INK, MUTED } from "@/constants/colors";
+import { INK } from "@/constants/colors";
 import styles from "./nav-shell.module.css";
 import { fetchSubscription, type Subscription } from "@/lib/payments";
 
@@ -67,7 +67,7 @@ function LogoMark({ collapsed }: { collapsed?: boolean }) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src="/images/logo/nao_icon_dark.png"
+        src="/images/logo/nao_icon_light.png"
         alt="ThinkNAO"
         style={{ width: rem(36), height: rem(36), objectFit: "contain", flexShrink: 0 }}
       />
@@ -76,7 +76,7 @@ function LogoMark({ collapsed }: { collapsed?: boolean }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/images/logo/think_nao_dark.png"
+      src="/images/logo/think_nao_light.png"
       alt="ThinkNAO"
       style={{ width: rem(168), height: "auto", maxHeight: rem(46), objectFit: "contain", flexShrink: 0 }}
     />
@@ -187,16 +187,9 @@ function getBreadcrumbs(pathname: string, sessionName?: string | null, problemCo
 export function NavShell({ children }: { children: React.ReactNode }) {
   const [renderedAt] = useState(() => Date.now());
   const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [expiryBannerDismissed, setExpiryBannerDismissed] = useState(false);
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      setCollapsed(localStorage.getItem("nav-collapsed") === "true");
-    });
-    return () => cancelAnimationFrame(frame);
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -206,12 +199,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
     return () => { active = false; };
   }, []);
 
-  const toggleCollapsed = () =>
-    setCollapsed((c) => {
-      const next = !c;
-      localStorage.setItem("nav-collapsed", String(next));
-      return next;
-    });
+  const toggleCollapsed = () => setCollapsed((current) => !current);
   const pathname = usePathname();
   const router = useRouter();
   const storeSessionName = useNavStore((s) => s.sessionName);
@@ -254,6 +242,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
         <Group h={HEADER_HEIGHT} wrap="nowrap" gap={0}>
           {/* Logo section — width tracks sidebar */}
           <UnstyledButton
+            className={styles.logoButton}
             onClick={toggleCollapsed}
             visibleFrom="sm"
             style={{
@@ -264,7 +253,6 @@ export function NavShell({ children }: { children: React.ReactNode }) {
               alignItems: "center",
               paddingInline: collapsed ? 0 : rem(20),
               justifyContent: collapsed ? "center" : "flex-start",
-              borderRight: "1px solid rgba(15, 23, 42, 0.08)",
               transition: "width 200ms ease, padding 200ms ease",
               cursor: "pointer",
             }}
@@ -274,40 +262,40 @@ export function NavShell({ children }: { children: React.ReactNode }) {
 
           {/* Mobile burger + logo */}
           <Group hiddenFrom="sm" px="md" gap="sm" align="center">
-            <Burger opened={mobileOpened} onClick={toggleMobile} size="sm" color={INK} />
+            <Burger opened={mobileOpened} onClick={toggleMobile} size="sm" color="#F7FBFC" />
             <LogoMark collapsed={false} />
           </Group>
 
           {/* Welcome + actions */}
           <Group flex={1} px={{ base: "md", sm: "xl" }} justify="space-between" align="center" wrap="nowrap">
             <Box visibleFrom="sm">
-              <Text className={styles.greeting} c={INK} lh={1.2}>
+              <Text className={styles.greeting} c="#F7FBFC" lh={1.2}>
                 {getGreeting(pathname)}, {firstName}!
               </Text>
               {breadcrumbs ? (
                 <Group gap={4} align="center">
                   {breadcrumbs.map((crumb, i) => (
                     <Group key={crumb.label} gap={4} align="center">
-                      {i > 0 && <Text size="sm" c="dimmed">›</Text>}
+                      {i > 0 && <Text size="sm" c="rgba(226, 241, 244, .58)">›</Text>}
                       {crumb.href ? (
                         <Text
                           size="sm"
-                          c={MUTED}
+                          c="rgba(226, 241, 244, .72)"
                           style={{ cursor: "pointer", textDecoration: "none" }}
                           onClick={() => router.push(crumb.href)}
-                          onMouseEnter={(e) => (e.currentTarget.style.color = INK)}
-                          onMouseLeave={(e) => (e.currentTarget.style.color = MUTED)}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(226, 241, 244, .72)")}
                         >
                           {crumb.label}
                         </Text>
                       ) : (
-                        <Text size="sm" c="dimmed">{crumb.label}</Text>
+                        <Text size="sm" c="rgba(226, 241, 244, .58)">{crumb.label}</Text>
                       )}
                     </Group>
                   ))}
                 </Group>
               ) : (
-                <Text size="sm" c="dimmed">
+                <Text size="sm" c="rgba(226, 241, 244, .58)">
                   {PAGE_LABELS[pathname] ?? "Dashboard"}
                 </Text>
               )}
@@ -371,9 +359,9 @@ export function NavShell({ children }: { children: React.ReactNode }) {
 
         {/* Profile button */}
         <Box
+          className={styles.sidebarFooter}
           px={collapsed ? rem(8) : "xs"}
           py="xs"
-          style={{ borderTop: "1px solid #E2E8F0" }}
         >
           <UnstyledButton
             className={styles.profileButton}
@@ -394,10 +382,10 @@ export function NavShell({ children }: { children: React.ReactNode }) {
             </Avatar>
             {!collapsed && (
               <Box style={{ minWidth: 0 }}>
-                <Text size="sm" fw={600} c={INK} style={{ lineHeight: 1.2 }} truncate>
+                <Text size="sm" fw={600} c="#F7FBFC" style={{ lineHeight: 1.2 }} truncate>
                   {fullName || "Profile"}
                 </Text>
-                <Text size="xs" c={MUTED} truncate>
+                <Text size="xs" c="rgba(226, 241, 244, .62)" truncate>
                   {email}
                 </Text>
               </Box>
@@ -407,10 +395,10 @@ export function NavShell({ children }: { children: React.ReactNode }) {
 
         {/* Collapse toggle — desktop only */}
         <Box
+          className={styles.sidebarFooter}
           visibleFrom="sm"
           px="xs"
           py="xs"
-          style={{ borderTop: "1px solid #E2E8F0" }}
         >
           <UnstyledButton
             className={styles.collapseButton}
@@ -422,7 +410,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
               width: "100%",
               height: rem(32),
               borderRadius: rem(8),
-              color: MUTED,
+              color: "rgba(226, 241, 244, .7)",
               padding: `0 ${rem(4)}`,
             }}
           >
@@ -430,7 +418,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
               <IconChevronRight size={15} stroke={1.5} />
             ) : (
               <Group gap={4}>
-                <Text size="xs" c={MUTED}>Collapse</Text>
+                <Text size="xs" c="rgba(226, 241, 244, .7)">Collapse</Text>
                 <IconChevronLeft size={15} stroke={1.5} />
               </Group>
             )}
@@ -454,6 +442,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
         )}
         {children}
       </AppShell.Main>
+      <span className={styles.innerCorner} aria-hidden="true" />
     </AppShell>
   );
 }
