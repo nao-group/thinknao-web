@@ -103,7 +103,14 @@ function JourneyLoader({ exiting = false }: { exiting?: boolean }) {
           <div className={styles.orbitParticles}>
             {Array.from({ length: 10 }, (_, index) => <span key={index} />)}
           </div>
-          <div className={styles.loaderMark} />
+          <div className={styles.loaderLogo}>
+            <span className={`${styles.logoPiece} ${styles.logoPieceLeft}`} />
+            <span className={`${styles.logoPiece} ${styles.logoPieceTop}`} />
+            <span className={`${styles.logoPiece} ${styles.logoPieceGold}`} />
+            <span className={`${styles.logoPiece} ${styles.logoPieceSpark}`} />
+            <span className={`${styles.logoPiece} ${styles.logoPieceDrop}`} />
+            <span className={styles.logoWhole} />
+          </div>
         </div>
         <Text className={styles.loadingEyebrow}>THINKNAO · YOUR CSCA JOURNEY</Text>
         <h1 className={styles.loadingTitle}>Preparing your journey</h1>
