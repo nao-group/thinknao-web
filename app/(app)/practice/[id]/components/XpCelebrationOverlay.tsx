@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Box, Text } from "@mantine/core";
 import { IconStarFilled } from "@tabler/icons-react";
 import { PRIMARY } from "@/constants/colors";
+import { formatXp } from "@/lib/format";
 
 // Bigger, wider burst than the inline pill's — this one's meant to read from across the screen.
 const BURST_STARS = [
@@ -80,7 +81,7 @@ export function XpCelebrationOverlay({ xp }: { xp: number }) {
             animation: "xpCelebratePop 450ms cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
         >
-          <Text size="28px" fw={900} c={PRIMARY} style={{ lineHeight: 1 }}>+{xp} XP</Text>
+          <Text size="28px" fw={900} c={PRIMARY} style={{ lineHeight: 1 }}>+{formatXp(xp)} XP</Text>
         </Box>
       </Box>
 

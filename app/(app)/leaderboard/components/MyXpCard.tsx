@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Avatar, Box, Group, Skeleton, Stack, Text, Tooltip, rem } from "@mantine/core";
 import { INK, PRIMARY, CREAM } from "@/constants/colors";
-import { getInitials } from "@/lib/format";
+import { getInitials, formatXp } from "@/lib/format";
 import { avatarStyle, RANK_MEDAL } from "./avatarStyle";
 import type { LeaderboardEntry } from "../types";
 
@@ -64,11 +64,11 @@ export function MyXpCard({ entry, loading }: { entry: LeaderboardEntry | null; l
               <Text size="xs" c="rgba(255,255,255,0.5)" fw={600} tt="uppercase" style={{ letterSpacing: "0.06em" }}>
                 This Year
               </Text>
-              <Text fw={800} size="md" c={PRIMARY}>{entry.yearly_xp.toLocaleString()} XP</Text>
+              <Text fw={800} size="md" c={PRIMARY}>{formatXp(entry.yearly_xp)} XP</Text>
             </Box>
             <Box className="leaderboard-standing-stat">
               <Text size="xs" c="rgba(255,255,255,0.5)" fw={600} tt="uppercase" style={{ letterSpacing: "0.06em" }}>This Month</Text>
-              <Text fw={800} size="md" c="white">{entry.month_xp.toLocaleString()} XP</Text>
+              <Text fw={800} size="md" c="white">{formatXp(entry.month_xp)} XP</Text>
             </Box>
           </Group>
 
@@ -84,7 +84,7 @@ export function MyXpCard({ entry, loading }: { entry: LeaderboardEntry | null; l
                   const isLast = i === entry.monthly_xp!.length - 1;
                   const isHovered = hoveredBar === i;
                   return (
-                    <Tooltip key={m.month} label={`${m.month}: ${m.xp.toLocaleString()} XP`} withArrow position="top" fz="xs">
+                    <Tooltip key={m.month} label={`${m.month}: ${formatXp(m.xp)} XP`} withArrow position="top" fz="xs">
                       <Box
                         onMouseEnter={() => setHoveredBar(i)}
                         onMouseLeave={() => setHoveredBar(null)}

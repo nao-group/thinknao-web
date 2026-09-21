@@ -35,6 +35,7 @@ import { INK, SURFACE, PRIMARY, CREAM, INDIGO, PANDA, VIOLET, EMERALD } from "@/
 import type { Session, SessionProgress, LearningActivity as LearningActivityData } from "./types";
 import { fetchRecentSessions, fetchInProgressSessions, fetchSessionProgress, fetchLearningActivity } from "./api";
 import { fetchSubscription, type Subscription } from "@/lib/payments";
+import { formatXp } from "@/lib/format";
 import styles from "./dashboard.module.css";
 
 // ─── Subject meta ──────────────────────────────────────────────────────────────
@@ -274,13 +275,13 @@ function LearningActivity() {
             value: stat(activity?.rank, "#"),
             label: "Rank",
             color: "var(--app-text-primary)",
-            tip: `XP over the past 12 months${activity ? ` · ${activity.year_xp} XP` : ""}`,
+            tip: `XP over the past 12 months${activity ? ` · ${formatXp(activity.year_xp)} XP` : ""}`,
           },
           {
             value: stat(activity?.monthly_rank, "#"),
             label: "Monthly Rank",
             color: "var(--app-text-primary)",
-            tip: `XP this month${activity ? ` · ${activity.month_xp} XP` : ""}`,
+            tip: `XP this month${activity ? ` · ${formatXp(activity.month_xp)} XP` : ""}`,
           },
         ].map(({ value, label, color, tip }) => (
           <Tooltip key={label} label={tip} withArrow position="top" fz="xs" multiline w={200}>
@@ -305,7 +306,7 @@ function LearningActivity() {
             const isHovered = hoveredBar === i;
             const pct = peakXp > 0 ? (xp / peakXp) * 100 : 0;
             return (
-              <Tooltip key={i} label={`${day}: ${xp} XP`} withArrow position="top" fz="xs">
+              <Tooltip key={i} label={`${day}: ${formatXp(xp)} XP`} withArrow position="top" fz="xs">
                 <Stack
                   align="center"
                   gap={2}

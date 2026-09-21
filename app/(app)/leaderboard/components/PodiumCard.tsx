@@ -3,7 +3,7 @@
 import { Avatar, Badge, Box, Stack, Text, rem } from "@mantine/core";
 import { IconTrophy } from "@tabler/icons-react";
 import { PRIMARY } from "@/constants/colors";
-import { getInitials } from "@/lib/format";
+import { getInitials, formatXp } from "@/lib/format";
 import { avatarStyle, RANK_MEDAL } from "./avatarStyle";
 import type { LeaderboardEntry } from "../types";
 
@@ -77,7 +77,7 @@ export function PodiumCard({ entry, height, onClick }: { entry: LeaderboardEntry
           radius="sm"
           style={{ backgroundColor: "rgba(255,255,255,0.25)", color: "white", fontWeight: 700, fontSize: rem(11) }}
         >
-          {entry.yearly_xp.toLocaleString()} XP
+          {formatXp(entry.yearly_xp)} XP
         </Badge>
         {entry.province && (
           <Text size="xs" c="rgba(255,255,255,0.8)" ta="center" lineClamp={1}>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Box, Group, Text, Tooltip, rem } from "@mantine/core";
 import { INK, SURFACE, PRIMARY, CREAM, MUTED } from "@/constants/colors";
+import { formatXp } from "@/lib/format";
 import type { MonthlyXp } from "../types";
 
 // ─── XP Stats ─────────────────────────────────────────────────────────────────
@@ -32,7 +33,7 @@ export function XpStats({ yearlyXp, monthlyXp }: { yearlyXp: number; monthlyXp: 
           <Text size="xs" fw={600} c={PRIMARY} tt="uppercase" style={{ letterSpacing: "0.06em" }}>
             This Year
           </Text>
-          <Text fw={800} size="md" c={PRIMARY}>{yearlyXp.toLocaleString()}</Text>
+          <Text fw={800} size="md" c={PRIMARY}>{formatXp(yearlyXp)}</Text>
           <Text size="xs" c={PRIMARY} style={{ opacity: 0.7 }}>XP</Text>
         </Box>
         <Box
@@ -50,7 +51,7 @@ export function XpStats({ yearlyXp, monthlyXp }: { yearlyXp: number; monthlyXp: 
           <Text size="xs" fw={600} c={MUTED} tt="uppercase" style={{ letterSpacing: "0.06em" }}>
             {currentMonth.month}
           </Text>
-          <Text fw={800} size="md" c={INK}>{currentMonth.xp.toLocaleString()}</Text>
+          <Text fw={800} size="md" c={INK}>{formatXp(currentMonth.xp)}</Text>
           <Text size="xs" c={MUTED}>XP</Text>
         </Box>
       </Group>
@@ -61,7 +62,7 @@ export function XpStats({ yearlyXp, monthlyXp }: { yearlyXp: number; monthlyXp: 
           const isLast = i === monthlyXp.length - 1;
           const isHovered = hoveredBar === i;
           return (
-            <Tooltip key={m.month} label={`${m.month}: ${m.xp.toLocaleString()} XP`} withArrow position="top" fz="xs">
+            <Tooltip key={m.month} label={`${m.month}: ${formatXp(m.xp)} XP`} withArrow position="top" fz="xs">
               <Box
                 onMouseEnter={() => setHoveredBar(i)}
                 onMouseLeave={() => setHoveredBar(null)}
