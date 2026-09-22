@@ -352,6 +352,7 @@ export function AlignedText({ text, vocab, mode, multiline = false, block = fals
             return (
               <div
                 key={`para${pi}`}
+                className="markdown-blockquote"
                 style={{
                   borderLeft: "3px solid #94A3B8",
                   backgroundColor: "#F8FAFC",
