@@ -2020,6 +2020,26 @@ html[data-mantine-color-scheme="dark"] .practice-topic-option[data-selected="tru
 }
 
 /* Practice session */
+html[data-mantine-color-scheme="dark"] .xp-gain-badge {
+  background-color: rgba(212, 160, 23, .16) !important;
+  border-color: #d4a017 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .practice-toolbar-btn {
+  background-color: rgba(255, 255, 255, .06) !important;
+}
+
+html[data-mantine-color-scheme="dark"] .practice-toolbar-btn svg { color: #aebdc2 !important; }
+
+html[data-mantine-color-scheme="dark"] .practice-toolbar-btn--active {
+  background-color: rgba(212, 160, 23, .18) !important;
+}
+
+html[data-mantine-color-scheme="dark"] .practice-toolbar-btn--active svg { color: #d4a017 !important; }
+
+html[data-mantine-color-scheme="dark"] .practice-timer svg,
+html[data-mantine-color-scheme="dark"] .practice-timer .mantine-Text-root { color: #aebdc2 !important; }
+
 html[data-mantine-color-scheme="dark"] .practice-detail-card {
   color: var(--app-text-primary);
   border: 1.5px solid var(--app-glass-card-border) !important;
@@ -2417,6 +2437,8 @@ html[data-mantine-color-scheme="dark"] .answer-explanation-panel {
 html[data-mantine-color-scheme="dark"] .answer-explanation-panel .answer-explanation-header,
 html[data-mantine-color-scheme="dark"] .answer-explanation-panel .markdown-rich-text,
 html[data-mantine-color-scheme="dark"] .answer-explanation-panel .mantine-Text-root { color: #e8f1ef !important; }
+html[data-mantine-color-scheme="dark"] .answer-explanation-panel .markdown-rich-text strong { color: #a8e6b8 !important; }
+html[data-mantine-color-scheme="dark"] .answer-explanation-panel .markdown-rich-text em { color: #b7c9c6 !important; }
 
 /* Reference refinements */
 html[data-mantine-color-scheme="dark"] .reference-flashcard-button:not(:disabled) {
