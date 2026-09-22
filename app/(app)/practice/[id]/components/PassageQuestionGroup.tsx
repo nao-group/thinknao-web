@@ -287,18 +287,21 @@ export function PassageQuestionGroup({
 
             {/* Question card */}
             <Box p="lg" style={{ backgroundColor: "white", borderRadius: rem(14) }}>
-              {/* Question number + text */}
+              {/* Question number + text — the number circle only makes sense when several
+                  sub-questions share one passage; a standalone MCQ skips it. */}
               <Group gap={rem(10)} mb={q.image_url ? rem(12) : "md"} align="flex-start">
-                <Box
-                  style={{
-                    minWidth: rem(28), height: rem(28), borderRadius: "50%",
-                    backgroundColor: "#F0F4FF", display: "flex", alignItems: "center",
-                    justifyContent: "center", fontSize: rem(13), fontWeight: 700,
-                    color: "#6670B0", flexShrink: 0,
-                  }}
-                >
-                  {questionNum}
-                </Box>
+                {passage && (
+                  <Box
+                    style={{
+                      minWidth: rem(28), height: rem(28), borderRadius: "50%",
+                      backgroundColor: "#F0F4FF", display: "flex", alignItems: "center",
+                      justifyContent: "center", fontSize: rem(13), fontWeight: 700,
+                      color: "#6670B0", flexShrink: 0,
+                    }}
+                  >
+                    {questionNum}
+                  </Box>
+                )}
                 <div style={{ flex: 1, lineHeight: 1.7 }}>
                   <AlignedText text={getQuestionText(q)} vocab={qVocab} mode={lang} />
                 </div>

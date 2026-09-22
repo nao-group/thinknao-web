@@ -1190,7 +1190,7 @@ export default function PracticeDetailPage() {
                     const isFlaggedCurrent = flaggedSet.has(activeGroup?.questions[currentSubQ]?.id ?? "");
                     return (
                       <Tooltip label={isFlaggedCurrent ? "Remove flag" : "Flag question"} withArrow>
-                        <UnstyledButton onClick={toggleFlag} style={{
+                        <UnstyledButton onClick={toggleFlag} className={`practice-toolbar-btn${isFlaggedCurrent ? " practice-toolbar-btn--active" : ""}`} style={{
                           width: rem(32), height: rem(32), borderRadius: rem(8),
                           display: "flex", alignItems: "center", justifyContent: "center",
                           backgroundColor: isFlaggedCurrent ? "#FFF9EC" : SURFACE,
@@ -1204,7 +1204,7 @@ export default function PracticeDetailPage() {
                     const isBookmarkedCurrent = bookmarked.has(activeGroup?.questions[currentSubQ]?.id ?? "");
                     return (
                       <Tooltip label={isBookmarkedCurrent ? "Remove bookmark" : "Bookmark question"} withArrow>
-                        <UnstyledButton onClick={toggleBookmark} style={{
+                        <UnstyledButton onClick={toggleBookmark} className={`practice-toolbar-btn${isBookmarkedCurrent ? " practice-toolbar-btn--active" : ""}`} style={{
                           width: rem(32), height: rem(32), borderRadius: rem(8),
                           display: "flex", alignItems: "center", justifyContent: "center",
                           backgroundColor: isBookmarkedCurrent ? "#FFF9EC" : SURFACE,
@@ -1215,7 +1215,7 @@ export default function PracticeDetailPage() {
                     );
                   })()}
                   <Tooltip label="Report a problem" withArrow>
-                    <UnstyledButton onClick={() => setReportOpen(true)} style={{
+                    <UnstyledButton onClick={() => setReportOpen(true)} className="practice-toolbar-btn" style={{
                       width: rem(32), height: rem(32), borderRadius: rem(8),
                       display: "flex", alignItems: "center", justifyContent: "center",
                       backgroundColor: SURFACE,
@@ -1223,7 +1223,7 @@ export default function PracticeDetailPage() {
                       <IconAlertCircle size={16} color={MUTED} stroke={1.5} />
                     </UnstyledButton>
                   </Tooltip>
-                  <Group gap={rem(5)} style={{ flexShrink: 0 }}>
+                  <Group gap={rem(5)} className="practice-timer" style={{ flexShrink: 0 }}>
                     <IconClock size={15} color={MUTED} stroke={1.5} />
                     <Text size="sm" fw={600} c={MUTED} style={{ fontVariantNumeric: "tabular-nums" }}>
                       {formatTime(elapsedSeconds)}

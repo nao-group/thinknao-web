@@ -39,6 +39,7 @@ export function XpGainBadge({ xp }: { xp: number }) {
         />
       ))}
       <Box
+        className="xp-gain-badge"
         px="sm"
         py={4}
         style={{
