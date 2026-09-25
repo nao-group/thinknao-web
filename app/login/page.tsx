@@ -25,6 +25,7 @@ import { AuthHeader } from "@/components/auth-header";
 import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { useAuthStore } from "@/store/auth";
 import { getApiErrorMessage } from "@/lib/errors";
+import { deviceDetails, deviceLabel } from "@/lib/device-display";
 import { AUTH_INPUT_STYLES as inputStyles } from "@/lib/auth-form-styles";
 import axios from "axios";
 
@@ -302,9 +303,10 @@ function LoginContent() {
                   <IconDeviceDesktop size={18} stroke={1.5} color="#667080" />
                   <Box>
                     <Text size="sm" fw={500} c={INK}>
-                      {s.device}
+                      {deviceLabel(s.device)}
                     </Text>
                     <Text size="xs" c="dimmed">
+                      {deviceDetails(s.device)} · {" "}
                       Signed in{" "}
                       {new Date(s.created_at).toLocaleDateString("en-US", {
                         month: "short",

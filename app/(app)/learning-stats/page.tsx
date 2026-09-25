@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Tooltip } from "@mantine/core";
 import { IconArrowRight, IconBolt, IconChartBar, IconFlame, IconInfoCircle, IconTarget } from "@tabler/icons-react";
 import { fetchLearningOverview, type LearningOverview } from "./api";
+import { MockExamProgress } from "./MockExamProgress";
 import styles from "./stats.module.css";
 
 const number = new Intl.NumberFormat("en-US");
@@ -105,10 +106,16 @@ export default function LearningStatsPage() {
         {data.subjects.length ? <div className={styles.subjectGrid}>{data.subjects.map((subject) => <article className={styles.subject} key={subject.code}><div className={styles.subjectHeader}><div><h3>{subject.name}</h3><p>{subject.answered} answers · {subject.correct} correct</p></div><strong>{percent(subject.accuracy)}</strong></div><div className={styles.progress} aria-label={`${subject.name}: ${percent(subject.accuracy)} accuracy`}><span style={{ width: `${subject.accuracy}%` }} /></div><div className={styles.topics} tabIndex={0} role="region" aria-label={`${subject.name} topic scores`}>{subject.topics.map((topic) => <div className={styles.topic} key={topic.code}><span>{topic.name}<small>{topic.correct}/{topic.answered} correct</small></span><strong>{percent(topic.accuracy)}</strong></div>)}</div>{subject.topics.length > 5 && <p className={styles.scrollHint}>Scroll to see all {subject.topics.length} topics</p>}</article>)}</div> : <div className={styles.empty}><p>No answered topics yet. Your subject breakdown will appear after your first practice set.</p><Link href="/practice" className={styles.textLink}>Start practicing <IconArrowRight size={17} aria-hidden="true" /></Link></div>}
       </section>
 
-      <section className={styles.panel}>
-        <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>RECENTLY COMPLETED</span><h2>Your latest sessions</h2></div></div>
-        {data.recent_sessions.length ? <div className={styles.recentList}>{data.recent_sessions.map((session) => <div className={styles.recent} key={session.id}><div><strong>{session.name}</strong><span>{session.subject_name} · {session.type === "mock_exam" ? "Mock exam" : "Practice"}</span></div><div><strong>{session.score === null ? "Completed" : percent(session.score)}</strong><span>{new Date(session.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span></div></div>)}</div> : <p className={styles.caption}>Complete a practice set or mock exam to see your history here.</p>}
-      </section>
+      <div className={styles.historyGrid}>
+        <section className={styles.panel}>
+          <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>RECENTLY COMPLETED</span><h2>Your latest sessions</h2></div></div>
+          {data.recent_sessions.length ? <div className={styles.recentList}>{data.recent_sessions.map((session) => <div className={styles.recent} key={session.id}><div><strong>{session.name}</strong><span>{session.subject_name} · {session.type === "mock_exam" ? "Mock exam" : "Practice"}</span></div><div><strong>{session.score === null ? "Completed" : percent(session.score)}</strong><span>{new Date(session.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span></div></div>)}</div> : <p className={styles.caption}>Complete a practice set or mock exam to see your history here.</p>}
+        </section>
+        <section className={styles.panel}>
+          <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>MOCK EXAM RESULTS</span><h2>Your score progress</h2></div></div>
+          <MockExamProgress results={data.mock_exam_results ?? []} />
+        </section>
+      </div>
     </main>
   );
 }
