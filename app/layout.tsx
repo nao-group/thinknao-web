@@ -7,6 +7,7 @@ import "katex/dist/katex.min.css";
 import "./globals.css";
 import { COLOR_SCHEME_STORAGE_KEY } from "@/lib/color-scheme";
 import { AppProviders } from "@/components/app-providers";
+import { TestingOnboardingReset } from "@/components/testing-onboarding-reset";
 
 const poppins = Poppins({
   weight: ["400", "500", "600", "700"],
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <AppProviders>
           {children}
+          <TestingOnboardingReset />
         </AppProviders>
       </body>
     </html>

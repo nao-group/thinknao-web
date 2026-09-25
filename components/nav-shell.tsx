@@ -30,6 +30,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { ProfileMenu } from "@/components/profile-menu";
+import { AppTour } from "@/components/app-tour";
 import { SubscriptionExpiryBanner } from "@/components/subscription-expiry-banner";
 import { ColorSchemeToggle } from "@/components/color-scheme-toggle";
 import { useAuthStore } from "@/store/auth";
@@ -114,6 +115,7 @@ function NavItem({
     <UnstyledButton
       onClick={onClick}
       className={styles.navItem}
+      data-tour={item.href}
       data-active={active || undefined}
       data-collapsed={collapsed || undefined}
       aria-current={active ? "page" : undefined}
@@ -206,8 +208,9 @@ function getBreadcrumbs(pathname: string, sessionName?: string | null, problemCo
 
 export function NavShell({ children }: { children: React.ReactNode }) {
   const [renderedAt] = useState(() => Date.now());
-  const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
+  const [mobileOpened, { toggle: toggleMobile, open: openMobile }] = useDisclosure();
   const [collapsed, setCollapsed] = useState(true);
+  const [tourOpen, setTourOpen] = useState(false);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [expiryBannerDismissed, setExpiryBannerDismissed] = useState(false);
 
@@ -227,7 +230,36 @@ export function NavShell({ children }: { children: React.ReactNode }) {
   const firstName = useAuthStore((s) => s.user?.full_name?.split(" ")[0] ?? "");
   const fullName = useAuthStore((s) => s.user?.full_name ?? "");
   const email = useAuthStore((s) => s.user?.email ?? "");
+  const tourUser = useAuthStore((s) => s.user);
   const avatarUrl = useAuthStore((s) => s.user?.avatar_url ?? undefined);
+
+  useEffect(() => {
+    if (pathname !== "/dashboard" || !tourUser?.onboarding_completed) return;
+    const key = `thinknao:tour:v1:${tourUser.user_id}`;
+    if (window.localStorage.getItem(key)) return;
+    const timer = window.setTimeout(() => {
+      setCollapsed(false);
+      if (window.innerWidth < 768) openMobile();
+      setTourOpen(true);
+    }, 850);
+    return () => window.clearTimeout(timer);
+  }, [pathname, tourUser?.onboarding_completed, tourUser?.user_id, openMobile]);
+
+  useEffect(() => {
+    function replayTour() {
+      router.push("/dashboard");
+      setCollapsed(false);
+      if (window.innerWidth < 768) openMobile();
+      setTourOpen(true);
+    }
+    window.addEventListener("thinknao:start-tour", replayTour);
+    return () => window.removeEventListener("thinknao:start-tour", replayTour);
+  }, [router, openMobile]);
+
+  function finishTour() {
+    if (tourUser?.user_id) window.localStorage.setItem(`thinknao:tour:v1:${tourUser.user_id}`, "done");
+    setTourOpen(false);
+  }
   const initials = fullName ? fullName.slice(0, 1).toUpperCase() : "?";
 
   const navbarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
@@ -322,7 +354,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
             </Box>
 
             <Group gap="sm" align="center" style={{ marginLeft: "auto" }}>
-              <ColorSchemeToggle className={styles.themeToggle} />
+              <Box data-tour="appearance"><ColorSchemeToggle className={styles.themeToggle} /></Box>
               <ProfileMenu />
             </Group>
           </Group>
@@ -386,6 +418,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
         >
           <UnstyledButton
             className={styles.profileButton}
+            data-tour="profile"
             onClick={() => router.push("/profile")}
             style={{
               display: "flex",
@@ -466,6 +499,7 @@ export function NavShell({ children }: { children: React.ReactNode }) {
         </Box>
       </AppShell.Main>
       <span className={styles.innerCorner} aria-hidden="true" />
+      {tourOpen && pathname === "/dashboard" && <AppTour onClose={finishTour} />}
     </AppShell>
   );
 }

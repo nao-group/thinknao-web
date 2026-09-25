@@ -16,6 +16,7 @@ import { activateFreePlan, fetchPlans, type Plan } from "@/app/checkout/api";
 import { LandingActionButton } from "@/components/ui/landing-action-button";
 import type { UserProfile } from "@/app/(app)/profile/types";
 import { useAuthStore } from "@/store/auth";
+import { isTestingAccount as matchesTestingAccount } from "@/lib/testing-account";
 import { INK, MUTED, PRIMARY } from "@/constants/colors";
 import styles from "./onboarding.module.css";
 
@@ -151,8 +152,20 @@ function OnboardingContent() {
     { value: "Tsinghua", label: "Tsinghua" },
   ]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const isTestingAccount = matchesTestingAccount(user?.email);
+  const [testingMode, setTestingMode] = useState<"free" | "subscriber" | null>(null);
   const [selectedPlan, setSelectedPlan] = useState("THINK-3MONTH");
+  const effectiveSelectedPlan = isTestingAccount ? testingMode === "free" ? "THINK-FREE-TRIAL" : "THINK-6MONTH" : selectedPlan;
   const firstName = user?.full_name?.trim().split(/\s+/)[0] || "friend";
+
+  useEffect(() => {
+    if (!isTestingAccount) return;
+    let active = true;
+    api.get<{ mode: "free" | "subscriber" }>("/api/onboarding/testing/mode")
+      .then(({ data }) => { if (active) setTestingMode(data.mode); })
+      .catch(() => { if (active) notifications.show({ title: "Could not load testing mode", message: "Please refresh and try again.", color: "red" }); });
+    return () => { active = false; };
+  }, [isTestingAccount]);
 
   useEffect(() => {
     let active = true;
@@ -199,7 +212,7 @@ function OnboardingContent() {
     return () => window.clearTimeout(timeout);
   }, [loading]);
 
-  const selected = useMemo(() => plans.find((plan) => plan.id === selectedPlan), [plans, selectedPlan]);
+  const selected = useMemo(() => plans.find((plan) => plan.id === effectiveSelectedPlan), [plans, effectiveSelectedPlan]);
   const canContinueBackground = Boolean(grade && province && school.trim());
   const canContinueDream = Boolean(university.trim());
 
@@ -223,6 +236,12 @@ function OnboardingContent() {
     if (!selected) return;
     setSubmitting(true);
     try {
+      if (isTestingAccount) {
+        await api.post("/api/onboarding/testing/complete");
+        if (user) setUser({ ...user, onboarding_completed: true });
+        router.replace(safeNext);
+        return;
+      }
       if (selected.id === "THINK-FREE-TRIAL") {
         await activateFreePlan();
         if (user) setUser({ ...user, onboarding_completed: true });
@@ -363,14 +382,14 @@ function OnboardingContent() {
           {step === 4 && (
             <>
               <div className={styles.formHero}>
-                <Text className={styles.eyebrow}>CHOOSE YOUR PLAN</Text>
-                <h1 className={styles.formTitle}>Start strong. Grow at your pace.</h1>
-                <Text className={styles.formCopy}>Choose the access that fits your CSCA journey today.</Text>
+                <Text className={styles.eyebrow}>{isTestingAccount ? "TESTING ACCESS" : "CHOOSE YOUR PLAN"}</Text>
+                <h1 className={styles.formTitle}>{isTestingAccount ? testingMode === "free" ? "Your free access is ready." : "Your six-month access is ready." : "Start strong. Grow at your pace."}</h1>
+                <Text className={styles.formCopy}>{isTestingAccount ? "Finish this onboarding run to return to your testing account. Your subscription stays active." : "Choose the access that fits your CSCA journey today."}</Text>
               </div>
               <div className={styles.formBody}>
                 <div className={styles.planGrid} role="radiogroup" aria-label="Subscription plan">
-                {plans.map((plan) => {
-                  const active = plan.id === selectedPlan;
+                {plans.filter((plan) => !isTestingAccount || plan.id === effectiveSelectedPlan).map((plan) => {
+                  const active = plan.id === effectiveSelectedPlan;
                   const isTrial = plan.id === "THINK-FREE-TRIAL";
                   const originalPrice = ORIGINAL_PLAN_PRICES[plan.id];
                   return (
@@ -380,11 +399,11 @@ function OnboardingContent() {
                       <Text fw={700} className={styles.planName}>{plan.name}</Text>
                       <div className={styles.planPriceBlock}>
                         {originalPrice > plan.total_price_idr && <Text className={styles.planOldPrice}><s>{formatIDR(originalPrice)}</s></Text>}
-                        <Text className={styles.planPrice}>{isTrial ? "Free" : formatIDR(plan.total_price_idr)}</Text>
-                        {!isTrial && plan.duration_months > 1 && <Text className={styles.planMonthly}>{formatIDR(Math.round(plan.total_price_idr / plan.duration_months / 100) * 100)} / month</Text>}
+                        <Text className={styles.planPrice}>{isTestingAccount ? "Included" : isTrial ? "Free" : formatIDR(plan.total_price_idr)}</Text>
+                        {!isTestingAccount && !isTrial && plan.duration_months > 1 && <Text className={styles.planMonthly}>{formatIDR(Math.round(plan.total_price_idr / plan.duration_months / 100) * 100)} / month</Text>}
                       </div>
-                      <Text size="xs" c={MUTED} className={styles.planNote}>{isTrial ? "No expiry — access ends when usage limits are reached" : plan.billing_note ?? `One-time payment for ${plan.duration_months} months access`}</Text>
-                      {plan.savings_badge && <Text size="xs" fw={700} c={PRIMARY} mt={5}>{plan.savings_badge}</Text>}
+                      <Text size="xs" c={MUTED} className={styles.planNote}>{isTestingAccount ? "Already active on this account" : isTrial ? "No expiry — access ends when usage limits are reached" : plan.billing_note ?? `One-time payment for ${plan.duration_months} months access`}</Text>
+                      {!isTestingAccount && plan.savings_badge && <Text size="xs" fw={700} c={PRIMARY} mt={5}>{plan.savings_badge}</Text>}
                       <div className={styles.planAccess}>
                         <Text className={styles.planAccessLabel}>{isTrial ? "Free plan limits" : "Full access"}</Text>
                         <ul>
@@ -402,8 +421,8 @@ function OnboardingContent() {
                 </div>
                 <div className={styles.actions}>
                   <Button variant="subtle" color="dark" leftSection={<IconArrowLeft size={16} />} onClick={() => setStep(3)}>Back</Button>
-                  <LandingActionButton presentation="auth" loading={submitting} disabled={!selected} rightSection={<IconArrowRight size={16} />} onClick={finishOnboarding}>
-                    {selected?.id === "THINK-FREE-TRIAL" ? "Start free access" : "Continue to payment"}
+                  <LandingActionButton presentation="auth" loading={submitting} disabled={!selected || (isTestingAccount && !testingMode)} rightSection={<IconArrowRight size={16} />} onClick={finishOnboarding}>
+                    {isTestingAccount ? testingMode ? "Finish testing onboarding" : "Loading testing access…" : selected?.id === "THINK-FREE-TRIAL" ? "Start free access" : "Continue to payment"}
                   </LandingActionButton>
                 </div>
               </div>
