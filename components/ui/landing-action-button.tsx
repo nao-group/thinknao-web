@@ -5,12 +5,14 @@ import { Button, type ButtonProps } from "@mantine/core";
 export type LandingActionButtonProps = ButtonProps &
   Omit<React.ComponentPropsWithoutRef<"button">, keyof ButtonProps> & {
   presentation?: "compact" | "auth" | "otp";
+  tone?: "primary" | "secondary";
 };
 
 /** Shared ThinkNAO primary action inspired by the landing-page CTA. */
 export function LandingActionButton({
   className,
   presentation = "compact",
+  tone = "primary",
   ...props
 }: LandingActionButtonProps) {
   const presentationClass =
@@ -23,7 +25,12 @@ export function LandingActionButton({
   return (
     <Button
       {...props}
-      className={["landing-action-button", presentationClass, className]
+      className={[
+        "landing-action-button",
+        tone === "secondary" ? "landing-action-button--secondary" : "",
+        presentationClass,
+        className,
+      ]
         .filter(Boolean)
         .join(" ")}
     />

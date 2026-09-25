@@ -227,7 +227,7 @@ export default function MockExamPage() {
               <Stack gap={8}>
                 {[
                   "Subject and language are chosen once before the exam and cannot be changed.",
-                  "Questions are AI-generated and randomised each session.",
+                  "Questions are randomised each session.",
                   "You cannot bookmark or save individual questions.",
                   "Answers are submitted all at once — no per-question feedback during the exam.",
                   "Correct answers and explanations are not revealed after submission.",
