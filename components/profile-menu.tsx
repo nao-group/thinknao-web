@@ -1,7 +1,7 @@
 "use client";
 
 import { Avatar, Box, Group, Menu, Text, UnstyledButton, rem } from "@mantine/core";
-import { IconChevronDown, IconLogout, IconUser } from "@tabler/icons-react";
+import { IconChevronDown, IconHelpCircle, IconLogout, IconUser } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import api from "@/lib/api";
@@ -70,6 +70,9 @@ export function ProfileMenu() {
           Profile
         </Menu.Item>
         <ColorSchemeMenuItem />
+        <Menu.Item leftSection={<IconHelpCircle size={15} stroke={1.5} />} onClick={() => window.dispatchEvent(new Event("thinknao:start-tour"))}>
+          Take a tour
+        </Menu.Item>
         <Menu.Divider />
         <Menu.Item
           leftSection={<IconLogout size={15} stroke={1.5} />}
