@@ -31,6 +31,7 @@ import { SUBJECT_CONFIG, SUBJECT_META } from "./data";
 import type { ExamResult, MockQ, Phase, Subject } from "./types";
 import { ExamStructureTable } from "./components/ExamStructureTable";
 import { RecentAttempts } from "./components/RecentAttempts";
+import { ExamProgressCard } from "./components/ExamProgressCard";
 import { SetupModal } from "./components/SetupModal";
 import { useSubscriptionAccessGuard } from "@/components/subscription-access-guard";
 import { useFreeTierWarning } from "@/components/free-tier-warning-modal";
@@ -247,6 +248,8 @@ export default function MockExamPage() {
             <RecentAttempts />
           </Box>
         </Group>
+
+        <ExamProgressCard />
 
         {/* Setup Modal */}
         <SetupModal

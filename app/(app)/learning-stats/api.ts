@@ -49,6 +49,14 @@ export interface LearningOverview {
     completed_at: string;
     score: number | null;
   }[];
+  mock_exam_results: MockExamResult[];
+}
+
+export interface MockExamResult {
+  id: string;
+  subject_name: string;
+  completed_at: string;
+  score: number;
 }
 
 export async function fetchLearningOverview(): Promise<LearningOverview> {

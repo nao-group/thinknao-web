@@ -14,37 +14,10 @@ import {
 import { notifications } from "@mantine/notifications";
 import { useAuthStore } from "@/store/auth";
 import { getApiErrorMessage } from "@/lib/errors";
+import { deviceDetails, deviceLabel, isMobileDevice } from "@/lib/device-display";
 import { CREAM, INK, PRIMARY, SURFACE } from "@/constants/colors";
 import { fetchLoginDevices, forgetLoginDevice, type LoginDevice } from "../api";
 import { SectionCard } from "./SectionCard";
-
-function isMobileDevice(value: string) {
-  return /android|iphone|ipad|mobile/i.test(value);
-}
-
-function deviceLabel(value: string) {
-  if (/iphone/i.test(value)) return "iPhone";
-  if (/ipad/i.test(value)) return "iPad";
-  if (/android/i.test(value)) return "Android device";
-  if (/edg/i.test(value)) return "Microsoft Edge";
-  if (/chrome/i.test(value)) return "Google Chrome";
-  if (/firefox/i.test(value)) return "Mozilla Firefox";
-  if (/safari/i.test(value)) return "Safari";
-  return value === "Unknown Device" ? "Unknown device" : "Web browser";
-}
-
-function deviceDetails(value: string) {
-  const os = /windows/i.test(value)
-    ? "Windows"
-    : /mac os|macintosh/i.test(value)
-      ? "macOS"
-      : /android/i.test(value)
-        ? "Android"
-        : /iphone|ipad/i.test(value)
-          ? "iOS"
-          : "Device details unavailable";
-  return os;
-}
 
 function formatActivity(value: string | null) {
   if (!value) return "Activity time unavailable";
