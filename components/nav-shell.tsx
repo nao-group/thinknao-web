@@ -26,6 +26,7 @@ import {
   IconChevronRight,
   IconLayoutGrid,
   IconPencil,
+  IconCalendarEvent,
   IconUsers,
 } from "@tabler/icons-react";
 import { ProfileMenu } from "@/components/profile-menu";
@@ -55,6 +56,10 @@ const NAV_SECTIONS = [
       { label: "Mock Exam", icon: IconAlignJustified, href: "/mock-exam" },
       { label: "Learning Stats", icon: IconChartHistogram, href: "/learning-stats" },
     ],
+  },
+  {
+    label: "EVENTS",
+    items: [{ label: "Tryout", icon: IconCalendarEvent, href: "/tryout" }],
   },
   {
     label: "OTHERS",
@@ -138,6 +143,7 @@ const GREETING_PREFIX: Record<string, string> = {
   "/references/formulas": "Study time",
   "/mock-exam":           "Test yourself",
   "/learning-stats":      "See your progress",
+  "/tryout":              "Join an event",
   "/leaderboard":         "How do you rank",
   "/dashboard/community": "Connect & share",
   "/profile":             "Your profile",
@@ -160,6 +166,7 @@ const PAGE_LABELS: Record<string, string> = {
   "/references/formulas": "Formulas",
   "/mock-exam": "Mock Exam",
   "/learning-stats": "Learning Stats",
+  "/tryout": "Tryout",
   "/leaderboard": "Leaderboard",
   "/dashboard/community": "Community",
   "/profile": "Profile",
