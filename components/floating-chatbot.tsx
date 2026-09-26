@@ -95,7 +95,7 @@ function formatTime(date: Date): string {
 function PracticeQuestionCard({ q, index }: { q: PracticeQuestion; index: number }) {
   const [revealed, setRevealed] = useState(false);
   return (
-    <Box style={{ border: "1px solid #E2E8F0", borderRadius: rem(10), padding: rem(10), marginBottom: rem(8) }}>
+    <Box className="nao-chat-practice-card" style={{ border: "1px solid #E2E8F0", borderRadius: rem(10), padding: rem(10), marginBottom: rem(8) }}>
       <Text size="xs" fw={700} c={MUTED} mb={4} tt="uppercase">
         Question {index + 1} · {q.difficulty}
       </Text>
@@ -112,7 +112,7 @@ function PracticeQuestionCard({ q, index }: { q: PracticeQuestion; index: number
         </Stack>
       )}
       {revealed ? (
-        <Box style={{ backgroundColor: "#F5E6CC", borderRadius: rem(8), padding: rem(8) }}>
+        <Box className="nao-chat-answer" style={{ backgroundColor: "#F5E6CC", borderRadius: rem(8), padding: rem(8) }}>
           <Text size="sm" fw={700} c={CORRECT_DARK}>Answer: {q.correct_answer}</Text>
           {q.explanation && (
             <Box fz="xs" mt={4}>
@@ -591,6 +591,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
     <>
       {/* ── Sliding panel ── */}
       <Box
+        className="nao-chat-panel"
         style={{
           position: "fixed",
           top: 0,
@@ -628,6 +629,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
         />
         {/* ── Header ── */}
         <Box
+          className="nao-chat-header"
           px="md"
           py="md"
           style={{
@@ -640,6 +642,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
             {view === "history" ? (
               <Group gap={8}>
                 <UnstyledButton
+                  className="nao-chat-icon-button"
                   onClick={() => { setView("chat"); setPendingDeleteId(null); }}
                   style={{
                     width: rem(30), height: rem(30), borderRadius: rem(8),
@@ -654,6 +657,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
             ) : (
               <Group gap={10}>
                 <Box
+                  className="nao-chat-avatar"
                   style={{
                     width: rem(34),
                     height: rem(34),
@@ -683,6 +687,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                 <>
                   <Tooltip label="New chat" position="bottom" withArrow>
                     <UnstyledButton
+                      className="nao-chat-icon-button"
                       onClick={() => requireChatAccess(startNewChat)}
                       style={{
                         width: rem(30), height: rem(30), borderRadius: rem(8),
@@ -695,6 +700,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                   </Tooltip>
                   <Tooltip label="Chat history" position="bottom" withArrow>
                     <UnstyledButton
+                      className="nao-chat-icon-button"
                       onClick={() => setView("history")}
                       style={{
                         width: rem(30), height: rem(30), borderRadius: rem(8),
@@ -708,6 +714,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                 </>
               )}
               <UnstyledButton
+                className="nao-chat-icon-button"
                 onClick={() => setOpen(false)}
                 style={{
                   width: rem(30), height: rem(30), borderRadius: rem(8),
@@ -724,8 +731,9 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
         {view === "history" ? (
           <>
             {/* Search */}
-            <Box px="sm" py="sm" style={{ borderBottom: "1px solid #F1F5F9", flexShrink: 0 }}>
+            <Box className="nao-chat-search" px="sm" py="sm" style={{ borderBottom: "1px solid #F1F5F9", flexShrink: 0 }}>
               <TextInput
+                className="nao-chat-search-input"
                 placeholder="Search past conversations…"
                 value={historySearch}
                 onChange={(e) => setHistorySearch(e.target.value)}
@@ -736,7 +744,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
             </Box>
 
             {/* List */}
-            <Box style={{ flex: 1, overflowY: "auto", padding: rem(12), backgroundColor: "#FAFBFC" }}>
+            <Box className="nao-chat-history" style={{ flex: 1, overflowY: "auto", padding: rem(12), backgroundColor: "#FAFBFC" }}>
               {historyLoading && historyList.length === 0 ? (
                 <Text size="sm" c={MUTED} ta="center" mt="md">Loading…</Text>
               ) : historyList.length === 0 ? (
@@ -748,6 +756,8 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                   {historyList.map((c) => (
                     <Box
                       key={c.conversation_id}
+                      className="nao-chat-history-card"
+                      data-deleting={pendingDeleteId === c.conversation_id ? "true" : "false"}
                       style={{
                         backgroundColor: "white",
                         border: pendingDeleteId === c.conversation_id ? "1px solid #F3D0D0" : "1px solid #F1F5F9",
@@ -763,6 +773,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                           </Text>
                           <Group gap={6} wrap="nowrap">
                             <UnstyledButton
+                              className="nao-chat-cancel-delete"
                               onClick={() => setPendingDeleteId(null)}
                               style={{
                                 fontSize: rem(12.5), fontWeight: 600, color: MUTED,
@@ -789,6 +800,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                           <Box style={{ flex: 1, minWidth: 0 }}>
                             {renamingId === c.conversation_id ? (
                               <TextInput
+                                className="nao-chat-rename-input"
                                 value={renameValue}
                                 onChange={(e) => setRenameValue(e.currentTarget.value)}
                                 onBlur={() => commitRename(c)}
@@ -846,6 +858,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                 THAT set, so make it obvious rather than silently confusing. */}
             {foreignSetName && (
               <Group
+                className="nao-chat-context"
                 gap={6}
                 px="sm"
                 py={8}
@@ -860,7 +873,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
             )}
 
             {/* ── Messages ── */}
-            <Box style={{ flex: 1, overflowY: "auto", padding: rem(16), backgroundColor: "white" }}>
+            <Box className="nao-chat-messages" style={{ flex: 1, overflowY: "auto", padding: rem(16), backgroundColor: "white" }}>
               <Stack gap={20}>
                 {messages.map((m, i) =>
                   m.role === "user" ? (
@@ -874,6 +887,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                           <Text size="xs" fw={700} c={INK} lh={1}>You</Text>
                         </Group>
                         <Box
+                          className="nao-chat-user-bubble"
                           px="md"
                           py="sm"
                           style={{
@@ -886,6 +900,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                       </Box>
                       {/* User avatar */}
                       <Box
+                        className="nao-chat-avatar nao-chat-avatar--user"
                         style={{
                           width: rem(30),
                           height: rem(30),
@@ -907,6 +922,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                     <Box key={i} style={{ display: "flex", justifyContent: "flex-start", alignItems: "flex-start", gap: rem(10) }}>
                       {/* AI avatar */}
                       <Box
+                        className="nao-chat-avatar"
                         style={{
                           width: rem(30),
                           height: rem(30),
@@ -932,7 +948,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                         {m.type === "practice_set" ? (
                           <PracticeSetMessage text={m.text} />
                         ) : (
-                          <Box fz="sm" style={{ lineHeight: 1.65, color: INK }}>
+                          <Box className="nao-chat-assistant-copy" fz="sm" style={{ lineHeight: 1.65, color: INK }}>
                             <MarkdownLatexText>{m.text}</MarkdownLatexText>
                           </Box>
                         )}
@@ -947,6 +963,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                     {starterPrompts.map((p) => (
                       <UnstyledButton
                         key={p}
+                        className="nao-chat-prompt"
                         onClick={() => handleSend(p)}
                         disabled={quotaReached}
                         style={{
@@ -971,6 +988,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                 {loading && (
                   <Box style={{ display: "flex", alignItems: "flex-start", gap: rem(10) }}>
                     <Box
+                      className="nao-chat-avatar"
                       style={{
                         width: rem(30), height: rem(30), borderRadius: rem(8),
                         backgroundColor: SURFACE, border: "1px solid #E2E8F0",
@@ -986,6 +1004,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                         {[0, 1, 2].map((d) => (
                           <Box
                             key={d}
+                            className="nao-chat-thinking-dot"
                             style={{
                               width: rem(7), height: rem(7), borderRadius: "50%",
                               backgroundColor: "#CBD5E1",
@@ -1003,9 +1022,11 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
             </Box>
 
             {/* ── Input composer ── */}
-            <Box px="md" py="md" style={{ borderTop: "1px solid #F1F5F9", backgroundColor: "white", flexShrink: 0 }}>
+            <Box className="nao-chat-composer" px="md" py="md" style={{ borderTop: "1px solid #F1F5F9", backgroundColor: "white", flexShrink: 0 }}>
               {showQuotaNotice && quota && (
                 <Box
+                  className="nao-chat-quota"
+                  data-status={quotaReached ? "reached" : showWarningCard ? "warning" : "free"}
                   role={quotaReached && isFreeTier ? "button" : "status"}
                   aria-live="polite"
                   mb="sm"
@@ -1030,6 +1051,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                   <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
                     <Group gap={8} align="flex-start" wrap="nowrap">
                       <Box
+                        className="nao-chat-quota-icon"
                         mt={1}
                         style={{
                           width: rem(28),
@@ -1068,7 +1090,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                     </Text>
                   </Group>
                   {!isFreeTier && (
-                    <Box mt={8} h={3} style={{ overflow: "hidden", borderRadius: rem(999), backgroundColor: "rgba(117,82,5,.12)" }}>
+                    <Box className="nao-chat-quota-track" mt={8} h={3} style={{ overflow: "hidden", borderRadius: rem(999), backgroundColor: "rgba(117,82,5,.12)" }}>
                       <Box
                         h="100%"
                         style={{
@@ -1083,6 +1105,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                 </Box>
               )}
               <Box
+                className="nao-chat-input-wrap"
                 style={{
                   border: `1.5px solid ${quotaReached ? "#E5E7EB" : input.trim() ? "#CBD5E1" : "#E2E8F0"}`,
                   borderRadius: rem(16),
@@ -1092,6 +1115,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                 }}
               >
                 <Textarea
+                  className="nao-chat-input"
                   ref={inputRef}
                   placeholder={
                     quotaReached
@@ -1128,6 +1152,8 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                 />
                 <Group justify="flex-end" px="sm" pb="sm" pt={2}>
                   <UnstyledButton
+                    className="nao-chat-send"
+                    data-ready={canSend ? "true" : "false"}
                     onClick={handleSendClick}
                     disabled={!quotaReached && !canSend}
                     style={{

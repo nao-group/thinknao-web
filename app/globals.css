@@ -2905,3 +2905,202 @@ html[data-mantine-color-scheme="dark"] :is(
   border-color: rgba(201, 226, 233, .56) !important;
   background: #355966 !important;
 }
+
+/* Ask NAO is portalled to body, so theme its panel and every view locally. */
+html[data-mantine-color-scheme="dark"] .nao-chat-panel {
+  color: #e8f1f3 !important;
+  background: #0d2d38 !important;
+  box-shadow: -12px 0 36px rgba(0, 8, 14, .45) !important;
+  border-left: 1px solid rgba(177, 208, 217, .18);
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-panel .mantine-Text-root {
+  color: #e8f1f3 !important;
+}
+
+html[data-mantine-color-scheme="dark"] :is(.nao-chat-header, .nao-chat-search, .nao-chat-composer) {
+  color: #e8f1f3 !important;
+  border-color: rgba(177, 208, 217, .18) !important;
+  background: #123844 !important;
+}
+
+html[data-mantine-color-scheme="dark"] :is(.nao-chat-history, .nao-chat-messages) {
+  color: #e8f1f3 !important;
+  background: #0d2d38 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-icon-button {
+  color: #e8f1f3 !important;
+  border-color: rgba(177, 208, 217, .3) !important;
+  background: #214653 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-icon-button:hover {
+  background: #315b69 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-icon-button svg {
+  color: #e8f1f3 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-avatar {
+  border-color: rgba(177, 208, 217, .28) !important;
+  background: #214653 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-avatar--user,
+html[data-mantine-color-scheme="dark"] .nao-chat-user-bubble {
+  background: #315e74 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-search-input .mantine-TextInput-input,
+html[data-mantine-color-scheme="dark"] .nao-chat-rename-input .mantine-TextInput-input {
+  color: #f2f6f7 !important;
+  border-color: rgba(177, 208, 217, .3) !important;
+  background: #214653 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-search-input .mantine-TextInput-input::placeholder {
+  color: #aac1c9 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-history-card {
+  border-color: rgba(177, 208, 217, .2) !important;
+  background: #1b414e !important;
+  box-shadow: 0 3px 12px rgba(0, 8, 14, .18) !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-history-card[data-deleting="true"] {
+  border-color: rgba(238, 123, 110, .55) !important;
+  background: #463d42 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-cancel-delete {
+  color: #e8f1f3 !important;
+  border-color: rgba(177, 208, 217, .34) !important;
+  background: #294e5a !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-context {
+  border-color: rgba(226, 181, 47, .3) !important;
+  background: #514827 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-assistant-copy,
+html[data-mantine-color-scheme="dark"] .nao-chat-assistant-copy .markdown-rich-text {
+  color: #e8f1f3 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-panel .markdown-rich-text a {
+  color: #f4d77e !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-panel .markdown-rich-text strong {
+  color: #f3f8f9 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-panel .markdown-rich-text em {
+  color: #c6dce2 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-panel .markdown-blockquote {
+  color: #f1e1b1 !important;
+  border-color: #e2b52f !important;
+  background: #4c452d !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-panel .markdown-code-chip {
+  color: #f1e1b1 !important;
+  background: #4c452d !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-practice-card {
+  border-color: rgba(177, 208, 217, .28) !important;
+  background: #1b414e !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-answer {
+  color: #dff0e4 !important;
+  background: #244d43 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-answer .mantine-Text-root {
+  color: #b8e8c6 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-prompt {
+  color: #e8f1f3 !important;
+  border-color: rgba(177, 208, 217, .35) !important;
+  background: #214653 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-prompt:hover {
+  border-color: rgba(226, 181, 47, .65) !important;
+  background: #315b69 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-thinking-dot {
+  background: #68b2cf !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-quota {
+  border-color: rgba(177, 208, 217, .3) !important;
+  background: #214653 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-quota[data-status="warning"] {
+  border-color: rgba(226, 181, 47, .5) !important;
+  background: #514827 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-quota[data-status="reached"] {
+  border-color: rgba(238, 123, 110, .6) !important;
+  background: #503c40 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-quota-icon {
+  color: #d8e9ee !important;
+  background: #315b69 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-quota[data-status="warning"] .nao-chat-quota-icon {
+  color: #f4d77e !important;
+  background: #6b5825 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-quota[data-status="reached"] .nao-chat-quota-icon {
+  color: #ffb0a7 !important;
+  background: #6b4244 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-quota-track {
+  background: rgba(210, 230, 235, .18) !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-input-wrap {
+  border-color: rgba(177, 208, 217, .36) !important;
+  background: #214653 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-input-wrap:focus-within {
+  border-color: #68b2cf !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-input .mantine-Textarea-input {
+  color: #f2f6f7 !important;
+  background: transparent !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-input .mantine-Textarea-input::placeholder {
+  color: #aac1c9 !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-send {
+  color: #d8e9ee !important;
+  background: #3d5f6c !important;
+}
+
+html[data-mantine-color-scheme="dark"] .nao-chat-send[data-ready="true"] {
+  color: #101b2b !important;
+  background: #e2b52f !important;
+}
