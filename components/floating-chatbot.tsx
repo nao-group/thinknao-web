@@ -650,7 +650,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}
                 >
-                  <IconArrowLeft size={15} stroke={1.8} color={INK} />
+                  <IconArrowLeft size={15} stroke={1.8} color="currentColor" />
                 </UnstyledButton>
                 <Text fw={700} size="sm" c={INK}>Chat history</Text>
               </Group>
@@ -695,7 +695,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                         display: "flex", alignItems: "center", justifyContent: "center",
                       }}
                     >
-                      <IconPlus size={15} stroke={2} color={INK} />
+                      <IconPlus size={15} stroke={2} color="currentColor" />
                     </UnstyledButton>
                   </Tooltip>
                   <Tooltip label="Chat history" position="bottom" withArrow>
@@ -708,7 +708,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                         display: "flex", alignItems: "center", justifyContent: "center",
                       }}
                     >
-                      <IconHistory size={15} stroke={1.6} color={INK} />
+                      <IconHistory size={15} stroke={1.6} color="currentColor" />
                     </UnstyledButton>
                   </Tooltip>
                 </>
@@ -722,7 +722,7 @@ export function FloatingChatbot({ sessionId, questionId }: FloatingChatbotProps)
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}
               >
-                <IconX size={14} stroke={2} color={INK} />
+                <IconX size={14} stroke={2} color="currentColor" />
               </UnstyledButton>
             </Group>
           </Group>

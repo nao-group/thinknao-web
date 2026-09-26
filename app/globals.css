@@ -2907,6 +2907,10 @@ html[data-mantine-color-scheme="dark"] :is(
 }
 
 /* Ask NAO is portalled to body, so theme its panel and every view locally. */
+.nao-chat-icon-button {
+  color: #0f172a;
+}
+
 html[data-mantine-color-scheme="dark"] .nao-chat-panel {
   color: #e8f1f3 !important;
   background: #0d2d38 !important;
@@ -2930,7 +2934,7 @@ html[data-mantine-color-scheme="dark"] :is(.nao-chat-history, .nao-chat-messages
 }
 
 html[data-mantine-color-scheme="dark"] .nao-chat-icon-button {
-  color: #e8f1f3 !important;
+  color: #fff !important;
   border-color: rgba(177, 208, 217, .3) !important;
   background: #214653 !important;
 }
@@ -2940,7 +2944,8 @@ html[data-mantine-color-scheme="dark"] .nao-chat-icon-button:hover {
 }
 
 html[data-mantine-color-scheme="dark"] .nao-chat-icon-button svg {
-  color: #e8f1f3 !important;
+  color: #fff !important;
+  stroke: currentColor !important;
 }
 
 html[data-mantine-color-scheme="dark"] .nao-chat-avatar {
