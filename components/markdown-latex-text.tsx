@@ -172,6 +172,7 @@ function parseCode(text: string, keyPrefix: string, circleNums: boolean): React.
       return [
         <span
           key={key}
+          className="markdown-code-chip"
           style={{
             display: "inline-block",
             backgroundColor: "#F5E6CC",
