@@ -70,8 +70,8 @@
 .sideFooter span { color: #687587; }
 .dialogBackdrop { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 18px; background: #10202bd1; }
 .dialog { width: min(100%, 440px); border-radius: 18px; background: #fff; box-shadow: 0 25px 75px #0004; overflow: hidden; }
-.dialogVisual { height: 170px; background: linear-gradient(120deg, #eaf1f1, #f8f1e2); overflow: hidden; }
-.dialogArt { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 48%; }
+.dialogVisual { height: 240px; background: linear-gradient(120deg, #eaf1f1, #f8f1e2); overflow: hidden; }
+.dialogArt { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
 .dialogContent { padding: 26px 28px 28px; }
 .dialog h2 { margin: 0 0 10px; }
 .dialog p { color: #647184; font-size: 13px; line-height: 1.6; }
@@ -95,7 +95,7 @@
 :is(.exam,.resultPage,.center) :is(button,select,a):focus-visible { outline: 3px solid #ba8613; outline-offset: 3px; }
 @media (max-width: 850px) { .workspace { grid-template-columns: 1fr; }.sidebar { position: static; order: -1; }.sidebar p,.legend,.sideFooter { display: none; }.numberGrid { grid-template-columns: repeat(8, minmax(0,1fr)); margin-top: 14px; }.questionCard { min-height: 0; } }
 @media (max-width: 560px) { .topbar { align-items: flex-start; }.topActions { flex-wrap: wrap; justify-content: flex-end; }.language { display: none; }.topButton { width: 100%; }.numberGrid { grid-template-columns: repeat(8,minmax(0,1fr)); }.sidebar { padding: 16px; }.workspace { padding: 15px; }.questionCard { padding: 19px; }.questionCard h1 { font-size: 19px; } }
-@media (max-width: 440px) { .dialogVisual { height: 145px; }.dialogContent { padding: 22px; }.dialogActions { flex-direction: column-reverse; }.dialogActions button { width: 100%; } }
+@media (max-width: 440px) { .dialogVisual { height: 200px; }.dialogContent { padding: 22px; }.dialogActions { flex-direction: column-reverse; }.dialogActions button { width: 100%; } }
 :global(html[data-mantine-color-scheme="dark"]) .exam,
 :global(html[data-mantine-color-scheme="dark"]) .resultPage,
 :global(html[data-mantine-color-scheme="dark"]) .center { background: #102b35; color: #f1f6f7; }
