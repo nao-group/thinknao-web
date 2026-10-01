@@ -616,7 +616,6 @@ html[data-mantine-color-scheme="dark"] .carousel-pagination-number[data-active="
 /* Answer key + markdown surfaces */
 .answer-explanation-panel {
   position: relative;
-  overflow: hidden;
   padding: 22px 24px !important;
   border: 1px solid #DCE4D7 !important;
   border-left: 1px solid #DCE4D7 !important;
@@ -631,8 +630,12 @@ html[data-mantine-color-scheme="dark"] .carousel-pagination-number[data-active="
   top: 0;
   bottom: 0;
   left: 0;
-  width: 4px;
-  background: linear-gradient(180deg, #7FA276, #D4A017);
+  right: 0;
+  border-radius: inherit;
+  /* Full-size overlay so the 4px stripe follows the rounded corners
+     without overflow: hidden, which would clip hover tooltips. */
+  background: linear-gradient(180deg, #7FA276, #D4A017) left / 4px 100% no-repeat;
+  pointer-events: none;
   content: "";
 }
 
