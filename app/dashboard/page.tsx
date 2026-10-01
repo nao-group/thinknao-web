@@ -419,42 +419,34 @@ export default function DashboardPage() {
   const [inProgressSessions, setInProgressSessions] = useState<Session[]>([]);
   const [progressMap, setProgressMap] = useState<Record<string, SessionProgress>>({});
   const [subscription, setSubscription] = useState<Subscription | null | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
+  const [loadingRecent, setLoadingRecent] = useState(true);
+  const [loadingInProgress, setLoadingInProgress] = useState(true);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [recent, inProgress, sub] = await Promise.all([
-          fetchRecentSessions(),
-          fetchInProgressSessions(),
-          fetchSubscription().catch(() => null),
-        ]);
+    fetchSubscription()
+      .catch(() => null)
+      .then(setSubscription);
 
-        setRecentSessions(recent);
+    fetchRecentSessions()
+      .then(setRecentSessions)
+      .catch((err) => console.error("Failed to load recent sessions:", err))
+      .finally(() => setLoadingRecent(false));
+
+    fetchInProgressSessions()
+      .then((inProgress) => {
         setInProgressSessions(inProgress);
-        setSubscription(sub);
-
-        if (inProgress.length > 0) {
-          const progressResults = await Promise.all(
-            inProgress.map((s) =>
-              fetchSessionProgress(s.id)
-                .then((progress) => ({ id: s.id, ...progress }))
-                .catch(() => ({ id: s.id, answered_count: 0, total_count: 0 }))
-            )
-          );
-          const map: Record<string, SessionProgress> = {};
-          for (const r of progressResults) {
-            map[r.id] = { answered_count: r.answered_count, total_count: r.total_count };
-          }
-          setProgressMap(map);
-        }
-      } catch (err) {
-        console.error("Dashboard load failed:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+        setLoadingInProgress(false);
+        // Progress bars fill in afterwards; don't block the list on them.
+        inProgress.forEach((s) => {
+          fetchSessionProgress(s.id)
+            .catch(() => ({ answered_count: 0, total_count: 0 }))
+            .then((progress) => setProgressMap((prev) => ({ ...prev, [s.id]: progress })));
+        });
+      })
+      .catch((err) => {
+        console.error("Failed to load in-progress sessions:", err);
+        setLoadingInProgress(false);
+      });
   }, []);
 
   function navigateToSession(session: Session) {
@@ -494,7 +486,7 @@ export default function DashboardPage() {
                 </Link>
               </Group>
               <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-                {loading ? (
+                {loadingRecent ? (
                   <>
                     <ProblemSetSkeleton />
                     <ProblemSetSkeleton />
@@ -525,7 +517,7 @@ export default function DashboardPage() {
                 </Link>
               </Group>
               <Stack gap="sm">
-                {loading ? (
+                {loadingInProgress ? (
                   <>
                     <InProgressSkeleton />
                     <InProgressSkeleton />
