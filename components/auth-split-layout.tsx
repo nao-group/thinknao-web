@@ -158,7 +158,6 @@ export function AuthSplitLayout({
       <section className={styles.formPanel} aria-label={mode === "login" ? "Log in" : "Create an account"}>
         <div className={styles.mobileBrand}><ThinkNaoLogo /></div>
         <Box className={styles.formCard}>{children}</Box>
-        <Text className={styles.formFooter}>LEARN BOLDLY · THINK BEYOND</Text>
       </section>
       {/* Ceremonial gate temporarily commented out/disabled. */}
       {CEREMONIAL_GATE_ENABLED && gateState === "ready" && (

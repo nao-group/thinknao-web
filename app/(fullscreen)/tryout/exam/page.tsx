@@ -24,7 +24,6 @@ export default function TryoutExamPage() {
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [review, setReview] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [selectedWord, setSelectedWord] = useState<{ questionId: string; key: string } | null>(null);
 
   useEffect(() => {
     const onFullscreenChange = () => setFullscreen(Boolean(document.fullscreenElement));
@@ -64,11 +63,6 @@ export default function TryoutExamPage() {
   function choose(blank: string, key: string) {
     if (!attempt || isFinished) return;
     const blanks = { ...(attempt.answers[question.id] ?? {}) };
-    if ((question.blanks || question.type === "XT") && key) {
-      for (const [otherBlank, value] of Object.entries(blanks)) {
-        if (otherBlank !== blank && value === key) delete blanks[otherBlank];
-      }
-    }
     blanks[blank] = key;
     const next = { ...attempt, answers: { ...attempt.answers, [question.id]: blanks } };
     setAttempt(next);
@@ -92,20 +86,6 @@ export default function TryoutExamPage() {
         return <button key={option.key} type="button" className={styles.option} data-selected={selected || undefined} data-correct={correct || undefined} data-wrong={(review && selected && !correct) || undefined} onClick={() => choose(blank, option.key)} disabled={isFinished} aria-pressed={selected}><span>{option.key}</span>{option.text}</button>;
       })}
     </div>;
-  }
-
-  function renderWordBank() {
-    if (isFinished) return null;
-    const usedKeys = new Set(Object.values(attempt?.answers[question.id] ?? {}));
-    return <div className={styles.wordBank}><strong>备选词 / Word bank · Drag or select a word, then choose a blank</strong><div>
-      {question.options.map((option) => <button key={option.key} type="button" draggable={!usedKeys.has(option.key)} disabled={usedKeys.has(option.key)} data-active={selectedWord?.questionId === question.id && selectedWord.key === option.key || undefined} onDragStart={(event) => event.dataTransfer.setData("text/plain", option.key)} onClick={() => setSelectedWord({ questionId: question.id, key: option.key })}>{option.key}. {option.text}</button>)}
-    </div></div>;
-  }
-
-  function renderInlineBlank(blank: string) {
-    const chosen = attempt?.answers[question.id]?.[blank] ?? "";
-    const word = question.options.find((option) => option.key === chosen)?.text;
-    return <button type="button" className={styles.inlineBlank} data-filled={!!chosen || undefined} data-active={step.blank === blank || undefined} key={`blank-${blank}`} onDragOver={(event) => { if (!isFinished) event.preventDefault(); }} onDrop={(event) => { event.preventDefault(); if (!isFinished) { choose(blank, event.dataTransfer.getData("text/plain")); setSelectedWord(null); } }} onClick={() => { if (isFinished) return; if (selectedWord?.questionId === question.id) { choose(blank, selectedWord.key); setSelectedWord(null); } else if (chosen) choose(blank, ""); }} disabled={isFinished} aria-label={`Question ${TRYOUT_STEPS.findIndex((item) => item.groupIndex === step.groupIndex && item.blank === blank) + 1}${word ? `: ${word}` : ": empty"}`}>{word ?? "____"}</button>;
   }
 
   if (isFinished && !review) return <main className={styles.resultPage}>
@@ -153,22 +133,10 @@ export default function TryoutExamPage() {
         <article className={styles.questionCard} onCopy={(event) => event.preventDefault()} onCut={(event) => event.preventDefault()} onContextMenu={(event) => event.preventDefault()}>
           <div className={styles.questionHeader}><span className={styles.kind}>{question.label}</span><span>#{String(current + 1).padStart(2, "0")}</span></div>
           {question.type === "YL" && question.passage && <section className={styles.passage}><strong>阅读材料 · Reading passage</strong><p>{question.passage}</p></section>}
-          <h1>{question.type === "cloze" ? "选择合适的词语，完成短文。" : readingItem?.prompt ?? question.prompt}</h1>
-          {question.type === "YL" && readingItem ? renderOptions(readingItem.index, readingItem.options) : question.type === "XT" && question.sentences ? <div className={styles.wordSet}>
-            {renderWordBank()}
-            <div className={styles.sentences}>{question.sentences.map((sentence) => {
-              const [before, after] = sentence.text.split("____");
-              const number = TRYOUT_STEPS.findIndex((item) => item.groupIndex === step.groupIndex && item.blank === sentence.index) + 1;
-              return <div className={styles.sentence} data-active={step.blank === sentence.index || undefined} key={sentence.index}><span className={styles.sentenceNumber}>{number}</span><p>{before}{renderInlineBlank(sentence.index)}{after}</p>{review && <small>Correct: {question.options.find((option) => option.key === question.correct[sentence.index])?.text}</small>}</div>;
-            })}</div>
-          </div> : question.type === "cloze" && question.blanks ? <div className={styles.wordSet}>
-            {renderWordBank()}
-            <p className={styles.paragraphCloze}>{question.prompt.split(/(\{\d+\})/g).map((part, index) => {
-              const match = part.match(/^\{(\d+)\}$/);
-              return match ? renderInlineBlank(match[1]) : <span key={`text-${index}`}>{part}</span>;
-            })}</p>
-            {review && <p className={styles.answerKey}>Answer key: {question.blanks.map((blank) => `${blank}. ${question.options.find((option) => option.key === question.correct[blank])?.text}`).join(" · ")}</p>}
-          </div> : renderOptions("1", question.options)}
+          <h1>{readingItem?.prompt ?? question.prompt}</h1>
+          {question.type === "YL" && readingItem
+            ? renderOptions(readingItem.index, readingItem.options)
+            : renderOptions("1", question.options)}
           {review && <p className={styles.feedback}>{attempt.answers[question.id]?.[step.blank] ? attempt.answers[question.id]?.[step.blank] === question.correct[step.blank] ? "Correct answer" : "Incorrect answer" : "Not answered"}</p>}
         </article>
         <div className={styles.bottomNav}><button onClick={() => setCurrent((index) => Math.max(0, index - 1))} disabled={current === 0}><IconArrowLeft size={17} /> Previous</button>{current < TRYOUT_ITEM_COUNT - 1 ? <button onClick={() => setCurrent((index) => index + 1)}>Next question <IconArrowRight size={17} /></button> : review ? <button onClick={() => setReview(false)}>View result <IconArrowRight size={17} /></button> : <button onClick={() => setConfirmSubmit(true)}>Submit tryout <IconSend size={17} /></button>}</div>

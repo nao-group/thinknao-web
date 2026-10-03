@@ -24,25 +24,6 @@
 .passage { margin-top: 26px; padding: 21px; border-left: 3px solid #d2a348; border-radius: 10px; background: #f8f6f0; }
 .passage strong { color: #9a6c14; font-size: 11px; letter-spacing: .05em; }
 .passage p { margin: 10px 0 0; font-size: 17px; line-height: 2; }
-.sentenceNumber { display: inline-grid; flex: 0 0 28px; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: #ebeff9; color: #586a9a; font-size: 12px; font-weight: 800; }
-.wordSet { display: grid; gap: 17px; }
-.wordBank { padding: 17px; border: 1px solid #dce4e8; border-radius: 12px; background: #f7f9f9; }
-.wordBank strong { display: block; margin-bottom: 12px; color: #657285; font-size: 12px; }
-.wordBank > div { display: flex; flex-wrap: wrap; gap: 9px; }
-.wordBank button { padding: 8px 14px; border: 1.5px solid #93b8cb; border-radius: 99px; background: #eaf4fa; color: #192437; font: inherit; font-size: 13px; cursor: grab; }
-.wordBank button[data-active="true"] { border-color: #b78415; background: #f7e4b2; }
-.wordBank button:disabled { opacity: .4; cursor: default; }
-.sentences { display: grid; gap: 10px; }
-.sentence { display: flex; align-items: baseline; gap: 10px; padding: 14px 16px; border: 1px solid #dce4e8; border-radius: 10px; background: #fff; }
-.sentence[data-active="true"] { border-color: #b78415; }
-.sentence p { flex: 1; margin: 0; font-size: 15px; line-height: 2; }
-.sentence small { color: #217048; font-size: 11px; }
-.inlineBlank { min-width: 72px; min-height: 30px; margin: 0 4px; padding: 3px 9px; border: 1.5px dashed #8396a0; border-radius: 8px; background: #eef2f3; color: #526270; font: inherit; font-size: 13px; cursor: pointer; }
-.inlineBlank[data-filled="true"] { border-color: #93b8cb; background: #eaf4fa; color: #192437; }
-.inlineBlank[data-active="true"] { outline: 2px solid #b78415; outline-offset: 2px; }
-.inlineBlank:disabled { cursor: default; opacity: 1; }
-.paragraphCloze { margin: 0; padding: 20px; border: 1px solid #dce4e8; border-radius: 12px; background: #fff; font-size: 17px; line-height: 2.5; }
-.answerKey { margin: 0; color: #217048; font-size: 12px; font-weight: 700; }
 .options { display: grid; gap: 10px; }
 .option { display: flex; align-items: center; gap: 13px; width: 100%; min-height: 55px; padding: 10px 14px; border: 1.5px solid #dce4e8; border-radius: 11px; background: #fff; color: inherit; text-align: left; font: inherit; font-size: 15px; cursor: pointer; }
 .option span { display: grid; flex: 0 0 30px; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: #edf1f2; color: #192437; font-size: 12px; font-weight: 800; }
@@ -107,15 +88,6 @@
 :global(html[data-mantine-color-scheme="dark"]) .dialogVisual { background: linear-gradient(120deg, #203b45, #3e4034); }
 :global(html[data-mantine-color-scheme="dark"]) .passage,
 :global(html[data-mantine-color-scheme="dark"]) .score { background: #2b4548; }
-:global(html[data-mantine-color-scheme="dark"]) .wordBank,
-:global(html[data-mantine-color-scheme="dark"]) .sentence,
-:global(html[data-mantine-color-scheme="dark"]) .paragraphCloze { border-color: #52707a; background: #254650; color: #f1f6f7; }
-:global(html[data-mantine-color-scheme="dark"]) .wordBank strong { color: #bed0d5; }
-:global(html[data-mantine-color-scheme="dark"]) .wordBank button,
-:global(html[data-mantine-color-scheme="dark"]) .inlineBlank { border-color: #7694a0; background: #315662; color: #f1f6f7; }
-:global(html[data-mantine-color-scheme="dark"]) .wordBank button[data-active="true"],
-:global(html[data-mantine-color-scheme="dark"]) .inlineBlank[data-filled="true"] { border-color: #d5a945; background: #534629; color: #fff2d6; }
-:global(html[data-mantine-color-scheme="dark"]) .sentence[data-active="true"] { border-color: #d4a017; }
 :global(html[data-mantine-color-scheme="dark"]) .topButton,
 :global(html[data-mantine-color-scheme="dark"]) .bottomNav button:last-child,
 :global(html[data-mantine-color-scheme="dark"]) .dialog .primary { border-color: #d4a017; background: #d4a017; color: #101b2b; }

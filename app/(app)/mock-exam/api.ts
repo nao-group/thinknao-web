@@ -1,7 +1,7 @@
 /**
  * API client for the mock-exam backend. Adapts the grouped QuestionGroup
- * response into the flat MockQ[] this page renders. Every group has exactly
- * one question (backend only samples ungrouped types — no passage UI here yet).
+ * response into the flat MockQ[] this page renders. Passage and word-bank
+ * packages are presented as independent multiple-choice questions here.
  */
 
 import api from "@/lib/api";
@@ -44,7 +44,7 @@ interface RawQuestionGroup {
   group_id: string;
   type: string;
   passage: string | null;
-  word_bank: unknown;
+  word_bank: { key: string; text: string }[] | null;
   questions: RawQuestionInGroup[];
 }
 
@@ -56,11 +56,11 @@ interface ExamCreateApiResponse {
   groups: RawQuestionGroup[];
 }
 
-function extractText(content: RawContent | undefined): string {
+function extractText(content: RawContent | undefined, itemIndex = 0): string {
   const qField = content?.question;
   if (!qField) return "";
   if (typeof qField === "string") return qField;
-  return Object.values(qField)[0] ?? "";
+  return qField[String(itemIndex + 1)] ?? Object.values(qField)[itemIndex] ?? Object.values(qField)[0] ?? "";
 }
 
 function extractOptions(content: RawContent | undefined): { key: string; text: string }[] {
@@ -75,22 +75,38 @@ function topicLabelFromCode(code: string): string {
   return parts.length >= 2 ? parts[1] : code;
 }
 
-function adaptQuestion(raw: RawQuestionInGroup, subject: Subject): MockQ {
+function adaptQuestion(raw: RawQuestionInGroup, group: RawQuestionGroup, itemIndex: number, subject: Subject): MockQ {
   const en = raw.content?.en;
   const zh = raw.content?.zh;
-  const enText = extractText(en);
-  const zhText = extractText(zh);
+  const isWordBankType = group.type === "XT" || group.type === "DT";
+  const enText = extractText(en, group.type === "XT" ? itemIndex : 0);
+  const zhText = extractText(zh, group.type === "XT" ? itemIndex : 0);
   const enOptions = extractOptions(en);
   const zhOptions = extractOptions(zh);
+  const options = isWordBankType
+    ? group.word_bank ?? []
+    : enOptions.length ? enOptions : zhOptions;
+  const blankNumber = itemIndex + 1;
+  const withContext = (text: string, language: "en" | "zh") => {
+    const passage = group.passage ? `${group.passage}\n\n` : "";
+    if (!isWordBankType) return `${passage}${text}`;
+    const staticBlanks = text.replace(/\{(\d+)\}|_{4,}/g, (_match, number: string | undefined) =>
+      number ? `(${number})` : "(  )"
+    );
+    if (group.type === "DT") {
+      return `${staticBlanks}\n\n${language === "zh" ? `请选择第 ${blankNumber} 空的正确答案。` : `Choose the correct answer for blank ${blankNumber}.`}`;
+    }
+    return `${staticBlanks}\n\n${language === "zh" ? "请选择最合适的词语。" : "Choose the best word."}`;
+  };
   return {
     id: raw.id,
     subject,
     topic: topicLabelFromCode(raw.code),
-    text: enText || zhText,
-    options: enOptions.length ? enOptions : zhOptions,
+    text: withContext(enText || zhText, enText ? "en" : "zh"),
+    options,
     correctAnswer: "", // never sent by the API before submission — grading happens server-side
     zh: zhText
-      ? { topic: topicLabelFromCode(raw.code), text: zhText, options: zhOptions.length ? zhOptions : undefined }
+      ? { topic: topicLabelFromCode(raw.code), text: withContext(zhText, "zh"), options: isWordBankType ? options : zhOptions.length ? zhOptions : undefined }
       : undefined,
   };
 }
@@ -104,7 +120,9 @@ export async function createExam(
     language,
   });
   const subject = SUBJECT_CODE_TO_NAME[data.subject_code] ?? SUBJECT_CODE_TO_NAME[subjectCode] ?? "Mathematics";
-  const questions = data.groups.map((g) => adaptQuestion(g.questions[0], subject));
+  const questions = data.groups.flatMap((g) =>
+    g.questions.map((question, index) => adaptQuestion(question, g, index, subject))
+  );
   return { sessionId: data.session_id, timeLimitMinutes: data.time_limit_minutes, questions };
 }
 

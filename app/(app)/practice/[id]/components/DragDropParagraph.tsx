@@ -186,6 +186,7 @@ export function DragDropParagraph({
 
       {/* Paragraph with inline blanks */}
       <div
+        className="chinese-practice-question-text"
         style={{
           fontSize: rem(16),
           lineHeight: 2,
