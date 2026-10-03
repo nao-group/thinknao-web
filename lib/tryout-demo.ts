@@ -1,18 +1,16 @@
 /** Frontend-only sample. Replace code lookup, questions, grading, and email delivery with the tryout API. */
 export const DEMO_CODE = "NAO-HC-ZH-DEMO";
-export const TRYOUT_STORAGE_KEY = "thinknao-tryout-demo-v1";
+export const TRYOUT_STORAGE_KEY = "thinknao-tryout-demo-v2";
 export const TRYOUT_DURATION_SECONDS = 30 * 60;
 
 export type TryoutQuestion = {
   id: string;
-  type: "multiple_choice" | "YL" | "cloze" | "XT";
+  type: "multiple_choice" | "YL";
   label: string;
   prompt: string;
   passage?: string;
   options: { key: string; text: string }[];
-  blanks?: string[];
   items?: { index: string; prompt: string; options: { key: string; text: string }[] }[];
-  sentences?: { index: string; text: string }[];
   correct: Record<string, string>;
 };
 
@@ -50,26 +48,48 @@ export const TRYOUT_QUESTIONS: TryoutQuestion[] = [
     ], correct: { "1": "C", "2": "A" },
   },
   {
-    id: "hc-05", type: "cloze", label: "段落填空 · Fill in the blanks",
-    prompt: "学习一门语言需要{1}。每天阅读一点儿，并主动和别人{2}，可以慢慢提高表达能力。",
-    blanks: ["1", "2"], options: [
+    id: "hc-05-1", type: "multiple_choice", label: "段落填空 · Multiple choice",
+    prompt: "学习一门语言需要____。每天阅读一点儿，并主动和别人交流，可以慢慢提高表达能力。第一空最合适的词语是？",
+    options: [
       { key: "A", text: "耐心" }, { key: "B", text: "交流" },
       { key: "C", text: "匆忙" }, { key: "D", text: "忘记" },
-    ], correct: { "1": "A", "2": "B" },
+    ], correct: { "1": "A" },
   },
   {
-    id: "hc-06", type: "XT", label: "选词填空 · XT",
-    prompt: "从同一个词库中选择合适的词，填入每一句的空格。",
+    id: "hc-05-2", type: "multiple_choice", label: "段落填空 · Multiple choice",
+    prompt: "学习一门语言需要耐心。每天阅读一点儿，并主动和别人____，可以慢慢提高表达能力。第二空最合适的词语是？",
+    options: [
+      { key: "A", text: "耐心" }, { key: "B", text: "交流" },
+      { key: "C", text: "匆忙" }, { key: "D", text: "忘记" },
+    ], correct: { "1": "B" },
+  },
+  {
+    id: "hc-06-1", type: "multiple_choice", label: "选词填空 · Multiple choice",
+    prompt: "这本书的内容很____，我一口气读完了。最合适的词语是？",
     options: [
       { key: "A", text: "精彩" }, { key: "B", text: "请教" },
       { key: "C", text: "逐渐" }, { key: "D", text: "安静" },
       { key: "E", text: "遥远" },
     ],
-    sentences: [
-      { index: "1", text: "这本书的内容很____，我一口气读完了。" },
-      { index: "2", text: "如果有不懂的问题，可以____老师。" },
-      { index: "3", text: "通过每天练习，她的中文水平____提高了。" },
-    ], correct: { "1": "A", "2": "B", "3": "C" },
+    correct: { "1": "A" },
+  },
+  {
+    id: "hc-06-2", type: "multiple_choice", label: "选词填空 · Multiple choice",
+    prompt: "如果有不懂的问题，可以____老师。最合适的词语是？",
+    options: [
+      { key: "A", text: "精彩" }, { key: "B", text: "请教" },
+      { key: "C", text: "逐渐" }, { key: "D", text: "安静" },
+      { key: "E", text: "遥远" },
+    ], correct: { "1": "B" },
+  },
+  {
+    id: "hc-06-3", type: "multiple_choice", label: "选词填空 · Multiple choice",
+    prompt: "通过每天练习，她的中文水平____提高了。最合适的词语是？",
+    options: [
+      { key: "A", text: "精彩" }, { key: "B", text: "请教" },
+      { key: "C", text: "逐渐" }, { key: "D", text: "安静" },
+      { key: "E", text: "遥远" },
+    ], correct: { "1": "C" },
   },
   {
     id: "hc-07", type: "multiple_choice", label: "文化常识 · Multiple choice",

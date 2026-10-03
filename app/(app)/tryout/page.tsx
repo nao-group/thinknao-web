@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { IconArrowRight, IconClock, IconKey, IconLanguage, IconNotebook } from "@tabler/icons-react";
-import { DEMO_CODE, TRYOUT_DURATION_SECONDS, TRYOUT_ITEM_COUNT, TRYOUT_QUESTIONS, readTryoutAttempt, saveTryoutAttempt } from "@/lib/tryout-demo";
+import { DEMO_CODE, TRYOUT_DURATION_SECONDS, TRYOUT_ITEM_COUNT, readTryoutAttempt, saveTryoutAttempt } from "@/lib/tryout-demo";
 import styles from "./tryout.module.css";
 
 export default function TryoutPage() {
@@ -45,7 +45,7 @@ export default function TryoutPage() {
         <h2>Humanities Chinese Tryout</h2>
         <p className={styles.muted}>Preview the full tryout flow with sample questions. Your answers and result stay in this browser session.</p>
         <div className={styles.facts}>
-          <span><IconNotebook size={18} /> {TRYOUT_ITEM_COUNT} questions · {TRYOUT_QUESTIONS.length} sets</span>
+          <span><IconNotebook size={18} /> {TRYOUT_ITEM_COUNT} multiple-choice questions</span>
           <span><IconClock size={18} /> 30 minutes</span>
           <span><IconLanguage size={18} /> 中文</span>
         </div>

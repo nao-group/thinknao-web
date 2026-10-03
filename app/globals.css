@@ -2076,6 +2076,10 @@ html[data-mantine-color-scheme="dark"] .practice-detail-card [style*="background
   background-color: rgba(8, 31, 41, 0.58) !important;
 }
 
+html[data-mantine-color-scheme="dark"] .chinese-practice-question-text {
+  color: #f2f6f7 !important;
+}
+
 html[data-mantine-color-scheme="dark"] .practice-detail-card .answer-explanation-panel {
   color: #dce8e7;
   border-color: rgba(151, 184, 149, 0.4);

@@ -218,7 +218,7 @@ function SentenceRow({
       >
         {questionIndex + 1}
       </span>
-      <span style={{ fontSize: rem(15), color: INK, flex: 1 }}>
+      <span className="chinese-practice-question-text" style={{ fontSize: rem(15), color: INK, flex: 1 }}>
         {segments.map((seg, i) => {
           if (seg.type === "text") return <span key={i}>{seg.value}</span>;
           const idx = seg.value;

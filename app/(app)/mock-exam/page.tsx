@@ -342,7 +342,7 @@ export default function MockExamPage() {
                   </Tooltip>
                 </Group>
                 <Box p="md" mb="lg" style={{ backgroundColor: SURFACE, borderRadius: rem(10) }}>
-                  <Text size="md" c={INK} lh={1.7}><LatexText>{qText}</LatexText></Text>
+                  <Text size="md" c={INK} lh={1.7} style={{ whiteSpace: "pre-wrap" }}><LatexText>{qText}</LatexText></Text>
                 </Box>
                 <Stack gap="sm">
                   {qOptions.map((opt) => {
