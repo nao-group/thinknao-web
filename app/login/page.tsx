@@ -253,7 +253,7 @@ function LoginContent() {
       </Box>
 
       <Text size="sm" c="dimmed" ta="center" mt={24}>
-        New to ThinkNao?{" "}
+        New to Nao Academy?{" "}
         <Anchor fw={700} c={INK} component={Link} href="/register">
           Create an account
         </Anchor>
