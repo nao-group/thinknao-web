@@ -127,6 +127,7 @@ html[data-mantine-color-scheme="dark"] .mantine-Modal-header {
 
 html[data-mantine-color-scheme="dark"] .mantine-Modal-content .mantine-Text-root,
 html[data-mantine-color-scheme="dark"] .mantine-Modal-content .mantine-Input-label,
+html[data-mantine-color-scheme="dark"] .mantine-Modal-content .mantine-InputWrapper-label,
 html[data-mantine-color-scheme="dark"] .mantine-Modal-content .mantine-Radio-label {
   color: var(--app-text-primary) !important;
 }

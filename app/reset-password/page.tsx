@@ -12,10 +12,11 @@ import {
   Title,
   rem,
 } from "@mantine/core";
-import { IconLock } from "@tabler/icons-react";
+import { IconArrowRight, IconLock } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { AuthSplitLayout } from "@/components/auth-split-layout";
 import { AuthHeader } from "@/components/auth-header";
+import { LandingActionButton } from "@/components/ui/landing-action-button";
 import { getApiErrorMessage } from "@/lib/errors";
 import { AUTH_INPUT_STYLES as inputStyles } from "@/lib/auth-form-styles";
 import axios from "axios";
@@ -120,7 +121,7 @@ function ResetPasswordForm() {
       <AuthHeader
         eyebrow="Security"
         title="Set a new password"
-        subtitle="Choose a strong password you haven&apos;t used before."
+        subtitle="Your new password will apply to your NAO account."
       />
 
       <Box
@@ -157,24 +158,17 @@ function ResetPasswordForm() {
           </Text>
         )}
 
-        <Button
+        <LandingActionButton
+          presentation="auth"
           type="submit"
           fullWidth
           size="md"
-          radius="md"
           loading={submitting}
-          rightSection={!submitting && <span>→</span>}
-          style={{
-            backgroundColor: INK,
-            color: "white",
-            fontWeight: 600,
-            fontSize: rem(15),
-            height: rem(52),
-            marginTop: rem(4),
-          }}
+          rightSection={!submitting && <IconArrowRight size={16} stroke={2.2} />}
+          style={{ marginTop: rem(4) }}
         >
           Reset password
-        </Button>
+        </LandingActionButton>
       </Box>
     </>
   );
