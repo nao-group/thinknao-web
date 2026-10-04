@@ -8,7 +8,6 @@ import {
   Anchor,
   Box,
   Button,
-  Checkbox,
   Group,
   Modal,
   PasswordInput,
@@ -222,15 +221,7 @@ function LoginContent() {
           }}
         />
 
-        <Group justify="space-between" align="center">
-          <Checkbox
-            label="Remember me"
-            size="sm"
-            styles={{
-              label: { fontSize: rem(14), color: INK },
-              input: { borderRadius: rem(4) },
-            }}
-          />
+        <Group justify="flex-start" align="center">
           <Anchor
             size="sm"
             fw={600}
@@ -406,16 +397,17 @@ function LoginContent() {
                 {forgotError}
               </Text>
             )}
-            <Button
+            <LandingActionButton
+              presentation="auth"
               type="submit"
               fullWidth
               size="md"
-              radius="md"
               loading={forgotLoading}
-              style={{ backgroundColor: INK, color: "white", fontWeight: 600 }}
+              disabled={!forgotEmail.trim()}
+              rightSection={!forgotLoading && <IconArrowRight size={16} stroke={2.2} />}
             >
               Send reset link
-            </Button>
+            </LandingActionButton>
           </Box>
         )}
       </Modal>
