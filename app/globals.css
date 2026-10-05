@@ -1989,6 +1989,14 @@ html[data-mantine-color-scheme="dark"] .profile-section-card .mantine-Input-inpu
   background: rgba(8, 31, 41, 0.58) !important;
 }
 
+html[data-mantine-color-scheme="dark"] .profile-section-card .mantine-InputWrapper-label,
+html[data-mantine-color-scheme="dark"] .profile-section-card .mantine-Input-label,
+html[data-mantine-color-scheme="dark"] .profile-section-card .mantine-InputWrapper-description,
+html[data-mantine-color-scheme="dark"] .profile-section-card .mantine-Select-section,
+html[data-mantine-color-scheme="dark"] .profile-section-card .mantine-Input-section {
+  color: var(--app-text-primary) !important;
+}
+
 html[data-mantine-color-scheme="dark"] .profile-section-card .mantine-Input-input::placeholder {
   color: #8fa3aa !important;
 }
