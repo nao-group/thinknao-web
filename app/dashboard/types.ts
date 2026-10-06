@@ -33,3 +33,10 @@ export interface LearningActivity {
   ranked_students: number;
   week: WeekdayXP[];
 }
+
+export interface AnnouncementBanner {
+  id: number;
+  name: string;
+  image_url: string;
+  redirect_url: string | null;
+}

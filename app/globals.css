@@ -517,27 +517,6 @@ html[data-mantine-color-scheme="dark"] .landing-action-button--secondary:not(:di
   background: linear-gradient(145deg, #345661, #24434e) !important;
 }
 
-html[data-mantine-color-scheme="dark"] .dashboard-announcement-slide {
-  border: 1px solid rgba(196, 220, 226, 0.1);
-  background-color: #0b2733 !important;
-  background-image:
-    radial-gradient(ellipse at 84% 46%, rgba(212, 160, 23, 0.17), transparent 56%),
-    linear-gradient(135deg, #091f2b 0%, #123743 68%, #183e49 100%) !important;
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.035), 0 14px 34px rgba(0, 8, 14, 0.2);
-}
-
-html[data-mantine-color-scheme="dark"] .dashboard-announcement-slide[data-slide-index="1"] {
-  background-image:
-    radial-gradient(ellipse at 84% 46%, rgba(96, 165, 250, 0.16), transparent 56%),
-    linear-gradient(135deg, #0a2230 0%, #17384b 68%, #1d4557 100%) !important;
-}
-
-html[data-mantine-color-scheme="dark"] .dashboard-announcement-slide[data-slide-index="2"] {
-  background-image:
-    radial-gradient(ellipse at 84% 46%, rgba(102, 112, 176, 0.18), transparent 56%),
-    linear-gradient(135deg, #101f31 0%, #243149 68%, #303956 100%) !important;
-}
-
 html[data-mantine-color-scheme="dark"] .pagination-control,
 html[data-mantine-color-scheme="dark"] .carousel-pagination-number {
   border-color: var(--app-control-border) !important;
