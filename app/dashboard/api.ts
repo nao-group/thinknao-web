@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import type { LearningActivity, Session, SessionProgress } from "./types";
+import type { AnnouncementBanner, LearningActivity, Session, SessionProgress } from "./types";
 
 export async function fetchLearningActivity(): Promise<LearningActivity> {
   const { data } = await api.get<LearningActivity>("/api/stats/learning-activity");
@@ -25,4 +25,9 @@ export async function fetchSessionProgress(sessionId: string): Promise<SessionPr
     `/api/sessions/${sessionId}/questions`
   );
   return { answered_count: data.answered_count ?? 0, total_count: data.total_count ?? 0 };
+}
+
+export async function fetchBanners(): Promise<AnnouncementBanner[]> {
+  const { data } = await api.get<AnnouncementBanner[]>("/api/banners");
+  return data ?? [];
 }
